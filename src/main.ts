@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { APP_NAME, API_PREFIX, API_VERSION, APP_DESCRIPTION } from './core/constants/app.constants';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 
@@ -13,40 +14,39 @@ async function bootstrap() {
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 
-  const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 3000;
-
-  const config = new DocumentBuilder()
-    .setTitle('LM API')
-    .setDescription('LM endpoint')
-    .setVersion('1.0')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('/', app, document, {
-    customJs: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.min.js',
-    ],
-    customCssUrl: [
-      'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
-    ],
+  const app = await NestFactory.create(AppModule, {
+    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
     credentials: true,
   });
+
+  app.setGlobalPrefix(API_PREFIX);
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true,
-    }),
+    })
   );
 
-  await app.listen(port);
-  console.log(`🚀 Server is running on http://localhost:${port}`);
+  const config = new DocumentBuilder()
+    .setTitle(APP_NAME)
+    .setDescription(APP_DESCRIPTION)
+    .setVersion(API_VERSION)
+    .addBearerAuth()
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
+
+  await app.listen(process.env.PORT ?? 3000);
+
+  const logger = new Logger('Level Music API');
+  logger.log(`App running on port ${process.env.PORT ?? 3000}`);
 }
 
 bootstrap();
