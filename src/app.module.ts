@@ -5,6 +5,7 @@ import { UserModule } from './user/user.module';
 import { EventModule } from './event/event.module';
 import { ClientModule } from './client/client.module';
 import { AuthModule } from './auth/auth.module';
+import { WorkerModule } from './worker/worker.module';
 
 @Module({
   imports: [
@@ -21,7 +22,10 @@ import { AuthModule } from './auth/auth.module';
     UserModule,
     EventModule,
     ClientModule,
-    AuthModule
-  ]
+    AuthModule,
+    WorkerModule
+  ],
+  providers: [],
+  controllers: []
 })
 export class AppModule {}
