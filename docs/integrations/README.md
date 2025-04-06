@@ -4,12 +4,12 @@ Esta sección documenta las integraciones con servicios externos utilizados en e
 
 ## Índice de Integraciones
 
-1. [Auth0](./auth0.md) - Autenticación y autorización
+1. [Culqi](./culqi.md) - Procesamiento de pagos
 
 ## Visión General
 
 El sistema se integra con 1 servicio externos(Por ahora) para proporcionar funcionalidades específicas:
 
-- **Auth0**: Proporciona autenticación y autorización segura para usuarios.
+- **Culqi**: Procesa pagos con tarjetas de crédito y débito.
 
 Cada integración está documentada en su propio archivo con detalles sobre la configuración, implementación y ejemplos de uso. 

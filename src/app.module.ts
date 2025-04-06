@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { EventModule } from './event/event.module';
-import { ClientModule } from './client/client.module';
 import { AuthModule } from './auth/auth.module';
 import { EquipmentModule } from './equipment/equipment.module';
 import { WorkerModule } from './worker/worker.module';
@@ -22,7 +21,6 @@ import { WorkerModule } from './worker/worker.module';
     }),
     UserModule,
     EventModule,
-    ClientModule,
     AuthModule,
     EquipmentModule,
     WorkerModule

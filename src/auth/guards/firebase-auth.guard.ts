@@ -1,11 +1,15 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../decorators';
+import * as admin from 'firebase-admin';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
-  private readonly logger = new Logger(FirebaseAuthGuard.name);
-
   constructor(private reflector: Reflector) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -13,32 +17,23 @@ export class FirebaseAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    if (isPublic) return true;
 
-    this.logger.debug(`Is public route: ${isPublic}`);
+    const req = context.switchToHttp().getRequest();
+    const authHeader = req.headers.authorization;
 
-    if (isPublic) {
-      return true;
+    if (!authHeader?.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Token no enviado');
     }
 
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
+    const token = authHeader.split('Bearer ')[1];
 
-    this.logger.debug(`Auth header: ${authHeader}`);
-
-    if (!authHeader) {
-      throw new UnauthorizedException('No token provided');
-    }
-
-    const token = authHeader.split(' ')[1];
     try {
-      request.user = {
-        uid: token.split('.')[1],
-        rol: token.includes('Administrador') ? 'Administrador' : 'Cliente'
-      };
+      const decoded = await admin.auth().verifyIdToken(token);
+      req.user = decoded;
       return true;
-    } catch (error) {
-      this.logger.error(`Error processing token: ${error.message}`);
-      throw new UnauthorizedException('Invalid token');
+    } catch (err) {
+      throw new UnauthorizedException('Token inválido');
     }
   }
-} 
+}

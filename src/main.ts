@@ -1,10 +1,11 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { APP_NAME, API_PREFIX, API_VERSION, APP_DESCRIPTION } from './core/constants/app.constants';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
+import { FirebaseAuthGuard } from './auth/guards';
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
+
+  const reflector = app.get(Reflector);
+  app.useGlobalGuards(new FirebaseAuthGuard(reflector));
 
   app.enableCors({
     origin: '*',
@@ -38,7 +42,16 @@ async function bootstrap() {
     .setTitle(APP_NAME)
     .setDescription(APP_DESCRIPTION)
     .setVersion(API_VERSION)
-    .addBearerAuth()
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        in: 'header',
+      },
+      'firebase-auth'
+    )
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);

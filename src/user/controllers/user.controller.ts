@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException, UseGuards } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto, UpdateUserDto } from '../dto';
-import { ApiTags, ApiSecurity, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { Public, Roles } from '../../auth/decorators';
-import { Roles as UserRoles } from '../../core/constants/app.constants';
+import { ApiTags, ApiSecurity, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Public } from '../../auth/decorators';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('user')
 @ApiTags('User')
@@ -21,10 +21,11 @@ export class UserController {
   }
 
   @Get()
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los usuarios' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Lista de usuarios obtenida correctamente.' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Lista de usuarios obtenida correctamente.' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al obtener los usuarios.' })
   findAll() {
     return this.userService.findAll();
@@ -32,9 +33,9 @@ export class UserController {
 
   @Get(':id')
   @Public()
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un usuario por ID' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Usuario encontrado correctamente.' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Usuario encontrado correctamente.' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al obtener el usuario.' })
   findOne(@Param('id') id: string) {
     return this.userService.findOne(id);
@@ -59,16 +60,6 @@ export class UserController {
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
   }
-
-  // @Get('findByUid/:uid')
-  // @Public()
-  // @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Obtiene el usuario por UID' })
-  // @ApiResponse({ status: HttpStatus.OK, description: 'El usuario ha sido obtenido correctamente.' })
-  // @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al obtener el usuario.' })
-  // findByUid(@Param('uid') uid: string) {
-  //   return this.userService.findByUid(uid);
-  // }
 
   @Get('find/:email')
   @Public()

@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { FirebaseAuthGuard, RolesGuard } from './guards';
-import { AuthService } from './services/auth.service';
-import { AuthController } from './controllers/auth.controller';
+import { FirebaseAuthGuard } from './guards';
 
 @Module({
   providers: [
@@ -10,13 +8,8 @@ import { AuthController } from './controllers/auth.controller';
       provide: APP_GUARD,
       useClass: FirebaseAuthGuard,
     },
-    {
-      provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-    AuthService
   ],
-  controllers: [AuthController],
-  exports: [AuthService]
+  controllers: [],
+  exports: []
 })
 export class AuthModule {} 
