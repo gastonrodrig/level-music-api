@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../schema/user.schema';
@@ -8,7 +13,7 @@ import { CreateUserDto, UpdateUserDto } from '../dto';
 export class UserService {
   constructor(
     @InjectModel(User.name)
-    private userModel: Model<User>
+    private userModel: Model<User>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -21,7 +26,9 @@ export class UserService {
       const user = await this.userModel.create(createUserDto);
       return await user.save();
     } catch (error) {
-      throw new InternalServerErrorException(`Error creating user: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error creating user: ${error.message}`,
+      );
     }
   }
 
@@ -29,7 +36,9 @@ export class UserService {
     try {
       return await this.userModel.find();
     } catch (error) {
-      throw new InternalServerErrorException(`Error finding users: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error finding users: ${error.message}`,
+      );
     }
   }
 
@@ -45,7 +54,9 @@ export class UserService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new InternalServerErrorException(`Error finding user: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error finding user: ${error.message}`,
+      );
     }
   }
 
@@ -53,7 +64,9 @@ export class UserService {
     try {
       return await this.userModel.findOne({ email });
     } catch (error) {
-      throw new InternalServerErrorException(`Error finding user by email: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error finding user by email: ${error.message}`,
+      );
     }
   }
 

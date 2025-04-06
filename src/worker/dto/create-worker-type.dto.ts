@@ -1,8 +1,13 @@
-import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateWorkerTypeDto {
-
   @ApiProperty({ example: 'Sonidista' })
   @IsString()
   @IsNotEmpty()
@@ -12,6 +17,4 @@ export class CreateWorkerTypeDto {
   @IsString()
   @IsNotEmpty()
   description: string;
-
- 
 }
