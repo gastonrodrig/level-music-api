@@ -1,27 +1,14 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  HttpCode,
-  HttpStatus,
-  NotFoundException,
-} from '@nestjs/common';
-import { EquipmentService } from '../services/equipment.service';
-import { CreateEquipmentDto } from '../dto';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { Public } from '../../auth/decorators';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Public } from "src/auth/decorators";
+import { CreateEquipmentMaintenanceDto } from "../dto";
+import { EquipmentMaintenanceService } from "../services/equipment_maintenance.service";
 
-@Controller('equipment')
-@ApiTags('Equipment')
-export class EquipmentController {
-  constructor(private readonly equipmentServices: EquipmentService) {}
-
-  @Post()
+@Controller('equipment-maintenance')
+@ApiTags('Equipment-Maintenance')
+export class EquipmentMaintenanceController{
+  constructor(private readonly equipmentMaintenanceServices: EquipmentMaintenanceService) {}
+ @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo equipo' })
@@ -33,8 +20,8 @@ export class EquipmentController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear el equipo.',
   })
-  create(@Body() createEquipmentDto: CreateEquipmentDto) {
-    return this.equipmentServices.create(createEquipmentDto);
+  create(@Body() createEquipmentMaintenanceDto: CreateEquipmentMaintenanceDto) {
+    return this.equipmentMaintenanceServices.create(createEquipmentMaintenanceDto);
   }
 
   @Get()
@@ -50,7 +37,7 @@ export class EquipmentController {
     description: 'Error al obtener los equipos.',
   })
   findAll() {
-    return this.equipmentServices.findAll();
+    return this.equipmentMaintenanceServices.findAll();
   }
 
   @Get(':id')
@@ -66,7 +53,7 @@ export class EquipmentController {
     description: 'Error al obtener el equipo.',
   })
   findOne(@Param('id') id: string) {
-    return this.equipmentServices.findOne(id);
+    return this.equipmentMaintenanceServices.findOne(id);
   }
 
   // @Put(':id')
@@ -92,7 +79,7 @@ export class EquipmentController {
     description: 'Error al eliminar el usuario.',
   })
   remove(@Param('id') id: string) {
-    return this.equipmentServices.remove(id);
+    return this.equipmentMaintenanceServices.remove(id);
   }
 
   // @Get('findByUid/:uid')

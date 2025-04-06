@@ -1,15 +1,10 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsOptional, IsString } from "class-validator";
-import { EquipmentType } from "../enum/equipmentType";
-import { StateType } from "../enum/stateType";
-import { LocationType } from "../enum/locationType";
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { EquipmentType } from '../enum/equipmentType';
+import { StateType } from '../enum/stateType';
+import { LocationType } from '../enum/locationType';
 
 export class CreateEquipmentDto {
-  @ApiProperty({ example: 'auth_id_example', required: false })
-  @IsString()
-  @IsOptional()
-  auth_id?: string;
-
   @ApiProperty({ example: 'Nombre del equipo', required: false })
   @IsString()
   @IsOptional()
@@ -20,12 +15,16 @@ export class CreateEquipmentDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ enum: EquipmentType, example: EquipmentType.OTROS, required: false })
+  @ApiProperty({
+  enum: EquipmentType,
+  example: EquipmentType.OTROS,
+  required: false,
+  })
   @IsEnum(EquipmentType)
   @IsOptional()
   equipment_type?: EquipmentType;
 
-  @ApiProperty({ example: '011' , required: false })
+  @ApiProperty({ example: '011', required: false })
   @IsString()
   @IsOptional()
   serial_number?: string;
@@ -35,11 +34,12 @@ export class CreateEquipmentDto {
   @IsOptional()
   state?: StateType;
 
-  @ApiProperty({ enum: LocationType, example: LocationType.ALMACEN, required: false })
+  @ApiProperty({
+  enum: LocationType,
+  example: LocationType.ALMACEN,
+  required: false,
+  })
   @IsEnum(LocationType)
   @IsOptional()
   location?: LocationType;
-
-  
-
 }

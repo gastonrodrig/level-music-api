@@ -1,5 +1,5 @@
 export enum EquipmentType {
-    SONIDO = 'Sonido',
-    ILUMINACION = 'Iluminación',
-    OTROS = 'Otros',
+  SONIDO = 'Sonido',
+  ILUMINACION = 'Iluminación',
+  OTROS = 'Otros',
 }

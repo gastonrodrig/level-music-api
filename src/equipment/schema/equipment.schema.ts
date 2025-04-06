@@ -6,8 +6,6 @@ import { EquipmentType } from "../enum/equipmentType";
 
 @Schema({ collection: 'Equipment' })
 export class Equipment {
-    @Prop({ length: 255, nullable: true })
-    auth_id: string;
     
     @Prop({ length: 255 }) 
     name: string;
