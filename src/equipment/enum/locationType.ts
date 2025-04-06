@@ -1,5 +1,5 @@
 export enum LocationType {
-    ALMACEN = 'Almacen',
-    EVENTO = 'Evento',
-    MANTENIMIENTO = 'Mantenimiento',
+  ALMACEN = 'Almacen',
+  EVENTO = 'Evento',
+  MANTENIMIENTO = 'Mantenimiento',
 }
