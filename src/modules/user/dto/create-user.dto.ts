@@ -1,22 +1,17 @@
 import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { DocType, Estado, Roles } from '../../core/constants/app.constants';
+import { DocType, Estado, Roles } from '../../../core/constants/app.constants';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'auth_id_example', required: false })
+  @ApiProperty({ example: 'auth_id_example' })
   @IsString()
   @IsOptional()
-  auth_id?: string;
+  auth_id: string;
 
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @ApiProperty({ example: 'password123' })
-  @IsString()
-  @IsNotEmpty()
-  password: string;
 
   @ApiProperty({ example: 'John Doe' })
   @IsString()
