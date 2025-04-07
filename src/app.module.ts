@@ -6,6 +6,7 @@ import { EventModule } from './modules/event/event.module';
 import { AuthModule } from './auth/auth.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { WorkerModule } from './modules/worker/worker.module';
+import { StorehouseMovementModule } from './modules/storehouse_movement/StorehouseMovement.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { WorkerModule } from './modules/worker/worker.module';
     AuthModule,
     EquipmentModule,
     WorkerModule,
+    StorehouseMovementModule,
     
   ],
   providers: [],
