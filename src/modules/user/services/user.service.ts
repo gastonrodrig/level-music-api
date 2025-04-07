@@ -1,9 +1,13 @@
+<<<<<<< HEAD
 import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+=======
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+>>>>>>> d7762e0 (modificacion estructura de archivos)
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../schema/user.schema';
@@ -13,7 +17,11 @@ import { CreateUserDto, UpdateUserDto } from '../dto';
 export class UserService {
   constructor(
     @InjectModel(User.name)
+<<<<<<< HEAD
     private userModel: Model<User>,
+=======
+    private userModel: Model<User>
+>>>>>>> d7762e0 (modificacion estructura de archivos)
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -26,6 +34,7 @@ export class UserService {
       const user = await this.userModel.create(createUserDto);
       return await user.save();
     } catch (error) {
+<<<<<<< HEAD
 <<<<<<< HEAD:src/user/services/user.service.ts
       throw new InternalServerErrorException(
         `Error creating user: ${error.message}`,
@@ -33,6 +42,9 @@ export class UserService {
 =======
       throw new InternalServerErrorException(`Error: ${error.message}`);
 >>>>>>> ad5b314 (equipment mainentance files reorganized):src/modules/user/services/user.service.ts
+=======
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+>>>>>>> d7762e0 (modificacion estructura de archivos)
     }
   }
 
@@ -40,6 +52,7 @@ export class UserService {
     try {
       return await this.userModel.find();
     } catch (error) {
+<<<<<<< HEAD
 <<<<<<< HEAD:src/user/services/user.service.ts
       throw new InternalServerErrorException(
         `Error finding users: ${error.message}`,
@@ -47,6 +60,9 @@ export class UserService {
 =======
       throw new InternalServerErrorException(`Error: ${error.message}`);
 >>>>>>> ad5b314 (equipment mainentance files reorganized):src/modules/user/services/user.service.ts
+=======
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+>>>>>>> d7762e0 (modificacion estructura de archivos)
     }
   }
 
@@ -59,6 +75,7 @@ export class UserService {
 
       return user;
     } catch (error) {
+<<<<<<< HEAD
 <<<<<<< HEAD:src/user/services/user.service.ts
       if (error instanceof NotFoundException) {
         throw error;
@@ -69,6 +86,9 @@ export class UserService {
 =======
       throw new InternalServerErrorException(`Error: ${error.message}`);
 >>>>>>> ad5b314 (equipment mainentance files reorganized):src/modules/user/services/user.service.ts
+=======
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+>>>>>>> d7762e0 (modificacion estructura de archivos)
     }
   }
 
@@ -76,6 +96,7 @@ export class UserService {
     try {
       return await this.userModel.findOne({ email });
     } catch (error) {
+<<<<<<< HEAD
 <<<<<<< HEAD:src/user/services/user.service.ts
       throw new InternalServerErrorException(
         `Error finding user by email: ${error.message}`,
@@ -83,6 +104,9 @@ export class UserService {
 =======
       throw new InternalServerErrorException(`Error: ${error.message}`);
 >>>>>>> ad5b314 (equipment mainentance files reorganized):src/modules/user/services/user.service.ts
+=======
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+>>>>>>> d7762e0 (modificacion estructura de archivos)
     }
   }
 
