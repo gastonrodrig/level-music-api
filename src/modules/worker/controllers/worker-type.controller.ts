@@ -13,7 +13,7 @@ import {
 import { WorkerTypeService } from '../services/worker-type.service';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Public } from '../../auth/decorators';
+import { Public } from '../../../auth/decorators';
 
 @Controller('worker-type')
 @ApiTags('Worker Type')

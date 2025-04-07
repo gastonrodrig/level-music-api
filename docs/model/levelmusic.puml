@@ -43,7 +43,6 @@ entity event #E6BB93 {
   * event_type_id : OBJECT ID ' Referencia al tipo de evento
   * state: ENUM('Pendiente', 'Enviado', 'Confirmado', 'Terminado', 'Cancelado')
   * final_price : DECIMAL(10,2) ' Precio total del evento (nullable)
-  
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -132,6 +131,34 @@ entity storehouse_movement #E6BB93 {
   updated_at : DATETIME
 }
 
+entity activity_template #E6BB93 {
+  * _id : OBJECT ID <<UID>>
+  * event_type_id : OBJECT ID ' Tipo de evento
+  * title : STRING ' Nombre de la actividad
+  * description : STRING
+  * phase : ENUM('pre_evento', 'durante_evento', 'post_evento')
+  * is_mandatory : BOOLEAN
+  * order : INTEGER
+  --
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity event_activity #E6BB93 {
+  * _id : OBJECT ID <<UID>>
+  * event_id : OBJECT ID ' Evento específico
+  * title : STRING
+  * description : STRING
+  * phase : ENUM('pre_evento', 'durante_evento', 'post_evento')
+  * status : ENUM('pendiente', 'realizada', 'validada', 'rechazada')
+  * admin_notes : STRING
+  * evidencia_url : STRING
+  * realizada_at : DATETIME
+  --
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
 '-----------------------------
 ' Relationships
 '-----------------------------
@@ -146,5 +173,7 @@ worker ||--o{ event_worker : "participa"
 event ||--o{ storehouse_movement : "asocia"
 equipment ||--o{ storehouse_movement : "se mueve"
 equipment ||--o{ equipment_maintenance : "recibe mantenimiento"
+event_type ||--o{ activity_template : "usa plantilla"
+event ||--o{ event_activity : "genera checklist"
 
 @enduml

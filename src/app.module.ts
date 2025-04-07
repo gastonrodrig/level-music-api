@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { UserModule } from './user/user.module';
-import { EventModule } from './event/event.module';
+import { UserModule } from './modules/user/user.module';
+import { EventModule } from './modules/event/event.module';
 import { AuthModule } from './auth/auth.module';
-import { EquipmentModule } from './equipment/equipment.module';
-import { WorkerModule } from './worker/worker.module';
+import { EquipmentModule } from './modules/equipment/equipment.module';
+import { WorkerModule } from './modules/worker/worker.module';
 
 @Module({
   imports: [

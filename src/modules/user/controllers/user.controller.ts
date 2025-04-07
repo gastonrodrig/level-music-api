@@ -1,9 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException, UseGuards } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto, UpdateUserDto } from '../dto';
-import { ApiTags, ApiSecurity, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { Public } from '../../auth/decorators';
-import { FirebaseAuthGuard } from 'src/auth/guards';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Public } from '../../../auth/decorators';
 
 @Controller('user')
 @ApiTags('User')
@@ -21,8 +20,9 @@ export class UserController {
   }
 
   @Get()
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los usuarios' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Lista de usuarios obtenida correctamente.' })

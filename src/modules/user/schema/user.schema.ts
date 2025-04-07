@@ -1,16 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Estado, Roles, DocType } from '../../core/constants/app.constants';
+import { Estado, Roles, DocType } from '../../../core/constants/app.constants';
 
 @Schema({ collection: 'User' })
 export class User {
-  @Prop({ length: 255, nullable: true })
+  @Prop({ length: 255, required: true })
   auth_id: string;
 
   @Prop({ length: 255, unique: true }) 
   email: string;
-
-  @Prop({ select: false })
-  password: string;
 
   @Prop({ length: 255 }) 
   fullName: string;
@@ -38,3 +35,13 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.pre('save', function (next) {
+  this.updated_at = new Date();
+  next();
+});
+
+UserSchema.pre('findOneAndUpdate', function (next) {
+  this.set({ updated_at: new Date() });
+  next();
+});

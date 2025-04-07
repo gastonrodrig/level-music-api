@@ -6,14 +6,13 @@ import {
   Param,
   Post,
   Put,
-  Query,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { WorkerService } from '../services/worker.service';
 import { CreateWorkerDto, UpdateWorkerDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Public } from '../../auth/decorators';
+import { Public } from '../../../auth/decorators';
 
 @Controller('worker')
 @ApiTags('Worker')

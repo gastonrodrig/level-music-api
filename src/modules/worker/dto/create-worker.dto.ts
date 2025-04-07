@@ -1,9 +1,5 @@
 import {
-  IsEmail,
   IsNotEmpty,
-  IsString,
-  IsEnum,
-  IsOptional,
   IsBoolean,
   IsMongoId,
 } from 'class-validator';
