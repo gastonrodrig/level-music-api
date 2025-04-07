@@ -15,13 +15,13 @@ export class UserService {
     try {
       const existingUser = await this.findByEmail(createUserDto.email);
       if (existingUser) {
-        return existingUser;
+        throw new BadRequestException('El usuario ya existe');
       }
 
       const user = await this.userModel.create(createUserDto);
       return await user.save();
     } catch (error) {
-      throw new InternalServerErrorException(`Error creating user: ${error.message}`);
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
 
@@ -29,7 +29,7 @@ export class UserService {
     try {
       return await this.userModel.find();
     } catch (error) {
-      throw new InternalServerErrorException(`Error finding users: ${error.message}`);
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
 
@@ -42,10 +42,7 @@ export class UserService {
 
       return user;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(`Error finding user: ${error.message}`);
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
 
@@ -53,26 +50,32 @@ export class UserService {
     try {
       return await this.userModel.findOne({ email });
     } catch (error) {
-      throw new InternalServerErrorException(`Error finding user by email: ${error.message}`);
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
 
   async update(user_id: string, updateUserDto: UpdateUserDto) {
-    const user = await this.userModel.findOne({ _id: user_id });
-    if (!user) {
-      throw new BadRequestException('Usuario no encontrado');
+    try {
+      const user = await this.userModel.findOne({ _id: user_id });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      Object.assign(user, updateUserDto);
+      return await user.save();
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
-
-    Object.assign(user, updateUserDto);
-    return await user.save();
   }
 
   async remove(user_id: string) {
-    const user = await this.userModel.findOneAndDelete({ _id: user_id });
-    if (!user) {
-      throw new BadRequestException('Usuario no encontrado');
+    try {
+      const user = await this.userModel.findOneAndDelete({ _id: user_id });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+      return { success: true };
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
-
-    return { success: true };
   }
 }
