@@ -1,15 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Types } from 'mongoose';
 
-@Schema({ collection: 'Worker_type' })
-export class Worker_type {
+@Schema({ collection: 'Worker' })
+export class Worker {
+  @Prop({ type: Types.ObjectId, ref: 'Worker_type', required: true })
+  worker_type_id: Types.ObjectId;
 
-  @Prop({ length: 255 }) 
-  name: string;
+  @Prop({ default: true })
+  availability: boolean;
 
-  @Prop({ length: 255 }) 
-  description: string;
-
-  
   @Prop({ default: Date.now })
   created_at: Date;
 
@@ -17,4 +16,4 @@ export class Worker_type {
   updated_at: Date;
 }
 
-export const Worker_typeSchema = SchemaFactory.createForClass(Worker_type);
+export const WorkerSchema = SchemaFactory.createForClass(Worker);

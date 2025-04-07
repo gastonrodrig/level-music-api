@@ -8,7 +8,7 @@ import { CreateUserDto, UpdateUserDto } from '../dto';
 export class UserService {
   constructor(
     @InjectModel(User.name)
-    private userModel: Model<User>
+    private userModel: Model<User>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -29,7 +29,9 @@ export class UserService {
     try {
       return await this.userModel.find();
     } catch (error) {
-      throw new InternalServerErrorException(`Error: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error finding users: ${error.message}`,
+      );
     }
   }
 
@@ -42,6 +44,9 @@ export class UserService {
 
       return user;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }

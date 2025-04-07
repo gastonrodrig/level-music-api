@@ -23,7 +23,8 @@ import { WorkerModule } from './modules/worker/worker.module';
     EventModule,
     AuthModule,
     EquipmentModule,
-    WorkerModule
+    WorkerModule,
+    
   ],
   providers: [],
   controllers: []

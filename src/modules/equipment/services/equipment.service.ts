@@ -52,5 +52,4 @@ export class EquipmentService {
 
     return { success: true };
   }
-  async 
 }
