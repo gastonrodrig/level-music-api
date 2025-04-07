@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpS
 import { EquipmentService } from '../services/equipment.service';
 import { CreateEquipmentDto } from '../dto';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { Public} from '../../auth/decorators';
+import { Public} from '../../../auth/decorators';
 
 
 @Controller('equipment')

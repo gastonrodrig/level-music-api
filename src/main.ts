@@ -60,6 +60,7 @@ async function bootstrap() {
 
   const logger = new Logger('Level Music API');
   logger.log(`App running on port ${process.env.PORT ?? 3000}`);
+  logger.log(`Swagger running on: http://localhost:${process.env.PORT ?? 3000}/api`);
 }
 
 bootstrap();
