@@ -5,12 +5,15 @@ import {
   Get,
   Param,
   Post,
+  Put,
+  Query,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { EquipmentService } from '../services/equipment.service';
 import { CreateEquipmentDto } from '../dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 
 @Controller('equipment')
