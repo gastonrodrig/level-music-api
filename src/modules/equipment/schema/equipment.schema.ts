@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { LocationType } from "../enum/locationType";
 import { StateType } from "../enum/stateType";
-import e from "express";
 import { EquipmentType } from "../enum/equipmentType";
 
 @Schema({ collection: 'Equipment' })

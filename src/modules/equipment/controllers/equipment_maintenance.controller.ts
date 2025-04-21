@@ -8,7 +8,8 @@ import { EquipmentMaintenanceService } from "../services/equipment_maintenance.s
 @ApiTags('Equipment-Maintenance')
 export class EquipmentMaintenanceController{
   constructor(private readonly equipmentMaintenanceServices: EquipmentMaintenanceService) {}
- @Post()
+
+  @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo equipo' })
