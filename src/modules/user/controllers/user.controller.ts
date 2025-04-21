@@ -3,6 +3,7 @@ import { UserService } from '../services/user.service';
 import { CreateUserDto, UpdateUserDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('user')
 @ApiTags('User')
@@ -20,8 +21,8 @@ export class UserController {
   }
 
   @Get()
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los usuarios' })

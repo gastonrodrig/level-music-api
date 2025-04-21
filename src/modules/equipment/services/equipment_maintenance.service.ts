@@ -29,6 +29,7 @@ export class EquipmentMaintenanceService {
       `Error creating equipment maintenance: ${error.message}`,
     );
   }
+  
   async findAll(): Promise<EquipmentMaintenance[]> {
     try {
       return await this.equipmenmaintenanceModel.find();

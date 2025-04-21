@@ -12,7 +12,7 @@ entity user #E6BB93 {
   * document_type: ENUM('DNI', 'RUC') (nullable)
   * document_number: STRING ' (nullable)
   * role: ENUM
-  * state: ENUM('Activo', 'Inactivo')
+  * status: ENUM('Activo', 'Inactivo')
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -41,7 +41,7 @@ entity event #E6BB93 {
   * place_size : INTEGER ' Tamaño del lugar en m²
   * user_id : OBJECT ID ' Referencia al usuario (user)
   * event_type_id : OBJECT ID ' Referencia al tipo de evento
-  * state: ENUM('Pendiente', 'Enviado', 'Confirmado', 'Terminado', 'Cancelado')
+  * status: ENUM('Pendiente', 'Enviado', 'Confirmado', 'Terminado', 'Cancelado')
   * final_price : DECIMAL(10,2) ' Precio total del evento (nullable)
   --
   created_at : DATETIME
@@ -54,7 +54,7 @@ entity food_service #E6BB93 {
   * description : STRING ' Descripción del servicio
   * multimedia : ARRAY ' Imágenes o videos del servicio
   * price : DECIMAL ' Precio del servicio de comida
-  * state: ENUM('Activo', 'Inactivo')
+  * status: ENUM('Activo', 'Inactivo')
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -101,7 +101,7 @@ entity equipment #E6BB93 {
   * description : STRING ' Descripción del equipo
   * equipment_type: ENUM('Sonido', 'Iluminación', 'Otros') 
   * serial_number: STRING ' Número de serie único
-  * state: ENUM('Disponible', 'En Uso', 'En Mantenimiento', 'Dañado')
+  * status: ENUM('Disponible', 'En Uso', 'En Mantenimiento', 'Dañado')
   * location: ENUM('Almacén', 'Evento', 'Mantenimiento') ' Ubicación actual
   * last_maintenance: DATETIME ' Última fecha de mantenimiento
   --
