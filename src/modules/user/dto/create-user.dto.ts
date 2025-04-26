@@ -15,12 +15,12 @@ export class CreateUserDto {
 
   @ApiProperty({ example: 'John Doe' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   full_name: string;
 
   @ApiProperty({ example: '1234567890' })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   phone: string;
 
   @ApiProperty({ enum: DocType, example: DocType.DNI, required: false })
@@ -30,7 +30,7 @@ export class CreateUserDto {
 
   @ApiProperty({ example: '12345678', required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   document_number?: string;
 
   @ApiProperty({ enum: Roles, example: Roles.ADMIN })
@@ -42,4 +42,9 @@ export class CreateUserDto {
   @IsEnum(Estado)
   @IsOptional()
   status?: Estado;
+
+  @ApiProperty({ example: 'https://example.com/profile.jpg', required: false })
+  @IsString()
+  @IsOptional()
+  profile_picture?: string;
 }
