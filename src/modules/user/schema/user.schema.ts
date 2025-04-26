@@ -9,10 +9,10 @@ export class User {
   @Prop({ length: 255, unique: true }) 
   email: string;
 
-  @Prop({ length: 255 }) 
-  fullName: string;
+  @Prop({ length: 255, nullable: true }) 
+  full_name: string;
 
-  @Prop({ required: true }) 
+  @Prop({ nullable: true }) 
   phone: string;
 
   @Prop({ enum: DocType, nullable: true })
@@ -25,13 +25,16 @@ export class User {
   role: Roles;
 
   @Prop({ enum: Estado, default: Estado.ACTIVO }) 
-  estado: string;
+  status: string;
   
   @Prop({ default: Date.now })
   created_at: Date;
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  @Prop({ length: 255, nullable: true })
+  profile_picture: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

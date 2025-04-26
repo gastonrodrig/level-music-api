@@ -23,7 +23,6 @@ export class UserController {
   @Get()
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
-  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los usuarios' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Lista de usuarios obtenida correctamente.' })
@@ -64,6 +63,10 @@ export class UserController {
 
   @Get('find/:email')
   @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener un usuario por Email' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'El usuario ha sido obtenido correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al obtener el usuario.' })
   findByEmail(@Param('email') email: string) {
     return this.userService.findByEmail(email);
   }
