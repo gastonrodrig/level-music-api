@@ -6,6 +6,7 @@ import { EventModule } from './modules/event/event.module';
 import { AuthModule } from './auth/auth.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { WorkerModule } from './modules/worker/worker.module';
+import { ServiceModule } from './modules/service/service.module';
 import { StorehouseMovementModule } from './modules/storehouse_movement/StorehouseMovement.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { StorehouseMovementModule } from './modules/storehouse_movement/Storehou
     UserModule,
     EventModule,
     AuthModule,
+    ServiceModule,
     EquipmentModule,
     WorkerModule,
     StorehouseMovementModule,

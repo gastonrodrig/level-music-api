@@ -5,8 +5,6 @@ import { CategoryType } from "../enum/categoryType";
 
 
 export class CreateEventTypeDto {
- 
-
 
     @ApiProperty({example: 'Descripcion del tipo de evento', required: false})
     @IsString()
