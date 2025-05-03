@@ -2,15 +2,16 @@
 '-----------------------------
 ' Entities
 '-----------------------------
+
 entity user #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * auth_id : STRING  ' ID from Auth (nullable)
-  * email: STRING ' (unique)
-  * password: STRING ' (hidden)
+  * auth_id : STRING
+  * email: STRING
+  * password: STRING
   * full_name: STRING
   * phone: STRING
   * document_type: ENUM('DNI', 'RUC') (nullable)
-  * document_number: STRING ' (nullable)
+  * document_number: STRING (nullable)
   * role: ENUM
   * status: ENUM('Activo', 'Inactivo')
   --
@@ -33,43 +34,78 @@ entity event #E6BB93 {
   * name : STRING
   * description : STRING
   * date : DATETIME
-  * time_range : STRING ' e.g.: "18:00 - 23:00"
-  * attendees_count : INTEGER ' Cantidad de asistentes
-  * exact_address : STRING ' Dirección exacta
-  * location_reference : STRING ' Referencia del lugar
-  * place_type : ENUM('Abierto', 'Cerrado') ' Tipo de lugar
-  * place_size : INTEGER ' Tamaño del lugar en m²
-  * user_id : OBJECT ID ' Referencia al usuario (user)
-  * event_type_id : OBJECT ID ' Referencia al tipo de evento
+  * time_range : STRING
+  * attendees_count : INTEGER
+  * exact_address : STRING
+  * location_reference : STRING
+  * place_type : ENUM('Abierto', 'Cerrado')
+  * place_size : INTEGER
+  * user_id : OBJECT ID
+  * event_type_id : OBJECT ID
   * status: ENUM('Pendiente', 'Enviado', 'Confirmado', 'Terminado', 'Cancelado')
-  * final_price : DECIMAL(10,2) ' Precio total del evento (nullable)
+  * final_price : DECIMAL(10,2)
   --
   created_at : DATETIME
   updated_at : DATETIME
 }
 
-entity food_service #E6BB93 {
+entity service_type #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * name : STRING ' Nombre del servicio de comida
-  * description : STRING ' Descripción del servicio
-  * multimedia : ARRAY ' Imágenes o videos del servicio
-  * price : DECIMAL ' Precio del servicio de comida
+  * name : STRING ' Ej: Comida, Fotografía, Toldos
+  * description : STRING
+  --
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity provider #E6BB93 {
+  * _id : OBJECT ID <<UID>>
+  * name : STRING ' Nombre del proveedor
+  * contact_name : STRING
+  * phone : STRING
+  * email : STRING
+  * status : ENUM('Activo', 'Inactivo')
+  --
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity service #E6BB93 {
+  * _id : OBJECT ID <<UID>>
+  * name : STRING
+  * description : STRING
+  * price : DECIMAL (nullable)
   * status: ENUM('Activo', 'Inactivo')
+  * provider_id : OBJECT ID
+  * service_type_id : OBJECT ID
   --
   created_at : DATETIME
   updated_at : DATETIME
 }
 
-entity event_food_service #E6BB93 {
+entity service_detail #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * event_id : OBJECT ID ' Relación con evento
-  * food_service_id : OBJECT ID ' Relación con servicio de comida
+  * service_id : OBJECT ID
+  * name : STRING
+  * description : STRING
+  * price : DECIMAL
+  * multimedia : ARRAY
+  * status : ENUM('Activo', 'Inactivo')
+  --
+  created_at : DATETIME
+  updated_at : DATETIME
+}
+
+entity event_service #E6BB93 {
+  * _id : OBJECT ID <<UID>>
+  * event_id : OBJECT ID
+  * service_id : OBJECT ID
 }
 
 entity worker_type #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * name : STRING ' e.g.: (DJ, Sonidista, etc.)
-  * description : STRING ' Descripción del rol
+  * name : STRING
+  * description : STRING
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -77,8 +113,8 @@ entity worker_type #E6BB93 {
 
 entity worker #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * worker_type_id : OBJECT ID ' Referencia a worker_type
-  * availability : BOOLEAN ' Disponible para eventos
+  * worker_type_id : OBJECT ID
+  * availability : BOOLEAN
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -86,10 +122,10 @@ entity worker #E6BB93 {
 
 entity event_worker #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * event_id : OBJECT ID ' Relación con evento
-  * worker_id : OBJECT ID ' Relación con trabajador
-  * status: ENUM('Pendiente', 'Cumplido', 'No Cumplido') ' Estado del servicio
-  * notes : STRING ' Observaciones (nullable)
+  * event_id : OBJECT ID
+  * worker_id : OBJECT ID
+  * status: ENUM('Pendiente', 'Cumplido', 'No Cumplido')
+  * notes : STRING
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -97,13 +133,13 @@ entity event_worker #E6BB93 {
 
 entity equipment #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * name : STRING ' Nombre del equipo
-  * description : STRING ' Descripción del equipo
+  * name : STRING
+  * description : STRING
   * equipment_type: ENUM('Sonido', 'Iluminación', 'Otros') 
-  * serial_number: STRING ' Número de serie único
-  * status: ENUM('Disponible', 'En Uso', 'En Mantenimiento', 'Dañado')
-  * location: ENUM('Almacén', 'Evento', 'Mantenimiento') ' Ubicación actual
-  * last_maintenance: DATETIME ' Última fecha de mantenimiento
+  * serial_number: STRING
+  * status: ENUM('Disponible', 'En Uso', 'En Mantenimiento', 'Daniado')
+  * location: ENUM('Almacén', 'Evento', 'Mantenimiento')
+  * last_maintenance: DATETIME
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -111,10 +147,10 @@ entity equipment #E6BB93 {
 
 entity equipment_maintenance #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * equipment_id : OBJECT ID ' Referencia al equipo
+  * equipment_id : OBJECT ID
   * maintenance_type: ENUM('Preventivo', 'Correctivo')
-  * description : STRING ' Descripción del mantenimiento realizado
-  * date : DATETIME ' Fecha de mantenimiento
+  * description : STRING
+  * date : DATETIME
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -122,10 +158,10 @@ entity equipment_maintenance #E6BB93 {
 
 entity storehouse_movement #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * equipment_id : OBJECT ID ' Referencia al equipo
-  * event_id : OBJECT ID ' Referencia al evento
-  * movement_type: ENUM('Salida', 'Entrada') ' Indica si sale o entra al almacén
-  * movement_date : DATETIME ' Fecha del movimiento
+  * equipment_id : OBJECT ID
+  * event_id : OBJECT ID
+  * movement_type: ENUM('Salida', 'Entrada')
+  * movement_date : DATETIME
   --
   created_at : DATETIME
   updated_at : DATETIME
@@ -133,8 +169,8 @@ entity storehouse_movement #E6BB93 {
 
 entity activity_template #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * event_type_id : OBJECT ID ' Tipo de evento
-  * title : STRING ' Nombre de la actividad
+  * event_type_id : OBJECT ID
+  * title : STRING
   * description : STRING
   * phase : ENUM('pre_evento', 'durante_evento', 'post_evento')
   * is_mandatory : BOOLEAN
@@ -146,7 +182,7 @@ entity activity_template #E6BB93 {
 
 entity event_activity #E6BB93 {
   * _id : OBJECT ID <<UID>>
-  * event_id : OBJECT ID ' Evento específico
+  * event_id : OBJECT ID
   * title : STRING
   * description : STRING
   * phase : ENUM('pre_evento', 'durante_evento', 'post_evento')
@@ -165,8 +201,11 @@ entity event_activity #E6BB93 {
 
 user ||--o{ event : "crea"
 event_type ||--o{ event : "clasifica"
-event ||--o{ event_food_service : "tiene"
-food_service ||--o{ event_food_service : "incluye"
+event ||--o{ event_service : "tiene"
+service ||--o{ event_service : "se usa"
+service_type ||--o{ service : "clasifica"
+provider ||--o{ service : "provee"
+service ||--o{ service_detail : "tiene opciones"
 worker_type ||--o{ worker : "clasifica"
 event ||--o{ event_worker : "asigna"
 worker ||--o{ event_worker : "participa"
