@@ -9,10 +9,12 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { WorkerTypeService } from '../services/worker-type.service';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 
 @Controller('worker-type')
@@ -50,6 +52,38 @@ export class WorkerTypeController {
   })
   findAll() {
     return this.workerTypeService.findAll();
+  }
+
+  @Get('paginated')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener tipos de trabajadores con paginación' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Cantidad de elementos por página (por defecto 10, máximo configurable en el servicio)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Número de elementos a saltar (por defecto 0)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description:
+      'Devuelve un objeto con `total` y el array `items` de tipos de trabajador paginados.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error en los parámetros de paginación.',
+  })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  ) {
+    return this.workerTypeService.findAllPaginated(limit, offset);
   }
 
   @Get(':id')

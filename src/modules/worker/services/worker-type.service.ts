@@ -37,7 +37,29 @@ export class WorkerTypeService {
     }
   }
 
-  async findOne(workerType_id: string): Promise<Worker_type> {
+  async findAllPaginated(
+    limit: number,
+    offset: number,
+  ): Promise<{ total: number; items: Worker_type[] }> {
+    try {
+      const [items, total] = await Promise.all([
+        this.workerTypeModel
+          .find()
+          .skip(offset)
+          .limit(limit)
+          .exec(),
+        this.workerTypeModel.countDocuments().exec(),
+      ]);
+
+      return { total, items };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding worker types with pagination: ${error.message}`,
+      );
+    }
+  }
+
+  async findOne(workerType_id: any): Promise<Worker_type> {
     try {
       const workerType = await this.workerTypeModel.findOne({
         _id: workerType_id,
