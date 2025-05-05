@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Worker_type } from '../schema/worker-type.schema';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
+import { SF_WORKER_TYPE } from 'src/core/utils/searchable-fields';
 
 @Injectable()
 export class WorkerTypeService {
@@ -38,17 +39,39 @@ export class WorkerTypeService {
   }
 
   async findAllPaginated(
-    limit: number,
-    offset: number,
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; items: Worker_type[] }> {
     try {
+      // Notas:
+      // 1) se filtra por nombre o descripción (Campos de la tabla)
+      const filter = search
+      ? {
+          $or: SF_WORKER_TYPE.map(field => ({
+            [field]: { $regex: search, $options: 'i' }
+          })),
+        }
+      : {};
+
+      // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
       const [items, total] = await Promise.all([
         this.workerTypeModel
-          .find()
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.workerTypeModel.countDocuments().exec(),
+        this.workerTypeModel
+          .countDocuments(filter)
+          .exec(),
       ]);
 
       return { total, items };
