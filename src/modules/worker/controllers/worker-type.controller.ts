@@ -11,6 +11,7 @@ import {
   HttpStatus,
   DefaultValuePipe,
   ParseIntPipe,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { WorkerTypeService } from '../services/worker-type.service';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
@@ -40,10 +41,10 @@ export class WorkerTypeController {
 
   @Get()
   @Public()
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los tipos de trabajadores' })
   @ApiResponse({
-    status: HttpStatus.CREATED,
+    status: HttpStatus.OK,
     description: 'Lista de tipos de trabajadores obtenida correctamente.',
   })
   @ApiResponse({
@@ -57,41 +58,42 @@ export class WorkerTypeController {
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener tipos de trabajadores con paginación' })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Cantidad de elementos por página (por defecto 10, máximo configurable en el servicio)',
-  })
-  @ApiQuery({
-    name: 'offset',
-    required: false,
-    type: Number,
-    description: 'Número de elementos a saltar (por defecto 0)',
-  })
+  @ApiOperation({ summary: 'Obtener tipos de trabajadores con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description:
-      'Devuelve un objeto con `total` y el array `items` de tipos de trabajador paginados.',
+    description: 'Lista de tipos de trabajadores obtenida paginada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error en los parámetros de paginación.',
+    description: 'Error al obtener los tipos de trabajadores paginada.',
   })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
   findAllPaginated(
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
   ) {
-    return this.workerTypeService.findAllPaginated(limit, offset);
+    return this.workerTypeService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
   }
 
   @Get(':id')
   @Public()
-  @HttpCode(HttpStatus.CREATED)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un tipo de trabajador por ID' })
   @ApiResponse({
-    status: HttpStatus.CREATED,
+    status: HttpStatus.OK,
     description: 'Tipo de trabajador encontrado correctamente.',
   })
   @ApiResponse({
