@@ -28,16 +28,6 @@ export class WorkerTypeService {
     }
   }
 
-  async findAll(): Promise<Worker_type[]> {
-    try {
-      return await this.workerTypeModel.find();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding users: ${error.message}`,
-      );
-    }
-  }
-
   async findAllPaginated(
     limit = 5,
     offset = 0,

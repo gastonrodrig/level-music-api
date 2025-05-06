@@ -3,28 +3,28 @@ import { IsString, IsOptional } from "class-validator";
 
 export class CreateProviderDto {
 
-  @ApiProperty({ example: "Nombre del proveedor", required: false })
+  @ApiProperty({ example: "Nombre del proveedor" })
   @IsString()
   @IsOptional()
-  name?: string;
+  name: string;
 
-  @ApiProperty({ example: "nombre de contacto", required: false })
+  @ApiProperty({ example: "nombre de contacto" })
   @IsString()
   @IsOptional()
-  contact_name?: string;
+  contact_name: string;
 
-  @ApiProperty({ example: "telefono de contacto", required: false })
+  @ApiProperty({ example: "telefono de contacto" })
   @IsString()
   @IsOptional()
-  phone?: string;
+  phone: string;
 
-  @ApiProperty({ example: "correo de contacto", required: false })
+  @ApiProperty({ example: "correo de contacto" })
   @IsString()
   @IsOptional()
-  email?: string;
+  email: string;
 
-  @ApiProperty({example: "Activo",enum: ["Activo", "Inactivo"],required: false,})
+  @ApiProperty({example: "Activo",enum: ["Activo", "Inactivo"]})
   @IsString()
   @IsOptional()
-  status?: string;
+  status: string;
 }
