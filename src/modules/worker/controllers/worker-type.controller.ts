@@ -39,22 +39,6 @@ export class WorkerTypeController {
     return this.workerTypeService.create(createWorkerTypeDto);
   }
 
-  @Get()
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener todos los tipos de trabajadores' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lista de tipos de trabajadores obtenida correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los tipos de trabajadores.',
-  })
-  findAll() {
-    return this.workerTypeService.findAll();
-  }
-
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)

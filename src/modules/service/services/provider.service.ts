@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Provider } from '../schema/provider.schema';
 import { Model } from 'mongoose';
 import { UpdateProviderDto } from '../dto/update-provider.dto';
+import { SF_PROVIDER } from 'src/core/utils/searchable-fields';
 
 @Injectable()
 export class ProviderService {
@@ -22,28 +23,37 @@ export class ProviderService {
     }
   }
 
-  async findAll(): Promise<Provider[]> {
-    try {
-      return await this.providerModel.find();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding providers: ${error.message}`,
-      );
-    }
-  }
-
   async findAllPaginated(
-    limit: number,
-    offset: number,
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; items: Provider[] }> {
     try {
+      const filter = search
+      ? {
+          $or: SF_PROVIDER.map(field => ({
+            [field]: { $regex: search, $options: 'i' }
+          })),
+        }
+      : {};
+
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
       const [items, total] = await Promise.all([
         this.providerModel
-          .find()
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.providerModel.countDocuments().exec(),
+        this.providerModel
+          .countDocuments(filter)
+          .exec(),
       ]);
 
       return { total, items };

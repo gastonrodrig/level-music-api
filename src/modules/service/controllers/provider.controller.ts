@@ -39,53 +39,37 @@ export class ProviderController {
     return this.providerService.create(createProviderDto);
   }
 
-  @Get()
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener todos los proveedores' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lista de proveedores obtenida correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los proveedores.',
-  })
-  async findAll() {
-    return this.providerService.findAll();
-  }
-
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener proveedores con paginación' })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description:
-      'Cantidad de elementos por página (por defecto 10, máximo configurable en el servicio)',
-  })
-  @ApiQuery({
-    name: 'offset',
-    required: false,
-    type: Number,
-    description: 'Número de elementos a saltar (por defecto 0)',
-  })
+  @ApiOperation({ summary: 'Obtener proveedores con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description:
-      'Devuelve un objeto con `total` y el array `items` de proveedores paginados.',
+    description: 'Lista de proveedores obtenida paginada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error en los parámetros de paginación.',
+    description: 'Error al obtener los proveedores paginada.',
   })
-  async findAllPaginated(
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
   ) {
-    return this.providerService.findAllPaginated(limit, offset);
+    return this.providerService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
   }
 
   @Get(':id')
