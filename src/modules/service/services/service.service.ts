@@ -2,8 +2,8 @@ import { Injectable, InternalServerErrorException, NotFoundException } from '@ne
 import { InjectModel } from '@nestjs/mongoose';
 import { Service } from '../schema/service.schema';
 import { Model } from 'mongoose';
-import { CreateServiceDto} from '../dto/create-service.dto'; 
-import { UpdateServiceDto } from '../dto/update-service.dto';
+import { CreateServiceDto, UpdateServiceDto } from '../dto'; 
+import { SF_SERVICE } from 'src/core/utils/searchable-fields';
 
 @Injectable()
 export class ServiceService {
@@ -11,28 +11,6 @@ export class ServiceService {
     @InjectModel(Service.name)
     private serviceModel: Model<Service>,
   ) {}
-
-  async findAllPaginated(
-    limit: number,
-    offset: number,
-  ): Promise<{ total: number; items: Service[] }> {
-    try {
-      const [items, total] = await Promise.all([
-        this.serviceModel
-          .find()
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.serviceModel.countDocuments().exec(),
-      ]);
-
-      return { total, items };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding services with pagination: ${error.message}`,
-      );
-    }
-  }
 
   async create(createServiceDto: CreateServiceDto): Promise<Service> {
     try {
@@ -43,11 +21,44 @@ export class ServiceService {
     }
   }
 
-  async findAll(): Promise<Service[]> {
+  async findAllPaginated(
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{ total: number; items: Service[] }> {
     try {
-      return await this.serviceModel.find().exec();
+      const filter = search
+      ? {
+          $or: SF_SERVICE.map(field => ({
+            [field]: { $regex: search, $options: 'i' }
+          })),
+        }
+      : {};
+
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
+      const [items, total] = await Promise.all([
+        this.serviceModel
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
+          .skip(offset)
+          .limit(limit)
+          .exec(),
+        this.serviceModel
+          .countDocuments(filter)
+          .exec(),
+      ]);
+
+      return { total, items };
     } catch (error) {
-      throw new InternalServerErrorException(`Error finding all services: ${error.message}`);
+      throw new InternalServerErrorException(
+        `Error finding services with pagination: ${error.message}`,
+      );
     }
   }
 

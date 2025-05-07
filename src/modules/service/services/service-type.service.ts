@@ -1,8 +1,9 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ServiceType } from '../schema/service_type.schema';
+import { ServiceType } from '../schema/service-type.schema';
 import { Model } from 'mongoose';
-import { UpdateServiceTypeDto } from '../dto/update-service_type.dto';
+import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
+import { SF_SERVICE_TYPE } from 'src/core/utils/searchable-fields';
 
 @Injectable()
 export class ServiceTypeService {
@@ -11,7 +12,7 @@ export class ServiceTypeService {
     private serviceTypeModel: Model<ServiceType>,
   ) {}
 
-  async create(createServiceTypeDto: any): Promise<ServiceType> {
+  async create(createServiceTypeDto: CreateServiceTypeDto): Promise<ServiceType> {
     try {
       const serviceType = await this.serviceTypeModel.create(createServiceTypeDto);
       return await serviceType.save();
@@ -22,28 +23,37 @@ export class ServiceTypeService {
     }
   }
 
-  async findAll(): Promise<ServiceType[]> {
-    try {
-      return await this.serviceTypeModel.find();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding service types: ${error.message}`,
-      );
-    }
-  }
-
   async findAllPaginated(
-    limit: number,
-    offset: number,
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; items: ServiceType[] }> {
     try {
+      const filter = search
+      ? {
+          $or: SF_SERVICE_TYPE.map(field => ({
+            [field]: { $regex: search, $options: 'i' }
+          })),
+        }
+      : {};
+
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
       const [items, total] = await Promise.all([
         this.serviceTypeModel
-          .find()
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.serviceTypeModel.countDocuments().exec(),
+        this.serviceTypeModel
+          .countDocuments(filter)
+          .exec(),
       ]);
 
       return { total, items };
