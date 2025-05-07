@@ -1,24 +1,20 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Service, ServiceSchema } from './schema/service.schema';
-import { ServiceType, ServiceTypeSchema } from './schema/service_type.schema';
-import { Provider, ProviderSchema } from './schema/provider.schema';
+import { ServiceType, ServiceTypeSchema } from './schema/service-type.schema';
 import { ServiceService } from './services/service.service';
-import { ServiceTypeService } from './services/service_type.service';
-import { ProviderService } from './services/provider.service';
+import { ServiceTypeService } from './services/service-type.service';
 import { ServiceController } from './controllers/service.controller';
-import { ServiceTypeController } from './controllers/service_type.controller';
-import { ProviderController } from './controllers/provider.controller';
+import { ServiceTypeController } from './controllers/service-type.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Service.name, schema: ServiceSchema },
       { name: ServiceType.name, schema: ServiceTypeSchema },
-      { name: Provider.name, schema: ProviderSchema },
     ]),
   ],
-  providers: [ServiceService, ServiceTypeService, ProviderService],
-  controllers: [ServiceController, ServiceTypeController, ProviderController],
+  providers: [ServiceService, ServiceTypeService],
+  controllers: [ServiceController, ServiceTypeController],
 })
 export class ServiceModule {}

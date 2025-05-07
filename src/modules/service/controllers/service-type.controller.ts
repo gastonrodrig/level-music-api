@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Put, Delete, Query, Param, Body, HttpCode, HttpStatus, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
-import { ServiceTypeService } from '../services/service_type.service';
-import { CreateServiceTypeDto } from '../dto/create-service_type.dto';
-import { UpdateServiceTypeDto } from '../dto/update-service_type.dto';
+import { ServiceTypeService } from '../services/service-type.service';
+import { CreateServiceTypeDto } from '../dto/create-service-type.dto';
+import { UpdateServiceTypeDto } from '../dto/update-service-type.dto';
 
 @ApiTags('Service Types')
 @Controller('service-types')
@@ -26,51 +26,37 @@ export class ServiceTypeController {
     return this.serviceTypeService.create(createServiceTypeDto);
   }
 
-  @Get()
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener todos los tipos de servicios' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lista de tipos de servicios obtenida correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los tipos de servicios.',
-  })
-  async findAll() {
-    return this.serviceTypeService.findAll();
-  }
-
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener tipos de servicios con paginación' })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Cantidad de elementos por página (por defecto 10, máximo configurable en el servicio)',
-  })
-  @ApiQuery({
-    name: 'offset',
-    required: false,
-    type: Number,
-    description: 'Número de elementos a saltar (por defecto 0)',
-  })
+  @ApiOperation({ summary: 'Obtener tipos de servicio con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Devuelve un objeto con `total` y el array `items` de tipos de servicios paginados.',
+    description: 'Lista de tipos de servicio obtenida paginada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error en los parámetros de paginación.',
+    description: 'Error al obtener los tipos de servicio paginada.',
   })
-  async findAllPaginated(
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
   ) {
-    return this.serviceTypeService.findAllPaginated(limit, offset);
+    return this.serviceTypeService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
   }
 
   @Get(':id')

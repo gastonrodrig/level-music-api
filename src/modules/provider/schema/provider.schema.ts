@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { StatusType } from "../enum/statusType";
+import { Estado } from "src/core/constants/app.constants";
 
 @Schema({ collection: 'Provider' })
 export class Provider {
@@ -18,8 +18,8 @@ export class Provider {
   @Prop({ length: 255 })
     email: string;
 
-  @Prop({ required: true, enum: StatusType })
-    status: StatusType;
+  @Prop({ required: true, enum: Estado })
+    status: Estado;
 
   @Prop({ default: Date.now })
     createdAt: Date;

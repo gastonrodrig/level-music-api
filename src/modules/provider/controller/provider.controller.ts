@@ -14,8 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { ProviderService } from '../services/provider.service';
-import { CreateProviderDto } from '../dto/create-provider.dto';
-import { UpdateProviderDto } from '../dto/update-provider.dto';
+import { CreateProviderDto, UpdateProviderDto } from '../dto';
 import { Public } from '../../../auth/decorators';
 
 @ApiTags('Providers')

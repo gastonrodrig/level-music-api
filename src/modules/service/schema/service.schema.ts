@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { StatusType } from "../enum/statusType";
 import { Types } from "mongoose";
+import { Estado } from "src/core/constants/app.constants";
 
 @Schema({ collection: 'Service' })
 export class Service {
@@ -14,8 +14,8 @@ export class Service {
   @Prop({ length: 255 })
   price: string;
 
-  @Prop({ required: true, enum: StatusType })
-  status: StatusType;
+  @Prop({ required: true, enum: Estado })
+  status: Estado;
 
   @Prop({ type: Types.ObjectId, required: true, ref: 'Provider' })
   providerId: Types.ObjectId;
