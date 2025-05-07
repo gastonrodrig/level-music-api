@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsOptional } from "class-validator";
+import { IsString, IsOptional, IsEnum, IsNotEmpty } from "class-validator";
+import { Estado } from "src/core/constants/app.constants";
 
 export class CreateProviderDto {
 
@@ -23,8 +24,8 @@ export class CreateProviderDto {
   @IsOptional()
   email: string;
 
-  @ApiProperty({example: "Activo",enum: ["Activo", "Inactivo"]})
-  @IsString()
-  @IsOptional()
-  status: string;
+  @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
+  @IsEnum(Estado)
+  @IsNotEmpty()
+  status: Estado;
 }
