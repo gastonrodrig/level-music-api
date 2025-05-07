@@ -8,6 +8,7 @@ import { EquipmentModule } from './modules/equipment/equipment.module';
 import { WorkerModule } from './modules/worker/worker.module';
 import { ServiceModule } from './modules/service/service.module';
 import { StorehouseMovementModule } from './modules/storehouse_movement/StorehouseMovement.module';
+import { ProviderModule } from './modules/provider/provider.module';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { StorehouseMovementModule } from './modules/storehouse_movement/Storehou
     EquipmentModule,
     WorkerModule,
     StorehouseMovementModule,
-    
+    ProviderModule
   ],
   providers: [],
   controllers: []
