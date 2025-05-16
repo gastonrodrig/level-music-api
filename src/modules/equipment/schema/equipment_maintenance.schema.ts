@@ -4,7 +4,6 @@ import { Types } from "mongoose";
 
 @Schema({ collection: 'EquipmentMaintenance' })
 export class EquipmentMaintenance {
-
   @Prop({ type: Types.ObjectId, ref: 'Equipment' })
   equipment_id: string;
 
@@ -16,6 +15,6 @@ export class EquipmentMaintenance {
   
   @Prop({ default: Date.now })
   date: Date;
-
 }
- export const EquipmentMaintenanceSchema = SchemaFactory.createForClass(EquipmentMaintenance);
+
+export const EquipmentMaintenanceSchema = SchemaFactory.createForClass(EquipmentMaintenance);

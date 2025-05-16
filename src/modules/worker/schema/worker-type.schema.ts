@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-@Schema({ collection: 'Worker_type' })
+@Schema({ collection: 'worker_types' })
 export class Worker_type {
   @Prop({ length: 255 })
   name: string;
