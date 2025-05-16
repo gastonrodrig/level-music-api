@@ -1,74 +1,92 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, DefaultValuePipe, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query } from "@nestjs/common";
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { EventTypeService } from "../services/event-type.service";
 import { Public } from "src/auth/decorators";
-import { CreateEventTypeDto } from "../dto/create-event_type.dto";
+import { CreateEventTypeDto } from "../dto/create-event-type.dto";
 
 @Controller('event-type')
 @ApiTags('Event-Type')
 export class EventTypeController {
-    constructor(private readonly eventTypeService: EventTypeService){}
-    @Post()
-    @Public()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Crear un nuevo tipo de evento' })
-    @ApiResponse({
-        status: HttpStatus.CREATED,
-        description: 'El tipo de evento ha sido creado correctamente.',
-    })
-    @ApiResponse({
-        status: HttpStatus.BAD_REQUEST,
-        description: 'Error al crear el tipo de evento.',
-    })
-    create(@Body() createEventTypeDto: CreateEventTypeDto) {
-        return this.eventTypeService.create(createEventTypeDto);
-    }
+  constructor(private readonly eventTypeService: EventTypeService){}
 
-    @Get()
-    @Public()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Obtener todos los tipos de eventos' })
-    @ApiResponse({
-        status: HttpStatus.CREATED,
-        description: 'Lista de tipos de eventos obtenida correctamente.',
-    })
-    @ApiResponse({
-        status: HttpStatus.BAD_REQUEST,
-        description: 'Error al obtener los tipos de eventos.',
-    })
-    findAll() {
-        return this.eventTypeService.findAll();
-    }
+  @Post()
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear un nuevo tipo de evento' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'El tipo de evento ha sido creado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear el tipo de evento.',
+  })
+  create(@Body() createEventTypeDto: CreateEventTypeDto) {
+    return this.eventTypeService.create(createEventTypeDto);
+  }
 
-    @Get(':id')
-    @Public()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Obtener un tipo de evento por ID' })
-    @ApiResponse({
-        status: HttpStatus.CREATED,
-        description: 'Tipo de evento encontrado correctamente.',
-    })
-    @ApiResponse({
-        status: HttpStatus.BAD_REQUEST,
-        description: 'Error al obtener el tipo de evento.',
-    })
-    findOne(@Param('id') id: string) {
-        return this.eventTypeService.findOne(id);
-    }
+  @Get('paginated')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener tipos de evento con paginación, búsqueda y orden' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de tipos de evento obtenida paginada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los tipos de eventos paginada.',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('type')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.eventTypeService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
+  }
 
-    @Delete(':id')
-    @Public()
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Eliminar un tipo de evento por ID' })
-    @ApiResponse({
-        status: HttpStatus.CREATED,
-        description: 'Tipo de evento eliminado correctamente.',
-    })
-    @ApiResponse({
-        status: HttpStatus.BAD_REQUEST,
-        description: 'Error al eliminar el tipo de evento.',
-    })
-    remove(@Param('id') id: string) {
-        return this.eventTypeService.remove(id);
-    }
+  @Get(':id')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Obtener un tipo de evento por ID' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Tipo de evento encontrado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener el tipo de evento.',
+  })
+  findOne(@Param('id') id: string) {
+    return this.eventTypeService.findOne(id);
+  }
+
+  @Delete(':id')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Eliminar un tipo de evento por ID' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Tipo de evento eliminado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al eliminar el tipo de evento.',
+  })
+  remove(@Param('id') id: string) {
+    return this.eventTypeService.remove(id);
+  }
 }
