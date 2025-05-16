@@ -1,8 +1,9 @@
-import { Body, Controller, DefaultValuePipe, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query } from "@nestjs/common";
+import { Body, Controller, DefaultValuePipe, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put, Query } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { EventTypeService } from "../services/event-type.service";
 import { Public } from "src/auth/decorators";
 import { CreateEventTypeDto } from "../dto/create-event-type.dto";
+import { UpdateEventTypeDto } from "../dto";
 
 @Controller('event-type')
 @ApiTags('Event-Type')
@@ -74,19 +75,13 @@ export class EventTypeController {
     return this.eventTypeService.findOne(id);
   }
 
-  @Delete(':id')
+  @Put(':id')
   @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Eliminar un tipo de evento por ID' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Tipo de evento eliminado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al eliminar el tipo de evento.',
-  })
-  remove(@Param('id') id: string) {
-    return this.eventTypeService.remove(id);
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar un tipo de servicio por ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'El tipo de servicio ha sido actualizado correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el tipo de servicio.' })
+  update(@Param('id') id: string, @Body() updateEventTypeDto: UpdateEventTypeDto) {
+    return this.eventTypeService.update(id, updateEventTypeDto);
   }
 }

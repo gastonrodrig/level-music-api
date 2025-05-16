@@ -41,7 +41,6 @@ export class UserService {
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
-
       return user;
     } catch (error) {
       if (error instanceof NotFoundException) {

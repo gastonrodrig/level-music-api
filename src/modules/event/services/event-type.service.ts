@@ -1,16 +1,14 @@
-
-
 import {
-    BadRequestException,
-    Injectable,
-    InternalServerErrorException,
-    NotFoundException,
-  } from '@nestjs/common';
-import { CreateEventTypeDto } from '../dto/create-event-type.dto';
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EventType } from '../schema/event-type.schema';
 import { SF_EVENT_TYPE } from 'src/core/utils/searchable-fields';
+import { CreateEventTypeDto, UpdateEventTypeDto } from '../dto';
 
 @Injectable()
 export class EventTypeService {
@@ -39,12 +37,12 @@ export class EventTypeService {
   ): Promise<{ total: number; items: EventType[] }> {
     try {
       const filter = search
-      ? {
-          $or: SF_EVENT_TYPE.map(field => ({
-            [field]: { $regex: search, $options: 'i' }
-          })),
-        }
-      : {};
+        ? {
+            $or: SF_EVENT_TYPE.map((field) => ({
+              [field]: { $regex: search, $options: 'i' },
+            })),
+          }
+        : {};
 
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
@@ -58,9 +56,7 @@ export class EventTypeService {
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.eventTypeModel
-          .countDocuments(filter)
-          .exec(),
+        this.eventTypeModel.countDocuments(filter).exec(),
       ]);
 
       return { total, items };
@@ -70,14 +66,16 @@ export class EventTypeService {
       );
     }
   }
-  
+
   async findOne(event_type_id: string): Promise<EventType> {
     try {
-      const eventType = await this.eventTypeModel.findOne({ _id: event_type_id });
+      const eventType = await this.eventTypeModel.findOne({
+        _id: event_type_id,
+      });
       if (!eventType) {
         throw new BadRequestException('Tipo de evento no encontrado');
       }
-      return eventType as unknown as EventType;
+      return eventType;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -88,11 +86,16 @@ export class EventTypeService {
     }
   }
 
-  async remove(event_type_id: string) {
-    const user = await this.eventTypeModel.findOneAndDelete({ _id: event_type_id });
-    if (!user) {
-      throw new BadRequestException('Tipo de evento no encontrado');
+  async update(event_type_id: string, updateEventTypeDto: UpdateEventTypeDto): Promise<EventType> {
+    try {
+      const eventType = await this.eventTypeModel.findOne({ _id: event_type_id });
+      if (!eventType) {
+        throw new BadRequestException('Tipo de evento no encontrado');
+      }
+      Object.assign(eventType, updateEventTypeDto);
+      return await eventType.save();
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
-    return { success: true };
   }
 }

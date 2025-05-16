@@ -4,3 +4,4 @@ export const SF_PROVIDER = ['name'];
 export const SF_SERVICE_TYPE = ['name'];
 export const SF_SERVICE = ['name'];
 export const SF_EVENT_TYPE = ['type', 'category'];
+export const SF_EVENT = ['name'];

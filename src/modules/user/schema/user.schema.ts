@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Estado, Roles, DocType } from '../../../core/constants/app.constants';
 
-@Schema({ collection: 'User' })
+@Schema({ collection: 'users' })
 export class User {
   @Prop({ length: 255, required: true })
   auth_id: string;

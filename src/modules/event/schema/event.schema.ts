@@ -3,8 +3,8 @@ import { Types } from 'mongoose';
 import { StatusType } from '../enum/status-type';
 import { PlaceType } from '../enum/place-type';
 
-@Schema({ collection: 'Event' })
-export class Event{
+@Schema({ collection: 'events' })
+export class Event {
   @Prop({ length: 255 })
   name: string;
 
@@ -15,40 +15,50 @@ export class Event{
   date: Date;
 
   @Prop({ required: true })
-  timeRange: string;
+  time_range: string;
 
   @Prop({ required: true })
-  attendeesCount: number;
+  attendees_count: number;
 
   @Prop({ required: true })
-  exactAddress: string;
+  exact_address: string;
 
   @Prop({ required: true })
-  locationReference?: string;
+  location_reference?: string;
 
   @Prop({ required: true, enum: PlaceType })
-  placeType: PlaceType;
+  place_type: PlaceType;
 
   @Prop({ required: true })
-  placeSize: number;
+  place_size: number;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
-  userId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'users' })
+  user_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'EventType' })
-  eventTypeId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'event-types' })
+  event_type_id: Types.ObjectId;
 
   @Prop({ required: true, enum: StatusType })
   state: StatusType;
 
   @Prop({ type: Number, nullable: true })
-  finalPrice?: number;
+  final_price?: number;
 
   @Prop({ default: Date.now })
-  createdAt: Date;
+  created_at: Date;
 
   @Prop({ default: Date.now })
-  updatedAt: Date;
+  updated_at: Date;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);
+
+EventSchema.pre('save', function (next) {
+  this.updated_at = new Date();
+  next();
+});
+
+EventSchema.pre('findOneAndUpdate', function (next) {
+  this.set({ updated_at: new Date() });
+  next();
+});

@@ -4,14 +4,18 @@ import {
     Post, 
     Body, 
     Param, 
-    Delete,
     HttpCode,
     HttpStatus,
+    DefaultValuePipe,
+    Query,
+    ParseIntPipe,
+    Put,
  } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services/event.service';
 import { CreateEventDto } from '../dto/create-event.dto';
+import { UpdateEventDto } from '../dto';
 
 @Controller('events')
 @ApiTags('Events')
@@ -34,20 +38,37 @@ export class EventController {
     return this.eventService.create(createEventDto);
   }
 
-  @Get()
+  @Get('paginated')
   @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Obtener todos los eventos' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener evento con paginación, búsqueda y orden' })
   @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Lista de eventos obtenida correctamente',
+    status: HttpStatus.OK,
+    description: 'Lista de eventos obtenida paginada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los eventos',
+    description: 'Error al obtener los eventos paginados.',
   })
-  findAll() {
-    return this.eventService.findAll();
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.eventService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
   }
 
   @Get(':id')
@@ -64,5 +85,15 @@ export class EventController {
   })
   findOne(@Param('id') event_id: string) {
     return this.eventService.findOne(event_id);
+  }
+
+  @Put(':id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar un evento por ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'El evento ha sido actualizado correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el evento.' })
+  update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
+    return this.eventService.update(id, updateEventDto);
   }
 }
