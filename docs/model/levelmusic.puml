@@ -8,7 +8,6 @@ entity users #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * auth_id          : STRING
   * email            : STRING
-  * password         : STRING
   * full_name        : STRING
   * phone            : STRING
   * document_type    : ENUM('DNI','RUC')
@@ -44,16 +43,30 @@ entity events #E6BB93 {
   * user_id           : OBJECT ID
   * event_type_id     : OBJECT ID
   * status            : ENUM('Pendiente','Enviado','Confirmado','Terminado','Cancelado')
-  * final_price       : DECIMAL(10,2)
   --
   created_at         : DATETIME
   updated_at         : DATETIME
+}
+
+entity reprogramings #E6BB93 {
+  * _id               : OBJECT ID <<UID>>
+  * event_id            : OBJECT ID  ' FK → event._id
+  * user_id             : OBJECT ID  ' FK → user._id
+  * previous_date     : DATETIME
+  * previous_time_range : STRING
+  * new_date          : DATETIME
+  * new_time_range    : STRING
+  * reason            : STRING
+  * status            : ENUM('Pendiente','Confirmado','Cancelado')
+  --
+  created_at         : DATETIME
 }
 
 entity service_types #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * name             : STRING
   * description      : STRING
+  * status           : ENUM('Activo','Inactivo')
   --
   created_at        : DATETIME
   updated_at        : DATETIME
@@ -101,12 +114,20 @@ entity event_services #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * event_id         : OBJECT ID
   * service_id       : OBJECT ID
+  * name             : STRING
+  * detail           : STRING
+  * price            : DECIMAL(10,2)
+  * new_price        : DECIMAL(10,2)
+  * provider_name    : STRING
+  --
+  assigned_at      : DATETIME
 }
 
 entity worker_types #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * name             : STRING
   * description      : STRING
+  * status           : ENUM('Activo','Inactivo')
   --
   created_at        : DATETIME
   updated_at        : DATETIME
@@ -116,17 +137,6 @@ entity workers #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * user_id          : OBJECT ID  ' FK → user._id
   * worker_type_id   : OBJECT ID
-  --
-  created_at        : DATETIME
-  updated_at        : DATETIME
-}
-
-entity worker_availabilities #E6BB93 {
-  * _id              : OBJECT ID <<UID>>
-  * worker_id        : OBJECT ID  ' FK → worker._id
-  * available_from   : DATETIME
-  * available_to     : DATETIME
-  * day_of_week      : ENUM('Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo')
   --
   created_at        : DATETIME
   updated_at        : DATETIME
@@ -144,13 +154,17 @@ entity incidents #E6BB93 {
   * incident_location : STRING (nullable)
   --
   created_at         : DATETIME
-  updated_at         : DATETIME
 }
 
 entity assignations #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * event_id         : OBJECT ID  ' FK → event._id
-  * worker_id        : OBJECT ID  ' FK → worker._id
+  * resource_id      : OBJECT ID  ' FK → resource._id (nullable)
+  * worker_id        : OBJECT ID  ' FK → worker._id (nullable)
+  * resource_type    : ENUM('Equipment','Light','Worker', ...)
+  * available_from   : DATETIME
+  * available_to     : DATETIME
+  * day_of_week      : ENUM('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')
   --
   assigned_at       : DATETIME
 }
@@ -169,25 +183,22 @@ entity resources #E6BB93 {
   updated_at        : DATETIME
 }
 
-entity resource_maintenances #E6BB93 {
+entity maintenances #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * resource_id     : OBJECT ID
   * maintenance_type : ENUM('Preventivo','Correctivo')
   * description      : STRING
-  * date             : DATETIME
   --
-  created_at        : DATETIME
+  date             : DATETIME
 }
 
 entity storehouse_movements #E6BB93 {
   * _id              : OBJECT ID <<UID>>
-  * resource_id     : OBJECT ID
+  * resource_id      : OBJECT ID
   * event_id         : OBJECT ID
   * movement_type    : ENUM('Entrada','Salida')
-  * movement_date    : DATETIME
   --
-  created_at        : DATETIME
-  updated_at        : DATETIME
+  * movement_date    : DATETIME
 }
 
 entity activity_templates #E6BB93 {
@@ -219,51 +230,35 @@ entity event_task_assignments #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * event_task_id    : OBJECT ID
   * worker_id        : OBJECT ID
-  * assigned_at      : DATETIME
   * status           : ENUM('Pendiente','Realizado')
   * notes            : STRING (nullable)
-  * evidence_url     : STRING (nullable)
+  * evidence         : OBJECT (nullable)
   * completed_at     : DATETIME (nullable)
   --
-  created_at        : DATETIME
-  updated_at        : DATETIME
+  assigned_at      : DATETIME
 }
 
-entity event_payment_schedules #E6BB93 {
+entity payment_schedules #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * event_id         : OBJECT ID
-  * payment_type     : ENUM('Parcia,','Final')
+  * payment_type     : ENUM('Parcial,','Final')
   * due_date         : DATETIME
-  * expected_amount  : DECIMAL(10,2)
-  --
-  created_at        : DATETIME
-  updated_at        : DATETIME
-}
-
-entity event_payments #E6BB93 {
-  * _id              : OBJECT ID <<UID>>
-  * schedule_id      : OBJECT ID  ' FK → event_payment_schedule._id (nullable)
-  * event_id         : OBJECT ID
-  * amount_paid      : DECIMAL(10,2)
-  * payment_date     : DATETIME
-  * payment_method   : STRING
+  * total_amount  : DECIMAL(10,2)
   * status           : ENUM('Pendiente','Completa','Retrasado')
   --
   created_at        : DATETIME
-  updated_at        : DATETIME
 }
 
 entity sales_documents #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * sale_document_number   : STRING
+  * schedule_id      : OBJECT ID  ' FK → event_payment_schedule._id
   * event_id         : OBJECT ID  ' FK → event._id
   * user_id          : OBJECT ID  ' FK → user._id
-  * date             : DATETIME
-  * due_date         : DATETIME (nullable)
-  * total            : DECIMAL(10,2)
+  * total_amount     : DECIMAL(10,2)
+  * type             : ENUM('Boleta','Factura')
   --
-  created_at        : DATETIME
-  updated_at        : DATETIME
+  issue_date       : DATETIME
 }
 
 entity sales_document_details #E6BB93 {
@@ -276,51 +271,52 @@ entity sales_document_details #E6BB93 {
   * total_price      : DECIMAL(10,2)
   --
   created_at        : DATETIME
-  updated_at        : DATETIME
 }
 
 '-----------------------------
 ' Relationships
 '-----------------------------
-users                     ||--o{ events                       : creates
-event_types               ||--o{ events                       : classifies
-events                    ||--o{ event_services               : has
-services                  ||--o{ event_services               : is_used
-service_types             ||--o{ services                     : classifies
-providers                 ||--o{ services                     : provides
-services                  ||--o{ service_details              : has_options
+users                      ||--o{ events                       : creates
+event_types                ||--o{ events                       : classifies
+events                     ||--o{ event_services               : has
+services                   ||--o{ event_services               : is_used
+service_types              ||--o{ services                     : classifies
+providers                  ||--o{ services                     : provides
+services                   ||--o{ service_details              : has_options
 
-users                      ||--|| workers                       : is_profile_of
-worker_types               ||--o{ workers                       : classifies
-workers                    ||--o{ worker_availabilities          : has_availability
+users                      ||--|| workers                      : is_profile_of
+worker_types               ||--o{ workers                      : classifies
 
-events                     ||--o{ storehouse_movements          : associates
-resources                  ||--o{ storehouse_movements          : is_moved
-resources                  ||--o{ resource_maintenances         : receives_maintenance
+events                     ||--o{ storehouse_movements         : associates
+resources                  ||--o{ storehouse_movements         : is_moved
+resources                  ||--o{ maintenances        : receives_maintenance
 
-event_types                ||--o{ activity_templates            : uses_template
-worker_types               ||--o{ activity_templates            : defines_for
+event_types                ||--o{ activity_templates           : uses_template
+worker_types               ||--o{ activity_templates           : defines_for
 
-events                     ||--o{ event_tasks                   : generates
-activity_templates         ||--o{ event_tasks                   : base_of
-worker_types               ||--o{ event_tasks                   : classifies
+users                      ||--o{ reprogramings                : requests_reschedule
+events                     ||--o{ reprogramings                : has_reschedules
 
-event_tasks                ||--o{ event_task_assignments        : assigns
-workers                    ||--o{ event_task_assignments        : executes
+events                     ||--o{ event_tasks                  : generates
+activity_templates         ||--o{ event_tasks                  : base_of
+worker_types               ||--o{ event_tasks                  : classifies
 
-events                     ||--o{ assignations                  : has_assignments
-workers                    ||--o{ assignations                  : participates_in
+event_tasks                ||--o{ event_task_assignments       : assigns
+workers                    ||--o{ event_task_assignments       : executes
 
-events                     ||--o{ event_payment_schedules       : plans_payments
-events                     ||--o{ event_payments                : records_payments
-event_payment_schedules    ||--o{ event_payments                : generates_records
+events                     ||--o{ assignations                 : has_assignments
+workers                    ||--o{ assignations                 : participates_in
+resources                  ||--o{ assignations                 : is_assigned
 
-events                     ||--o{ sales_documents                      : generates
-users                      ||--o{ sales_documents                      : issues_to
+events                     ||--o{ payment_schedules      : plans_payments
 
-sales_documents                   ||--o{ sales_document_details              : has_detail
-events                     ||--o{ incidents                     : records_incidents
-workers                    ||--o{ incidents                     : registered
-resources                  ||--o{ incidents                     : has_incidents
+events                     ||--o{ sales_documents              : generates
+users                      ||--o{ sales_documents              : issues_to
+payment_schedules    ||--|| sales_documents              : generates
+
+sales_documents            ||--o{ sales_document_details       : has_detail
+events                     ||--o{ incidents                    : records_incidents
+workers                    ||--o{ incidents                    : registered
+resources                  ||--o{ incidents                    : has_incidents
 
 @enduml
