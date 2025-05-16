@@ -22,40 +22,40 @@ export class CreateEventDto {
 
   @ApiProperty({ example: '18:00 - 23:00', required: true })
   @IsString()
-  timeRange: string;
+  time_range: string;
 
   @ApiProperty({ example: 100, required: false })
   @IsOptional()
   @IsNumber()
-  attendeesCount?: number;
+  attendees_count?: number;
 
   @ApiProperty({ example: 'Calle Falsa 123', required: false })
   @IsOptional()
   @IsString()
-  exactAddress?: string;
+  exact_address?: string;
 
   @ApiProperty({ example: 'Cerca del parque central', required: false })
   @IsOptional()
   @IsString()
-  locationReference?: string;
+  location_reference?: string;
 
   @ApiProperty({ example: 'Abierto', enum: PlaceType, required: true })
   @IsString()
-  placeType: PlaceType;
+  place_type: PlaceType;
 
   @ApiProperty({ example: 500, required: false })
   @IsOptional()
   @IsNumber()
-  placeSize?: number;
+  place_size?: number;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsString()
   @IsOptional()
-  userId: Types.ObjectId;
+  user_id: Types.ObjectId;
 
-  @ApiProperty({ example: '63f1b2c4e4b0d5a1c8f9e7a7', required: true })
+  @ApiProperty({ type: Types.ObjectId, required: true })
   @IsString()
-  eventTypeId: string;
+  event_type_id: string;
 
   @ApiProperty({ example: 'Pendiente', enum: StatusType, required: true })
   @IsString()
@@ -64,5 +64,5 @@ export class CreateEventDto {
   @ApiProperty({ example: 1500.50, required: false })
   @IsOptional()
   @IsNumber()
-  finalPrice?: number;
+  final_price?: number;
 }
