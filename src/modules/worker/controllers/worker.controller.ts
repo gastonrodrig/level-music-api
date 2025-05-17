@@ -82,20 +82,4 @@ export class WorkerController {
   update(@Param('id') id: string, @Body() updateWorkerDto: UpdateWorkerDto) {
     return this.workerService.update(id, updateWorkerDto);
   }
-
-  @Delete(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar un trabajador por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El trabajador ha sido eliminado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al eliminar el trabajador.',
-  })
-  remove(@Param('id') id: string) {
-    return this.workerService.remove(id);
-  }
 }

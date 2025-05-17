@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Estado } from "src/core/constants/app.constants";
 
-@Schema( { collection: 'ServiceType' })
+@Schema( { collection: 'service-types' })
 export class ServiceType {
   @Prop({ length: 255 })  
   name: string;
@@ -8,10 +9,24 @@ export class ServiceType {
   @Prop({ length: 255 })
   description: string;
 
-  @Prop({ default: Date.now })
-  createdAt: Date;
+  @Prop({ enum: Estado, default: Estado.ACTIVO }) 
+  status: string;
 
   @Prop({ default: Date.now })
-  updatedAt: Date;
+  created_at: Date;
+
+  @Prop({ default: Date.now })
+  updated_at: Date;
 }
+
 export const ServiceTypeSchema = SchemaFactory.createForClass(ServiceType);
+
+ServiceTypeSchema.pre('save', function (next) {
+  this.updated_at = new Date();
+  next();
+});
+
+ServiceTypeSchema.pre('findOneAndUpdate', function (next) {
+  this.set({ updated_at: new Date() });
+  next();
+});

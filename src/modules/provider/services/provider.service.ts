@@ -92,15 +92,4 @@ export class ProviderService {
       throw new InternalServerErrorException(`Error updating provider: ${error.message}`);
     }
   }
-
-  async remove(provider_id: string) {
-    const provider = await this.providerModel.findOneAndDelete({
-      _id: provider_id,
-    });
-    if (!provider) {
-      throw new InternalServerErrorException('Provider not found');
-    }
-
-    return { success: true };
-  }
 }

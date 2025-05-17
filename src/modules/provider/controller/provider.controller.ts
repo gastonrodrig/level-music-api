@@ -105,20 +105,4 @@ export class ProviderController {
   ) {
     return this.providerService.update(id, updateProviderDto);
   }
-
-  @Delete(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar un proveedor por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El proveedor ha sido eliminado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al eliminar el proveedor.',
-  })
-  async remove(@Param('id') id: string) {
-    return this.providerService.remove(id);
-  }
 }

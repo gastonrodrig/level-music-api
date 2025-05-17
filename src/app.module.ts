@@ -4,10 +4,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './modules/user/user.module';
 import { EventModule } from './modules/event/event.module';
 import { AuthModule } from './auth/auth.module';
-import { EquipmentModule } from './modules/equipment/equipment.module';
+import { ResourceModule } from './modules/resources/resource.module';
 import { WorkerModule } from './modules/worker/worker.module';
 import { ServiceModule } from './modules/service/service.module';
-import { StorehouseMovementModule } from './modules/storehouse_movement/StorehouseMovement.module';
+import { StorehouseMovementModule } from './modules/storehouse-movement/storehouse-movement.module';
 import { ProviderModule } from './modules/provider/provider.module';
 
 @Module({
@@ -26,7 +26,7 @@ import { ProviderModule } from './modules/provider/provider.module';
     EventModule,
     AuthModule,
     ServiceModule,
-    EquipmentModule,
+    ResourceModule,
     WorkerModule,
     StorehouseMovementModule,
     ProviderModule

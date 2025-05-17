@@ -5,3 +5,9 @@ export const SF_SERVICE_TYPE = ['name'];
 export const SF_SERVICE = ['name'];
 export const SF_EVENT_TYPE = ['type', 'category'];
 export const SF_EVENT = ['name'];
+export const SF_STOREHOUSE_MOVEMENT = ['movement_date'];
+export const SF_USER = ['full_name', 'document_number', 'role'];
+export const SF_RESOURCE = ['maintenance_type', 'description'];
+export const SF_MAINTENANCE = ['date'];
+export const SF_WORKER = ['name'];
+// export const 

@@ -6,6 +6,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Estado } from 'src/core/constants/app.constants';
 
 export class CreateWorkerTypeDto {
   @ApiProperty({ example: 'Sonidista' })
@@ -17,4 +18,9 @@ export class CreateWorkerTypeDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
+  @IsEnum(Estado)
+  @IsOptional()
+  status?: Estado;
 }

@@ -95,14 +95,4 @@ export class ServiceTypeService {
       throw new InternalServerErrorException(`Error updating service type: ${error.message}`);
     }
   }
-
-  async remove(service_type_id: string) {
-    const serviceType = await this.serviceTypeModel.findOneAndDelete({ _id: service_type_id });
-    if (!serviceType) {
-      throw new InternalServerErrorException('Service type not found');
-    }
-
-    return { success: true };
-  }
-  
 }

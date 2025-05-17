@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException, UseGuards, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto, UpdateUserDto } from '../dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 
@@ -20,16 +20,38 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
-  @Get()
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener todos los usuarios' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Lista de usuarios obtenida correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al obtener los usuarios.' })
-  findAll() {
-    return this.userService.findAll();
-  }
+  @Get('paginated')
+    @Public()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Obtener usuarios con paginación, búsqueda y orden' })
+    @ApiResponse({
+      status: HttpStatus.OK,
+      description: 'Lista de usuarios obtenida paginada correctamente.',
+    })
+    @ApiResponse({
+      status: HttpStatus.BAD_REQUEST,
+      description: 'Error al obtener los usuarios paginada.',
+    })
+    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+    @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+    @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+    findAllPaginated(
+      @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+      @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+      @Query('search') search?: string,
+      @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+      @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+    ) {
+      return this.userService.findAllPaginated(
+        limit,
+        offset,
+        search?.trim(),
+        sortField,
+        sortOrder,
+      );
+    }
 
   @Get(':id')
   @Public()
