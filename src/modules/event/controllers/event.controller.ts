@@ -10,8 +10,9 @@ import {
     Query,
     ParseIntPipe,
     Put,
+    UseGuards,
  } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services/event.service';
 import { CreateEventDto } from '../dto/create-event.dto';
@@ -41,14 +42,14 @@ export class EventController {
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener evento con paginación, búsqueda y orden' })
+  @ApiOperation({ summary: 'Obtener eventos con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de eventos obtenida paginada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los eventos paginados.',
+    description: 'Error al obtener los eventos paginada.',
   })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
   @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })

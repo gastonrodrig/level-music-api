@@ -90,20 +90,4 @@ export class ServiceController {
   async update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
     return this.serviceService.update(id, updateServiceDto);
   }
-
-  @Delete(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar un servicio por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El servicio ha sido eliminado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al eliminar el servicio.',
-  })
-  async remove(@Param('id') id: string) {
-    return this.serviceService.remove(id);
-  }
 }

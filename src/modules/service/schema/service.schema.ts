@@ -2,9 +2,8 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { Estado } from "src/core/constants/app.constants";
 
-@Schema({ collection: 'Service' })
+@Schema({ collection: 'services' })
 export class Service {
-
   @Prop({ length: 255 })
   name: string;
 
@@ -14,19 +13,30 @@ export class Service {
   @Prop({ length: 255 })
   price: string;
 
-  @Prop({ required: true, enum: Estado })
-  status: Estado;
+  @Prop({ enum: Estado, default: Estado.ACTIVO }) 
+  status: string;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'Provider' })
-  providerId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'providers' })
+  provider_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'EventType' })
-  ServiceTypeId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'service-types' })
+  service_type_id: Types.ObjectId;
   
   @Prop({ default: Date.now })
-  createdAt: Date;
+  created_at: Date;
 
   @Prop({ default: Date.now })
-  updatedAt: Date;
+  updated_at: Date;
 }
+
 export const ServiceSchema = SchemaFactory.createForClass(Service);
+
+ServiceSchema.pre('save', function (next) {
+  this.updated_at = new Date();
+  next();
+});
+
+ServiceSchema.pre('findOneAndUpdate', function (next) {
+  this.set({ updated_at: new Date() });
+  next();
+});

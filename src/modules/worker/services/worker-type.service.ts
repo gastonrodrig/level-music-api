@@ -6,18 +6,18 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Worker_type } from '../schema/worker-type.schema';
+import { WorkerType } from '../schema/worker-type.schema';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
 import { SF_WORKER_TYPE } from 'src/core/utils/searchable-fields';
 
 @Injectable()
 export class WorkerTypeService {
   constructor(
-    @InjectModel(Worker_type.name)
-    private workerTypeModel: Model<Worker_type>,
+    @InjectModel(WorkerType.name)
+    private workerTypeModel: Model<WorkerType>,
   ) {}
 
-  async create(createWorkerTypeDto: CreateWorkerTypeDto): Promise<Worker_type> {
+  async create(createWorkerTypeDto: CreateWorkerTypeDto): Promise<WorkerType> {
     try {
       const worker = await this.workerTypeModel.create(createWorkerTypeDto);
       return await worker.save();
@@ -34,10 +34,8 @@ export class WorkerTypeService {
     search = '',
     sortField: string,
     sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Worker_type[] }> {
+  ): Promise<{ total: number; items: WorkerType[] }> {
     try {
-      // Notas:
-      // 1) se filtra por nombre o descripción (Campos de la tabla)
       const filter = search
       ? {
           $or: SF_WORKER_TYPE.map(field => ({
@@ -46,7 +44,6 @@ export class WorkerTypeService {
         }
       : {};
 
-      // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
       };
@@ -72,10 +69,10 @@ export class WorkerTypeService {
     }
   }
 
-  async findOne(workerType_id: any): Promise<Worker_type> {
+  async findOne(worker_type_id: any): Promise<WorkerType> {
     try {
       const workerType = await this.workerTypeModel.findOne({
-        _id: workerType_id,
+        _id: worker_type_id,
       });
       if (!workerType) {
         throw new BadRequestException('Tipo de trabajador no encontrado');
@@ -93,11 +90,11 @@ export class WorkerTypeService {
   }
 
   async update(
-    workerType_id: string,
+    worker_type_id: string,
     updateWorkerTypeDto: UpdateWorkerTypeDto,
   ) {
     const workerType = await this.workerTypeModel.findOne({
-      _id: workerType_id,
+      _id: worker_type_id,
     });
     if (!workerType) {
       throw new BadRequestException('Tipo de trabajador no encontrado');
@@ -107,9 +104,9 @@ export class WorkerTypeService {
     return await workerType.save();
   }
 
-  async remove(workerType_id: string) {
+  async remove(worker_type_id: string) {
     const workerType = await this.workerTypeModel.findOneAndDelete({
-      _id: workerType_id,
+      _id: worker_type_id,
     });
     if (!workerType) {
       throw new BadRequestException('Tipo de trabajador no encontrado');

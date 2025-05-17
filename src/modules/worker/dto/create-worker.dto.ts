@@ -4,21 +4,16 @@ import {
   IsMongoId,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Types } from 'mongoose';
 
 export class CreateWorkerDto {
-  @ApiProperty({
-    example: '67ea1b5eec23135d02f6d11c',
-    description: 'ID del tipo de trabajador',
-  })
+  @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
   @IsNotEmpty()
-  worker_type_id: string;
+  worker_type_id: Types.ObjectId;
 
-  @ApiProperty({
-    example: true,
-    description: 'Disponibilidad del trabajador para eventos',
-  })
-  @IsBoolean()
+  @ApiProperty({ type: Types.ObjectId, required: true })
+  @IsMongoId()
   @IsNotEmpty()
-  availability: boolean;
+  user_id: Types.ObjectId;
 }

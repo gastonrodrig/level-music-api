@@ -87,15 +87,4 @@ export class ServiceService {
       throw new InternalServerErrorException(`Error updating service: ${error.message}`);
     }
   }
-
-  async remove(id: string): Promise<void> {
-    try {
-      const result = await this.serviceModel.findByIdAndDelete(id).exec();
-      if (!result) {
-        throw new NotFoundException(`Service with ID ${id} not found`);
-      }
-    } catch (error) {
-      throw new InternalServerErrorException(`Error removing service: ${error.message}`);
-    }
-  }
 }

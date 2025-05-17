@@ -24,43 +24,48 @@ export class EventService {
   }
 
   async findAllPaginated(
-    limit = 5,
-    offset = 0,
-    search = '',
-    sortField: string,
-    sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Event[] }> {
-    try {
-      const filter = search
+      limit = 5,
+      offset = 0,
+      search = '',
+      sortField: string,
+      sortOrder: 'asc' | 'desc' = 'asc',
+    ): Promise<{ total: number; items: Event[] }> {
+      try {
+        // Notas:
+        // 1) se filtra por nombre o descripción (Campos de la tabla)
+        const filter = search
         ? {
-            $or: SF_EVENT.map((field) => ({
-              [field]: { $regex: search, $options: 'i' },
+            $or: SF_EVENT.map(field => ({
+              [field]: { $regex: search, $options: 'i' }
             })),
           }
         : {};
-
-      const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
-      };
-
-      const [items, total] = await Promise.all([
-        this.eventModel
-          .find(filter)
-          .collation({ locale: 'es', strength: 1 })
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.eventModel.countDocuments(filter).exec(),
-      ]);
-
-      return { total, items };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding events with pagination: ${error.message}`,
-      );
+  
+        // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
+        const sortObj: Record<string, 1 | -1> = {
+          [sortField]: sortOrder === 'asc' ? 1 : -1,
+        };
+  
+        const [items, total] = await Promise.all([
+          this.eventModel
+            .find(filter)
+            .collation({ locale: 'es', strength: 1 })
+            .sort(sortObj)
+            .skip(offset)
+            .limit(limit)
+            .exec(),
+          this.eventModel
+            .countDocuments(filter)
+            .exec(),
+        ]);
+  
+        return { total, items };
+      } catch (error) {
+        throw new InternalServerErrorException(
+          `Error finding event with pagination: ${error.message}`,
+        );
+      }
     }
-  }
 
   async findOne(event_id: string): Promise<Event> {
     try {

@@ -106,20 +106,4 @@ export class WorkerTypeController {
   ) {
     return this.workerTypeService.update(id, updateWorkerTypeDto);
   }
-
-  @Delete(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar un tipo de trabajador por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El tipo de trabajador ha sido eliminado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al eliminar el tipo de trabajador.',
-  })
-  remove(@Param('id') id: string) {
-    return this.workerTypeService.remove(id);
-  }
 }
