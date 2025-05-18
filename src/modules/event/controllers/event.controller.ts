@@ -10,9 +10,8 @@ import {
     Query,
     ParseIntPipe,
     Put,
-    UseGuards,
  } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services/event.service';
 import { CreateEventDto } from '../dto/create-event.dto';

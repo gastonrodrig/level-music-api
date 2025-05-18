@@ -10,4 +10,6 @@ export const SF_USER = ['full_name', 'document_number', 'role'];
 export const SF_RESOURCE = ['maintenance_type', 'description'];
 export const SF_MAINTENANCE = ['date'];
 export const SF_WORKER = ['name'];
+export const SF_ACTIVITY_TEMPLATE = ['title','description','phase'];
+export const SF_EVENT_TASK = ['title','description','phase'];
 // export const 
