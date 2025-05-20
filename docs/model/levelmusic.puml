@@ -14,6 +14,7 @@ entity users #E6BB93 {
   * document_number  : STRING
   * role             : ENUM('Cliente','Trabajador','Administrador','Almacenero','Transportista')
   * status           : ENUM('Activo','Inactivo')
+  * needs_password_change : BOOLEAN,
   --
   created_at        : DATETIME
   updated_at        : DATETIME

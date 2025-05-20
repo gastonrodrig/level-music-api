@@ -73,16 +73,6 @@ export class UserController {
     return this.userService.update(id, updateUserDto);
   }
 
-  @Delete(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar un usuario por ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'El usuario ha sido eliminado correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al eliminar el usuario.' })
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
-  }
-
   @Get('find/:email')
   @Public()
   @HttpCode(HttpStatus.OK)

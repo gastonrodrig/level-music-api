@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { DocType, Estado, Roles } from '../../../core/constants/app.constants';
 
@@ -42,6 +42,11 @@ export class CreateUserDto {
   @IsEnum(Estado)
   @IsOptional()
   status?: Estado;
+
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsNotEmpty()
+  needs_password_change?: boolean;
 
   @ApiProperty({ example: 'https://example.com/profile.jpg', required: false })
   @IsString()
