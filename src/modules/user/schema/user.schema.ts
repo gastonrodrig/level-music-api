@@ -26,6 +26,9 @@ export class User {
 
   @Prop({ enum: Estado, default: Estado.ACTIVO }) 
   status: string;
+
+  @Prop({ required: false, default: null })
+  needs_password_change?: boolean;
   
   @Prop({ default: Date.now })
   created_at: Date;

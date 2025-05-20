@@ -105,16 +105,4 @@ export class UserService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
-
-  async remove(user_id: string) {
-    try {
-      const user = await this.userModel.findOneAndDelete({ _id: user_id });
-      if (!user) {
-        throw new BadRequestException('Usuario no encontrado');
-      }
-      return { success: true };
-    } catch (error) {
-      throw new InternalServerErrorException(`Error: ${error.message}`);
-    }
-  }
 }
