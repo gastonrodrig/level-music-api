@@ -19,6 +19,9 @@ export class ActivityTemplate {
   @Prop({ enum: PhaseType, default: PhaseType.PRE_EVENTO }) 
   phase: string;
 
+  @Prop({ default: true })
+  requires_evidence: boolean;
+
   @Prop({ default: Date.now })
   created_at: Date;
   

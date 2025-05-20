@@ -25,48 +25,48 @@ export class ActivityTemplateService {
   }
 
   async findAllPaginated(
-      limit = 5,
-      offset = 0,
-      search = '',
-      sortField: string,
-      sortOrder: 'asc' | 'desc' = 'asc',
-    ): Promise<{ total: number; items: ActivityTemplate[] }> {
-      try {
-        // Notas:
-        // 1) se filtra por nombre o descripción (Campos de la tabla)
-        const filter = search
-        ? {
-            $or: SF_ACTIVITY_TEMPLATE.map(field => ({
-              [field]: { $regex: search, $options: 'i' }
-            })),
-          }
-        : {};
-  
-        // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
-        const sortObj: Record<string, 1 | -1> = {
-          [sortField]: sortOrder === 'asc' ? 1 : -1,
-        };
-  
-        const [items, total] = await Promise.all([
-          this.activityTemplateModel
-            .find(filter)
-            .collation({ locale: 'es', strength: 1 })
-            .sort(sortObj)
-            .skip(offset)
-            .limit(limit)
-            .exec(),
-          this.activityTemplateModel
-            .countDocuments(filter)
-            .exec(),
-        ]);
-  
-        return { total, items };
-      } catch (error) {
-        throw new InternalServerErrorException(
-          `Error finding activity template with pagination: ${error.message}`,
-        );
-      }
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{ total: number; items: ActivityTemplate[] }> {
+    try {
+      // Notas:
+      // 1) se filtra por nombre o descripción (Campos de la tabla)
+      const filter = search
+      ? {
+          $or: SF_ACTIVITY_TEMPLATE.map(field => ({
+            [field]: { $regex: search, $options: 'i' }
+          })),
+        }
+      : {};
+
+      // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
+      const [items, total] = await Promise.all([
+        this.activityTemplateModel
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
+          .skip(offset)
+          .limit(limit)
+          .exec(),
+        this.activityTemplateModel
+          .countDocuments(filter)
+          .exec(),
+      ]);
+
+      return { total, items };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding activity template with pagination: ${error.message}`,
+      );
     }
+  }
 
   async findOne(template_id: string): Promise<ActivityTemplate> {
     try {

@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { Types } from "mongoose";
 import { PhaseType } from "../enum/phase-type";
 
@@ -25,5 +25,11 @@ export class CreateActivityTemplateDto {
 
   @ApiProperty({ example: 'Pre Evento', enum: PhaseType, required: true })
   @IsString()
+  @IsNotEmpty()
   phase_type: PhaseType;
+
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
+  @IsNotEmpty()
+  requires_evidence: boolean;
 }

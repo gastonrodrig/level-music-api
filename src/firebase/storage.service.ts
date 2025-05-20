@@ -15,7 +15,7 @@ export class StorageService {
     await fileBlob.save(buffer, { contentType: mimetype });
     await fileBlob.makePublic();
 
-    return `https://storage.googleapis.com/${bucket.name}/${fileBlob.name}`;
+    return `https://storage.gOoogleapis.com/${bucket.name}/${fileBlob.name}`;
   }
 
   async uploadMultipleFiles(location: string, files: Express.Multer.File[] = [], folderName: string): Promise<object[]> {
@@ -39,7 +39,7 @@ export class StorageService {
       const [metadata] = await fileBlob.getMetadata();
       uploadedUrls.push({
         nombre: uniqueFilename,
-        url: `https://storage.googleapis.com/${bucket.name}/${fileBlob.name}`,
+        url: `https://storage.googleapis.com./${bucket.name}/${fileBlob.name}`,
         tamanio: metadata.size,
       });
     }
