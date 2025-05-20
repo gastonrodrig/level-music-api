@@ -208,6 +208,7 @@ entity activity_templates #E6BB93 {
   * title            : STRING
   * description      : STRING
   * phase            : ENUM('Pre-evento','En-evento','Post-evento')
+  * requires_evidence : BOOLEAN
   --
   created_at        : DATETIME
   updated_at        : DATETIME
@@ -218,24 +219,18 @@ entity event_tasks #E6BB93 {
   * event_id         : OBJECT ID
   * template_id      : OBJECT ID (nullable)
   * worker_type_id   : OBJECT ID
+  * worker_id        : OBJECT ID (nullable)
   * title            : STRING
-  * description      : STRING
+  * notes            : STRING
   * phase            : ENUM('Pre-evento','En-evento','Post-evento')
-  --
-  created_at        : DATETIME
-  updated_at        : DATETIME
-}
-
-entity event_task_assignments #E6BB93 {
-  * _id              : OBJECT ID <<UID>>
-  * event_task_id    : OBJECT ID
-  * worker_id        : OBJECT ID
   * status           : ENUM('Pendiente','Realizado')
-  * notes            : STRING (nullable)
-  * evidence         : OBJECT (nullable)
-  * completed_at     : DATETIME (nullable)
+  * requires_evidence : BOOLEAN
+  * evidence         : OBJECT (nullable) // { url, name, mimetype, size }
+  * assigned_at      : DATETIME (nullable) 
+  * completed_at     : DATETIME (nullable) 
   --
-  assigned_at      : DATETIME
+  created_at         : DATETIME
+  updated_at         : DATETIME
 }
 
 entity payment_schedules #E6BB93 {
@@ -300,9 +295,7 @@ events                     ||--o{ reprogramings                : has_reschedules
 events                     ||--o{ event_tasks                  : generates
 activity_templates         ||--o{ event_tasks                  : base_of
 worker_types               ||--o{ event_tasks                  : classifies
-
-event_tasks                ||--o{ event_task_assignments       : assigns
-workers                    ||--o{ event_task_assignments       : executes
+workers                    ||--o{ event_tasks                  : assigned_to
 
 events                     ||--o{ assignations                 : has_assignments
 workers                    ||--o{ assignations                 : participates_in
