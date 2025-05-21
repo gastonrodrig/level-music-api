@@ -8,7 +8,8 @@ entity users #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * auth_id          : STRING
   * email            : STRING
-  * full_name        : STRING
+  * first_name       : STRING
+  * last_name        : STRING
   * phone            : STRING
   * document_type    : ENUM('DNI','RUC')
   * document_number  : STRING
