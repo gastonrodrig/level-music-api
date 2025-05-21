@@ -10,12 +10,15 @@ export class User {
   email: string;
 
   @Prop({ length: 255, nullable: true }) 
-  full_name: string;
+  first_name: string;
+
+  @Prop({ length: 255, nullable: true }) 
+  last_name: string;
 
   @Prop({ nullable: true }) 
   phone: string;
 
-  @Prop({ enum: DocType, nullable: true })
+  @Prop({ enum: DocType, default: DocType.DNI, nullable: true })
   document_type: DocType;
 
   @Prop({ length: 255, nullable: true }) 

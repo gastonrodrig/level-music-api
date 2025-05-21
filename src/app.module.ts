@@ -9,6 +9,7 @@ import { WorkerModule } from './modules/worker/worker.module';
 import { ServiceModule } from './modules/service/service.module';
 import { StorehouseMovementModule } from './modules/storehouse-movement/storehouse-movement.module';
 import { ProviderModule } from './modules/provider/provider.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ProviderModule } from './modules/provider/provider.module';
       }),
       inject: [ConfigService],
     }),
+    MailModule,
     UserModule,
     EventModule,
     AuthModule,

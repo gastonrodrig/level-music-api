@@ -13,10 +13,15 @@ export class CreateUserDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'John Doe' })
+  @ApiProperty({ example: 'John' })
   @IsString()
   @IsOptional()
-  full_name: string;
+  first_name: string;
+
+  @ApiProperty({ example: 'Doe' })
+  @IsString()
+  @IsOptional()
+  last_name: string;
 
   @ApiProperty({ example: '1234567890' })
   @IsString()
