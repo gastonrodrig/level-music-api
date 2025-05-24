@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsDate, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsDate, IsOptional, IsNumber, IsMongoId } from 'class-validator';
 import { StatusType, PlaceType } from '../enum';
 import { Types } from 'mongoose';
 import { Type } from 'class-transformer';
@@ -49,7 +49,7 @@ export class CreateEventDto {
   place_size?: number;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   user_id: Types.ObjectId;
 

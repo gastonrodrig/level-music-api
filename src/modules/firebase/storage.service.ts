@@ -38,29 +38,26 @@ export class StorageService {
 
       const [metadata] = await fileBlob.getMetadata();
       uploadedUrls.push({
-        nombre: uniqueFilename,
         url: `https://storage.googleapis.com./${bucket.name}/${fileBlob.name}`,
-        tamanio: metadata.size,
+        name: uniqueFilename,
+        size: metadata.size,
+        storagePath: filePath
       });
     }
     return uploadedUrls;
   }
 
-  async deleteFile(fileUrl: string): Promise<void> {
+  async deleteFile(storagePath: string): Promise<void> {
     const bucket = admin.storage().bucket();
-    const filePath = fileUrl.replace(
-      `https://storage.googleapis.com/${bucket.name}/`,
-      '',
-    );
-    const file = bucket.file(filePath);
+    const file = bucket.file(storagePath);
 
     const [exists] = await file.exists();
-
-    if (exists) {
-      await file.delete();
-      console.log(`File deleted: ${filePath}`);
-    } else {
-      console.warn(`File not found: ${filePath}`);
+    if (!exists) {
+      console.warn(`File not found: ${storagePath}`);
+      return;
     }
+
+    await file.delete();
+    console.log(`File deleted: ${storagePath}`);
   }
 }

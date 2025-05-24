@@ -1,1 +1,2 @@
-export * from './multimedia.schema';
+export * from './collection';
+export * from './embedded';

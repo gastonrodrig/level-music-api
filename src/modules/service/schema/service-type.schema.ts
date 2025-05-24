@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Estado } from "src/core/constants/app.constants";
 
-@Schema( { collection: 'service-types' })
+@Schema({ collection: 'service-types' })
 export class ServiceType {
   @Prop({ length: 255 })  
   name: string;

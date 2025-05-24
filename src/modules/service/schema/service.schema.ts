@@ -5,13 +5,10 @@ import { Estado } from "src/core/constants/app.constants";
 @Schema({ collection: 'services' })
 export class Service {
   @Prop({ length: 255 })
-  name: string;
+  provider_name: string;
 
   @Prop({ length: 255 })
-  description: string;
-
-  @Prop({ length: 255 })
-  price: string;
+  service_type_name: string;
 
   @Prop({ enum: Estado, default: Estado.ACTIVO }) 
   status: string;
