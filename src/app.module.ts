@@ -7,7 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ResourceModule } from './modules/resources/resource.module';
 import { WorkerModule } from './modules/worker/worker.module';
 import { ServiceModule } from './modules/service/service.module';
-import { StorehouseMovementModule } from './modules/storehouse-movement/storehouse-movement.module';
+import { StorehouseMovementModule } from './modules/storehouse/storehouse.module';
 import { ProviderModule } from './modules/provider/provider.module';
 import { MailModule } from './modules/mail/mail.module';
 

@@ -1,37 +1,31 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { IsDecimal, IsEnum, IsOptional, IsString } from "class-validator";
+import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { Types } from "mongoose";
-import { Estado } from "src/core/constants/app.constants";
+import { Estado } from "../../../core/constants/app.constants";
 
 export class CreateServiceDto {
-@ApiProperty({ example: "Nombre del servicio de Evento", required: false })
+  @ApiProperty({ example: "Nombre del proveedor", required: false })
   @IsString()
   @IsOptional()
-  name?: string;
+  provider_name?: string;
 
-  @ApiProperty({ example: "Descripcion del servicio", required: false })
+  @ApiProperty({ example: "Tipo del servicio", required: true })
   @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiProperty({ example: "Precio del servicio", required: false })
-  @IsDecimal()
-  @IsOptional()
-  price?: string;
+  @IsNotEmpty()
+  service_type_name: string;
 
   @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
   @IsEnum(Estado)
-  @IsOptional()
-  status?: Estado;
+  @IsNotEmpty()
+  status: Estado;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   provider_id: Types.ObjectId;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   service_type_id: Types.ObjectId;
 }

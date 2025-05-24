@@ -1,26 +1,26 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsEnum, IsMongoId, IsNotEmpty, IsObject, IsOptional, IsString } from "class-validator";
 import { Types } from "mongoose";
 import { PhaseType, TaskStatusType } from "../enum";
 
 export class CreateEventTaskDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   event_id: Types.ObjectId;
   
   @ApiProperty({ type: Types.ObjectId, required: false })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   template_id?: string;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsString()
+  @IsMongoId()
   @IsNotEmpty()
   worker_type_id: string;
 
   @ApiProperty({ type: Types.ObjectId, required: false })
-  @IsString()
+  @IsMongoId()
   @IsOptional()
   worker_id?: string;
 

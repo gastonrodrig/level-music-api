@@ -3,7 +3,7 @@ import { MovementType } from "../enum";
 import { Types } from "mongoose";
 
 @Schema({ collection: 'storehouse-movements' })
-export class Storehouse_Movement {
+export class StorehouseMovement {
   @Prop({ type: Types.ObjectId, ref: 'resources' })
   resource_id: string;
 
@@ -16,4 +16,4 @@ export class Storehouse_Movement {
   @Prop({ default: Date.now })
   movement_date: Date;
 }
- export const Storehouse_MovementSchema = SchemaFactory.createForClass(Storehouse_Movement);
+ export const StorehouseMovementSchema = SchemaFactory.createForClass(StorehouseMovement);
