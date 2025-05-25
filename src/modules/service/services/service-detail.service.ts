@@ -4,7 +4,7 @@ import { ServiceDetail } from '../schema/service-detail.schema';
 import { Model, Types } from 'mongoose';
 import { CreateServiceDetailDto, UpdateServiceDto } from '../dto'; 
 import { ServiceDetailMedia } from 'src/modules/uploads';
-import { StorageService } from 'src/modules/firebase/storage.service';
+import { StorageService } from 'src/modules/firebase/services/storage.service';
 
 @Injectable()
 export class ServiceDetailService {
