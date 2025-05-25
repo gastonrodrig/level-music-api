@@ -10,7 +10,7 @@ import { ServiceDetail, ServiceDetailSchema } from './schema/service-detail.sche
 import { ServiceDetailMedia, ServiceDetailMediaSchema } from '../uploads';
 import { ServiceDetailService } from './services/service-detail.service';
 import { ServiceDetailController } from './controllers/service-detail.controller';
-import { FirebaseModule } from '../firebase/storage.module';
+import { FirebaseModule } from '../firebase/firebase.module';
 
 @Module({
   imports: [

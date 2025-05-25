@@ -50,7 +50,7 @@ export class CreateUserDto {
 
   @ApiProperty({ example: false, required: false })
   @IsBoolean()
-  @IsNotEmpty()
+  @IsOptional()
   needs_password_change?: boolean;
 
   @ApiProperty({ example: 'https://example.com/profile.jpg', required: false })
