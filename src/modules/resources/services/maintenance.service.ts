@@ -49,7 +49,7 @@ export class MaintenanceService {
       const [items, total] = await Promise.all([
         this.maintenanceModel
           .find(filter)
-          .populate('resources')	
+          .populate('resource')	
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)
