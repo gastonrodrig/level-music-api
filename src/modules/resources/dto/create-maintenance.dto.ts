@@ -18,10 +18,10 @@ export class CreateMaintenanceDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsString()
   @IsNotEmpty()
-  resource_id: Types.ObjectId;
-
-  @ApiProperty({ example: new Date().toISOString() })
-  @IsString()
+  resource: Types.ObjectId;
+  
+  @ApiProperty({ example: '2023-10-01T00:00:00Z' })
+  @IsString() 
   @IsNotEmpty()
   date: string;
 }

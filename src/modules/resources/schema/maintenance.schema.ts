@@ -11,7 +11,7 @@ export class Maintenance {
   description: string;
 
   @Prop({ type: Types.ObjectId, ref: 'resources' })
-  resource_id: string;
+  resource: string;
 
   @Prop({ default: Date.now })
   date: Date;
