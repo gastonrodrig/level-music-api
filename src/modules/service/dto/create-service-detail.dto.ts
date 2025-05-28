@@ -7,7 +7,7 @@ export class CreateServiceDetailDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
   @IsNotEmpty()
-  service_id: string;
+  service: string;
 
   @ApiProperty({ example: {} })
   @IsObject()

@@ -4,8 +4,8 @@ import { ServiceDetailMedia, ServiceDetailMediaSchema } from "src/modules/upload
 
 @Schema({ collection: 'service-details' })
 export class ServiceDetail {
-  @Prop({ type: Types.ObjectId, required: true, ref: 'services' })
-  service_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'Service' })
+  service: Types.ObjectId;
 
   @Prop({ type: Object })  
   details: Object;
