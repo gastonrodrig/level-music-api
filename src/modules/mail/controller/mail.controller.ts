@@ -1,8 +1,8 @@
 import { Controller, Body, Post } from '@nestjs/common';
 import { MailService } from '../service/mail.service';
-import { CreateMailDto } from '../dto/create-mail.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
+import { CreateTemporalCredentialMailDto, CreateMailDto } from '../dto';
 
 @ApiTags('Mail - Gmail Api')
 @Controller('mail')
@@ -16,5 +16,14 @@ export class MailController {
   ) {
     const result = await this.mailService.sendTestEmail(createMailDto);
     return { message: `Correo de prueba enviado satisfactoriamente`, result };
+  }
+
+  @Post('send-temporal-credentials')
+  @Public()
+  async sendTemporalCredentials(
+    @Body() createTemporalCredentialDto: CreateTemporalCredentialMailDto,
+  ) {
+    const result = await this.mailService.sendTemporalCredentials(createTemporalCredentialDto);
+    return { message: `Correo de credenciales temporales enviado satisfactoriamente`, result };
   }
 }
