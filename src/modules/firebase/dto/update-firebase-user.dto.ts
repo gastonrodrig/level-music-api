@@ -1,4 +1,9 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateFirebaseUserDto } from './create-firebase-user.dto';
+import { IsEmail, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-export class UpdateFirebaseUserDto extends PartialType(CreateFirebaseUserDto) {}
+export class UpdateFirebaseUserDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
