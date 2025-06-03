@@ -4,20 +4,14 @@ import { Estado } from "src/core/constants/app.constants";
 
 @Schema({ collection: 'services' })
 export class Service {
-  @Prop({ length: 255 })
-  provider_name: string;
-
-  @Prop({ length: 255 })
-  service_type_name: string;
-
   @Prop({ enum: Estado, default: Estado.ACTIVO }) 
   status: string;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'providers' })
-  provider_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'Provider' })
+  provider: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'service-types' })
-  service_type_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: 'ServiceType' })
+  service_type: Types.ObjectId;
   
   @Prop({ default: Date.now })
   created_at: Date;

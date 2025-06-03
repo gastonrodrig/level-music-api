@@ -70,6 +70,53 @@ export class UserService {
       }
     }
 
+  async findAllCustomersPaginated(
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string,
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{ total: number; items: User[] }> {
+    try {
+      // Filtrar por rol cliente y búsqueda
+      const baseFilter = { role: 'Cliente' };
+      const searchFilter = search
+        ? {
+            $or: SF_USER.map(field => ({
+              [field]: { $regex: search, $options: 'i' }
+            })),
+          }
+        : {};
+
+      const filter = search
+        ? { ...baseFilter, ...searchFilter }
+        : baseFilter;
+
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
+      const [items, total] = await Promise.all([
+        this.userModel
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
+          .skip(offset)
+          .limit(limit)
+          .exec(),
+        this.userModel
+          .countDocuments(filter)
+          .exec(),
+      ]);
+
+      return { total, items };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding customers with pagination: ${error.message}`,
+      );
+    }
+  }
+
   async findOne(user_id: string): Promise<User> {
     try {
       const user = await this.userModel.findOne({ _id: user_id });
