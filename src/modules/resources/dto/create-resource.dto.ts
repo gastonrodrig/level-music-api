@@ -8,12 +8,7 @@ export class CreateResourceDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 'Descripcion del recurso' })
-  @IsString()
-  @IsNotEmpty()
-  description: string;
-
-  @ApiProperty({ enum: ResourceType, example: ResourceType.SONIDO })
+  @ApiProperty({ enum: ResourceType, example: ResourceType.EQUIPO })
   @IsEnum(ResourceType)
   @IsNotEmpty()
   resource_type: ResourceType;
@@ -23,7 +18,7 @@ export class CreateResourceDto {
   @IsNotEmpty()
   serial_number: string;
 
-  @ApiProperty({ enum: StatusType, example: StatusType.EN_USO })
+  @ApiProperty({ enum: StatusType, example: StatusType.DISPONIBLE })
   @IsEnum(StatusType)
   @IsNotEmpty()
   status: StatusType;

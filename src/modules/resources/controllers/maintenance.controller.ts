@@ -1,4 +1,4 @@
-import { Body, Controller, DefaultValuePipe, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query } from "@nestjs/common";
+import { Body, Controller, DefaultValuePipe, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query, Delete } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Public } from "src/auth/decorators";
 import { CreateMaintenanceDto } from "../dto";
@@ -72,5 +72,21 @@ export class MaintenanceController{
   })
   findOne(@Param('id') id: string) {
     return this.maintenanceServices.findOne(id);
+  }
+
+  @Delete(':id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Eliminar un mantenimiento por ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Mantenimiento eliminado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Mantenimiento no encontrado.',
+  })
+  remove(@Param('id') id: string) {
+    return this.maintenanceServices.remove(id);
   }
 }

@@ -49,6 +49,7 @@ export class MaintenanceService {
       const [items, total] = await Promise.all([
         this.maintenanceModel
           .find(filter)
+          .populate('resource')	
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)
@@ -81,6 +82,20 @@ export class MaintenanceService {
       }
       throw new InternalServerErrorException(
         `Error finding maintenance: ${error.message}`,
+      );
+    }
+  }
+
+  async remove(maintenance_id: string): Promise<{ deleted: boolean }> {
+    try {
+      const result = await this.maintenanceModel.deleteOne({ _id: maintenance_id });
+      if (result.deletedCount === 0) {
+        throw new NotFoundException('Mantenimiento no encontrado');
+      }
+      return { deleted: true };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error eliminando mantenimiento: ${error.message}`,
       );
     }
   }
