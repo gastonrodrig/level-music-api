@@ -18,7 +18,7 @@ import { CreateResourceDto, UpdateResourceDto } from '../dto';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 
-@Controller('resource')
+@Controller('resources')
 @ApiTags('Resource')
 export class ResourceController {
   constructor(private readonly resourceService: ResourceService) {}
@@ -97,4 +97,21 @@ export class ResourceController {
   update(@Param('id') id: string, @Body() updateResourceDto: UpdateResourceDto) {
     return this.resourceService.update(id, updateResourceDto);
   }
+
+  @Get('by-serial')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener equipo por número de serie' })
+  @ApiQuery({ name: 'serial', required: true, type: String, description: 'Número de serie del equipo' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Equipo encontrado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Equipo no encontrado.',
+  })
+  async findBySerial(@Query('serial') serial: string) {
+    return this.resourceService.findBySerial(serial);
+  }
+
 }

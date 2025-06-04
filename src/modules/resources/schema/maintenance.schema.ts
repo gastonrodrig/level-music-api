@@ -10,8 +10,8 @@ export class Maintenance {
   @Prop({ length: 255 })
   description: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'resources' })
-  resource_id: string;
+  @Prop({ type: Types.ObjectId, ref: 'Resource' })
+  resource: Types.ObjectId;
 
   @Prop({ default: Date.now })
   date: Date;

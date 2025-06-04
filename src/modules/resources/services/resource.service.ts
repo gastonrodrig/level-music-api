@@ -12,8 +12,21 @@ export class ResourceService {
     private resourceModel: Model<Resource>
   ) {}
 
+  generateSerialNumber(length = 12): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let serial = '';
+    for (let i = 0; i < length; i++) {
+      serial += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return serial;
+  }
+
   async create(createResourceDto: CreateResourceDto): Promise<Resource> {
     try {
+      // Si no se proporciona serial_number, se genera uno automáticamente
+      if (!createResourceDto.serial_number) {
+        createResourceDto.serial_number = this.generateSerialNumber(12);
+      }
       const resource = await this.resourceModel.create(createResourceDto);
       return await resource.save();
     } catch (error) {
@@ -65,6 +78,14 @@ export class ResourceService {
       }
     }
 
+     async findBySerial(serial: string): Promise<Resource> {
+    const resource = await this.resourceModel.findOne({ serial });
+    if (!resource) {
+      throw new NotFoundException('Equipo no encontrado');
+    }
+    return resource;
+  }
+
   async findOne(resource_id: string): Promise<Resource> {
     try {
       const resource = await this.resourceModel.findOne({ _id: resource_id });
@@ -92,7 +113,9 @@ export class ResourceService {
       throw new BadRequestException('Recurso no encontrado');
     }
 
+    // Solo actualiza los campos requeridos
     Object.assign(resouce, updateResourceDto);
     return await resouce.save();
   }
+
 }
