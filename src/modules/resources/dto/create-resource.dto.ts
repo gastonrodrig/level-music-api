@@ -13,11 +13,6 @@ export class CreateResourceDto {
   @IsNotEmpty()
   resource_type: ResourceType;
 
-  @ApiProperty({ example: '1293219313' })
-  @IsString()
-  @IsNotEmpty()
-  serial_number: string;
-
   @ApiProperty({ enum: StatusType, example: StatusType.DISPONIBLE })
   @IsEnum(StatusType)
   @IsNotEmpty()
