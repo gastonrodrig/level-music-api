@@ -22,8 +22,11 @@ export class UserService {
       if (existingUser) {
         throw new BadRequestException('ERROR-001');
       }
-      if (existingDocumentNumber) {
-        throw new BadRequestException('ERROR-002');
+      
+      if(createUserDto.created_by_admin) { 
+        if (existingDocumentNumber) {
+          throw new BadRequestException('ERROR-002');
+        }
       }
 
       const user = await this.userModel.create(createUserDto);
@@ -167,6 +170,20 @@ export class UserService {
       }
 
       Object.assign(user, updateUserDto);
+      return await user.save();
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+    }
+  }
+
+  async resetPasswordChangeFlag(uid: string): Promise<User> {
+    try {
+      const user = await this.userModel.findOne({ auth_id: uid });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+
+      user.needs_password_change = false;
       return await user.save();
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
