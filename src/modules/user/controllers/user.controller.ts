@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException, UseGuards, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, HttpCode, HttpStatus, NotFoundException, UseGuards, DefaultValuePipe, ParseIntPipe, Patch } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { CreateUserDto, UpdateUserDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -115,5 +115,15 @@ export class UserController {
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al obtener el usuario.' })
   findByEmail(@Param('email') email: string) {
     return this.userService.findByEmail(email);
+  }
+
+  @Patch('reset-password-flag/:uid')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resetear el flag de cambio de contraseña para un usuario' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'El flag de cambio de contraseña ha sido reseteado correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al resetear el flag de cambio de contraseña.' })
+  resetPasswordChangeFlag(@Param('uid') id: string) {
+    return this.userService.resetPasswordChangeFlag(id);
   }
 }

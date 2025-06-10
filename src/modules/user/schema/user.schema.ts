@@ -32,6 +32,9 @@ export class User {
 
   @Prop({ required: false, default: null })
   needs_password_change?: boolean;
+
+  @Prop({ required: true, default: false })
+  created_by_admin: boolean;
   
   @Prop({ default: Date.now })
   created_at: Date;

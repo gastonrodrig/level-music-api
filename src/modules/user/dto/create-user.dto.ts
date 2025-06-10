@@ -53,6 +53,11 @@ export class CreateUserDto {
   @IsOptional()
   needs_password_change?: boolean;
 
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
+  @IsOptional()
+  created_by_admin?: boolean;
+
   @ApiProperty({ example: 'https://example.com/profile.jpg', required: false })
   @IsString()
   @IsOptional()
