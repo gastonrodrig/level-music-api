@@ -14,9 +14,19 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      const existingUser = await this.findByEmail(createUserDto.email);
+      const [existingUser, existingDocumentNumber] = await Promise.all([
+        this.userModel.findOne({ email: createUserDto.email }),
+        this.userModel.findOne({ document_number: createUserDto.document_number }),
+      ]);
+
       if (existingUser) {
-        throw new BadRequestException('El usuario ya existe');
+        throw new BadRequestException('ERROR-001');
+      }
+      
+      if(createUserDto.created_by_admin) { 
+        if (existingDocumentNumber) {
+          throw new BadRequestException('ERROR-002');
+        }
       }
 
       const user = await this.userModel.create(createUserDto);
@@ -146,7 +156,34 @@ export class UserService {
       if (!user) {
         throw new BadRequestException('Usuario no encontrado');
       }
+
+      const [existingUser, existingDocumentNumber] = await Promise.all([
+        this.userModel.findOne({ email: updateUserDto.email, _id: { $ne: user_id } }),
+        this.userModel.findOne({ document_number: updateUserDto.document_number, _id: { $ne: user_id } }),
+      ]);
+
+      if (existingUser) {
+        throw new BadRequestException('ERROR-001');
+      }
+      if (existingDocumentNumber) {
+        throw new BadRequestException('ERROR-002');
+      }
+
       Object.assign(user, updateUserDto);
+      return await user.save();
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+    }
+  }
+
+  async resetPasswordChangeFlag(uid: string): Promise<User> {
+    try {
+      const user = await this.userModel.findOne({ auth_id: uid });
+      if (!user) {
+        throw new BadRequestException('Usuario no encontrado');
+      }
+
+      user.needs_password_change = false;
       return await user.save();
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
