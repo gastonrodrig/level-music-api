@@ -2,19 +2,23 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { Multimedia, MultimediaSchema } from '../../uploads';
 import { PhaseType, TaskStatusType } from "../enum";
+import { Event } from "./event.schema";
+import { ActivityTemplate } from "./activity-template.schema";
+import { WorkerType } from "src/modules/worker/schema/worker-type.schema";
+import { Worker } from "src/modules/worker/schema/worker.schema";
 
 @Schema({ collection: 'event-tasks' })
 export class EventTask {
-  @Prop({ type: Types.ObjectId, required: true, ref: 'events' })
+  @Prop({ type: Types.ObjectId, required: true, ref: Event.name })
   event_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: false, ref: 'activity-templates', default: null })
+  @Prop({ type: Types.ObjectId, required: false, ref: ActivityTemplate.name, default: null })
   template_id?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'worker-types' })
+  @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })
   worker_type_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: false, ref: 'workers', default: null })
+  @Prop({ type: Types.ObjectId, required: false, ref: Worker.name, default: null })
   worker_id?: Types.ObjectId;
 
   @Prop({ length: 255 })

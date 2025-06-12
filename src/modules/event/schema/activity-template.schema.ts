@@ -1,13 +1,15 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { PhaseType } from "../enum/phase-type";
+import { PhaseType } from "../enum/phase-type.enum";
+import { EventType } from "./event-type.schema";
+import { WorkerType } from "src/modules/worker/schema/worker-type.schema";
 
 @Schema({ collection: 'activity-templates' })
 export class ActivityTemplate {
-  @Prop({ type: Types.ObjectId, required: true, ref: 'events-types' })
+  @Prop({ type: Types.ObjectId, required: true, ref: EventType.name })
   event_type_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'worker-types' })
+  @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })
   worker_type_id: Types.ObjectId;
 
   @Prop({ length: 255 })

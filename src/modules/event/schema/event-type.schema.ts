@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { CategoryType } from "../enum/category-type";
+import { CategoryType } from "../enum";
 import { Estado } from "../../../core/constants/app.constants";
 
 @Schema({ collection: 'event-types' })
