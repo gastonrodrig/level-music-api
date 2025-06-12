@@ -4,12 +4,15 @@ import { Provider } from '../schema/provider.schema';
 import { Model } from 'mongoose';
 import { CreateProviderDto, UpdateProviderDto } from '../dto';
 import { SF_PROVIDER } from 'src/core/utils/searchable-fields';
+import { Service } from '../../service/schema/service.schema'; // Importa el modelo Service
 
 @Injectable()
 export class ProviderService {
   constructor(
     @InjectModel(Provider.name)
     private providerModel: Model<Provider>,
+    @InjectModel(Service.name)
+    private serviceModel: Model<Service>, // Inyecta el modelo Service
   ) {}
 
   async create(createProviderDto: CreateProviderDto): Promise<Provider> {
@@ -81,12 +84,21 @@ export class ProviderService {
 
   async update(id: string, updateProviderDto: UpdateProviderDto): Promise<Provider> {
     try {
-      const updatedProvider = await this.providerModel
-        .findByIdAndUpdate(id, updateProviderDto, { new: true })
-        .exec();
+      const updatedProvider = await this.providerModel.findOneAndUpdate(
+        { _id: id },  
+        updateProviderDto,
+        { new: true }
+      ).exec();
       if (!updatedProvider) {
         throw new NotFoundException(`Provider with ID ${id} not found`);
       }
+
+      // Denormalización: actualiza provider_name en los servicios relacionados
+      await this.serviceModel.updateMany(
+        { provider: updatedProvider._id },
+        { $set: { provider_name: updatedProvider.name } }
+      );
+
       return updatedProvider;
     } catch (error) {
       throw new InternalServerErrorException(`Error updating provider: ${error.message}`);
