@@ -17,7 +17,7 @@ export class PreventiveMaintenanceSchedulerService {
     private maintenanceModel: Model<Maintenance>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handlePreventiveMaintenance() {
     this.logger.log('🔧 Iniciando revisión automática de mantenimientos preventivos...');
 
