@@ -12,9 +12,10 @@ import {
   NotFoundException,
   DefaultValuePipe,
   ParseIntPipe,
+  Patch,
 } from '@nestjs/common';
 import { ResourceService } from '../services/resource.service';
-import { CreateResourceDto, UpdateResourceDto } from '../dto';
+import { CreateResourceDto, UpdateResourceDto, UpdateResourceStatusDto } from '../dto';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 
@@ -40,37 +41,54 @@ export class ResourceController {
   }
 
   @Get('paginated')
-    @Public()
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Obtener recurso con paginación, búsqueda y orden' })
-    @ApiResponse({
-      status: HttpStatus.OK,
-      description: 'Lista de recursos obtenida paginada correctamente.',
-    })
-    @ApiResponse({
-      status: HttpStatus.BAD_REQUEST,
-      description: 'Error al obtener los recursos paginada.',
-    })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
-    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
-    @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
-    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
-    findAllPaginated(
-      @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-      @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
-      @Query('search') search?: string,
-      @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
-      @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
-    ) {
-      return this.resourceService.findAllPaginated(
-        limit,
-        offset,
-        search?.trim(),
-        sortField,
-        sortOrder,
-      );
-    }
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener recurso con paginación, búsqueda y orden' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de recursos obtenida paginada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los recursos paginada.',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.resourceService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
+  }
+  
+  @Get('by-serial')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener equipo por número de serie' })
+  @ApiQuery({ name: 'serial', required: true, type: String, description: 'Número de serie del equipo' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Equipo encontrado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Equipo no encontrado.',
+  })
+  findBySerial(@Query('serial') serial: string) {
+    return this.resourceService.findBySerial(serial);
+  }
 
   @Get(':id')
   @Public()
@@ -92,26 +110,37 @@ export class ResourceController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un recurso por ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'El recurso ha sido actualizado correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el recurso.' })
-  update(@Param('id') id: string, @Body() updateResourceDto: UpdateResourceDto) {
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'El recurso ha sido actualizado correctamente.' 
+  })
+  @ApiResponse({ 
+    status: HttpStatus.BAD_REQUEST, 
+    description: 'Error al actualizar el recurso.' 
+  })
+  update(
+    @Param('id') id: string, 
+    @Body() updateResourceDto: UpdateResourceDto
+  ) {
     return this.resourceService.update(id, updateResourceDto);
   }
 
-  @Get('by-serial')
+  @Patch(':id/status')
+  @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener equipo por número de serie' })
-  @ApiQuery({ name: 'serial', required: true, type: String, description: 'Número de serie del equipo' })
+  @ApiOperation({ summary: 'Actualizar estado de un recurso' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Equipo encontrado correctamente.',
+    description: 'El estado del recurso ha sido actualizado correctamente.',
   })
   @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Equipo no encontrado.',
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar el estado del recurso.',
   })
-  async findBySerial(@Query('serial') serial: string) {
-    return this.resourceService.findBySerial(serial);
+  updateStatus(
+    @Param('id') id: string,
+    @Body() statusDto: UpdateResourceStatusDto
+  ) {
+    return this.resourceService.updateStatus(id, statusDto);
   }
-
 }

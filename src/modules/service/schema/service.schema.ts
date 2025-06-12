@@ -1,16 +1,18 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { Estado } from "src/core/constants/app.constants";
+import { Provider } from "src/modules/provider/schema/provider.schema";
+import { ServiceType } from "./service-type.schema";
 
 @Schema({ collection: 'services' })
 export class Service {
   @Prop({ enum: Estado, default: Estado.ACTIVO }) 
   status: string;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'Provider' })
+  @Prop({ type: Types.ObjectId, required: true, ref: Provider.name })
   provider: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'ServiceType' })
+  @Prop({ type: Types.ObjectId, required: true, ref: ServiceType.name })
   service_type: Types.ObjectId;
   
   @Prop({ default: Date.now })

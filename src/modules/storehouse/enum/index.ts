@@ -1,1 +1,1 @@
-export * from './movement-type';
+export * from './movement-type.enum';
