@@ -18,4 +18,14 @@ export class CreateServiceDto {
   @IsMongoId()
   @IsOptional()
   service_type: Types.ObjectId;
+
+  @ApiProperty({ type: String, required: true })
+  @IsString()
+  @IsNotEmpty()
+  provider_name: string;
+
+  @ApiProperty({ type: String, required: true })
+  @IsString()
+  @IsNotEmpty()
+  service_type_name: string;
 }

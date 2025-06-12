@@ -44,7 +44,6 @@ export class ServiceService {
       const [items, total] = await Promise.all([
         this.serviceModel
           .find(filter)
-          .populate(['provider', 'service_type'])
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)

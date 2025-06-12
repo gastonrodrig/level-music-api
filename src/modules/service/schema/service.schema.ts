@@ -20,6 +20,12 @@ export class Service {
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  @Prop({ type: String }) // Campo denormalizado
+  provider_name: string;
+
+  @Prop({ type: String }) // Campo denormalizado
+  service_type_name: string;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Service);
