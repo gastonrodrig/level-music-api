@@ -1,7 +1,7 @@
-import { Body, Controller, DefaultValuePipe, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query, Delete } from "@nestjs/common";
+import { Body, Controller, DefaultValuePipe, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query, Delete, Patch } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Public } from "src/auth/decorators";
-import { CreateMaintenanceDto } from "../dto";
+import { CreateMaintenanceDto, UpdateMaintenanceStatusDto } from "../dto";
 import { MaintenanceService } from "../services/maintenance.service";
 
 @Controller('maintenance')
@@ -58,35 +58,22 @@ export class MaintenanceController{
     );
   }
 
-  @Get(':id')
+  @Patch(':id/status')
   @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Obtener un mantenimiento por ID' })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar estado del mantenimiento' })
   @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Mantenimiento encontrado correctamente.',
+    status: HttpStatus.OK,
+    description: 'El estado del mantenimiento ha sido actualizado correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener el mantenimiento.',
+    description: 'Error al actualizar el estado del mantenimiento.',
   })
-  findOne(@Param('id') id: string) {
-    return this.maintenanceServices.findOne(id);
-  }
-
-  @Delete(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Eliminar un mantenimiento por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Mantenimiento eliminado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Mantenimiento no encontrado.',
-  })
-  remove(@Param('id') id: string) {
-    return this.maintenanceServices.remove(id);
+  updateStatus(
+    @Param('id') id: string,
+    @Body() statusDto: UpdateMaintenanceStatusDto
+  ) {
+    return this.maintenanceServices.updateStatus(id, statusDto);
   }
 }

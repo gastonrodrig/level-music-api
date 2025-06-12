@@ -6,15 +6,25 @@ import { ResourceController } from "./controllers/resource.controller";
 import { Maintenance, MaintenanceSchema } from "./schema/maintenance.schema";
 import { MaintenanceService } from "./services/maintenance.service";
 import { MaintenanceController } from "./controllers/maintenance.controller";
+import { PreventiveMaintenanceSchedulerService } from "./services/maintenance-scheduler.service";
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Resource.name, schema: ResourceSchema },
       { name: Maintenance.name, schema: MaintenanceSchema },
-    ])
+    ]),
+    ScheduleModule.forRoot(), 
   ],
-  providers : [ResourceService, MaintenanceService],
-  controllers: [ResourceController, MaintenanceController]
+  providers: [
+    ResourceService, 
+    MaintenanceService, 
+    PreventiveMaintenanceSchedulerService 
+  ],
+  controllers: [
+    ResourceController, 
+    MaintenanceController
+  ]
 })
 export class ResourceModule {}

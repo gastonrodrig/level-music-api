@@ -1,10 +1,11 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { ServiceDetailMedia, ServiceDetailMediaSchema } from "src/modules/uploads";
+import { Service } from "./service.schema";
 
 @Schema({ collection: 'service-details' })
 export class ServiceDetail {
-  @Prop({ type: Types.ObjectId, required: true, ref: 'Service' })
+  @Prop({ type: Types.ObjectId, required: true, ref: Service.name })
   service: Types.ObjectId;
 
   @Prop({ type: Object })  
