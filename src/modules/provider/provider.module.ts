@@ -1,15 +1,28 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Provider, ProviderSchema } from './schema/provider.schema';
-import { ProviderService } from './services/provider.service';
-import { ProviderController } from './controller/provider.controller';
-import { Service, ServiceSchema } from '../service/schema/service.schema';
+import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
+import { Provider, ProviderSchema } from './schema';
+import { ProviderService } from './services';
+import { ProviderController } from './controllers';
+import { addProviderHooks } from './hooks';
+import { Service, ServiceSchema } from '../service/schema';
+import { Connection } from 'mongoose';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: Provider.name, schema: ProviderSchema },
       { name: Service.name, schema: ServiceSchema },
+    ]),
+
+    MongooseModule.forFeatureAsync([
+      {
+        name: Provider.name,
+        useFactory: (connection: Connection) => {
+          const schema = ProviderSchema;
+          addProviderHooks(schema, connection);
+          return schema;
+        },
+        inject: [getConnectionToken()],
+      },
     ]),
   ],
   providers: [ProviderService],

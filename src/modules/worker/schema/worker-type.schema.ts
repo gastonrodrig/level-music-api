@@ -20,13 +20,3 @@ export class WorkerType {
 }
 
 export const WorkerTypeSchema = SchemaFactory.createForClass(WorkerType);
-
-WorkerTypeSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-WorkerTypeSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

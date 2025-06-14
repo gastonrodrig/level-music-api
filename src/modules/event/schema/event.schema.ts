@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { StatusType } from '../enum/status-type';
-import { PlaceType } from '../enum/place-type';
+import { StatusType, PlaceType } from '../enum';
+import { User } from 'src/modules/user/schema';
+import { EventType } from './event-type.schema';
 
 @Schema({ collection: 'events' })
 export class Event {
@@ -32,10 +33,10 @@ export class Event {
   @Prop({ required: true })
   place_size: number;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'users' })
+  @Prop({ type: Types.ObjectId, required: true, ref: User.name })
   user_id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'event-types' })
+  @Prop({ type: Types.ObjectId, required: true, ref: EventType.name })
   event_type_id: Types.ObjectId;
 
   @Prop({ required: true, enum: StatusType })
@@ -52,13 +53,3 @@ export class Event {
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);
-
-EventSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-EventSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

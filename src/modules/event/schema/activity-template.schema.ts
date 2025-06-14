@@ -1,14 +1,16 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { PhaseType } from "../enum/phase-type";
+import { PhaseType } from "../enum";
+import { EventType } from "./event-type.schema";
+import { WorkerType } from "src/modules/worker/schema";
 
 @Schema({ collection: 'activity-templates' })
 export class ActivityTemplate {
-  @Prop({ type: Types.ObjectId, required: true, ref: 'events-types' })
-  event_type_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: EventType.name })
+  event_type: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: 'worker-types' })
-  worker_type_id: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })
+  worker_type: Types.ObjectId;
 
   @Prop({ length: 255 })
   title: string;
@@ -30,13 +32,3 @@ export class ActivityTemplate {
 }
 
 export const ActivityTemplateSchema = SchemaFactory.createForClass(ActivityTemplate);
-
-ActivityTemplateSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-ActivityTemplateSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

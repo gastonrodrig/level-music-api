@@ -1,9 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Query, Param, Body, HttpCode, HttpStatus, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Query,
+  Param,
+  Body,
+  HttpCode,
+  HttpStatus,
+  DefaultValuePipe,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiQuery, 
+  ApiResponse 
+} from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
-import { ServiceTypeService } from '../services/service-type.service';
-import { CreateServiceTypeDto } from '../dto/create-service-type.dto';
-import { UpdateServiceTypeDto } from '../dto/update-service-type.dto';
+import { ServiceTypeService } from '../services';
+import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
 
 @ApiTags('Service Types')
 @Controller('service-types')
@@ -29,7 +45,9 @@ export class ServiceTypeController {
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener tipos de servicio con paginación, búsqueda y orden' })
+  @ApiOperation({
+    summary: 'Obtener tipos de servicio con paginación, búsqueda y orden',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de tipos de servicio obtenida paginada correctamente.',
@@ -45,7 +63,7 @@ export class ServiceTypeController {
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
   findAllPaginated(
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('search') search?: string,
     @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
     @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
@@ -87,7 +105,10 @@ export class ServiceTypeController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al actualizar el tipo de servicio.',
   })
-  async update(@Param('id') id: string, @Body() updateServiceTypeDto: UpdateServiceTypeDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateServiceTypeDto: UpdateServiceTypeDto,
+  ) {
     return this.serviceTypeService.update(id, updateServiceTypeDto);
   }
 }

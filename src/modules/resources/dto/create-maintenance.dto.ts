@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsMongoId, IsNotEmpty, IsString } from 'class-validator';
-import { Types } from 'mongoose';
-import { MaintenanceType } from '../enum/maintenance-type';
+import { MaintenanceType } from '../enum/maintenance-type.enum';
 
 export class CreateMaintenanceDto {
   @ApiProperty({ enum: MaintenanceType })
@@ -18,6 +17,11 @@ export class CreateMaintenanceDto {
   @IsMongoId()
   @IsNotEmpty()
   resource: string;
+
+  @ApiProperty({ type: String, required: true })
+  @IsString()
+  @IsNotEmpty()
+  resource_name: string;
   
   @ApiProperty({ example: '2023-10-01T00:00:00Z' })
   @IsString() 

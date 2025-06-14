@@ -1,9 +1,9 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ServiceType } from '../schema/service-type.schema';
+import { ServiceType } from '../schema';
 import { Model } from 'mongoose';
 import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
-import { SF_SERVICE_TYPE } from 'src/core/utils/searchable-fields';
+import { SF_SERVICE_TYPE } from 'src/core/utils';
 
 @Injectable()
 export class ServiceTypeService {
@@ -82,17 +82,22 @@ export class ServiceTypeService {
     }
   }
 
-  async update(id: string, updateServiceTypeDto: UpdateServiceTypeDto): Promise<ServiceType> {
+  async update(service_type_id: string, updateServiceTypeDto: UpdateServiceTypeDto): Promise<ServiceType> {
     try {
-      const updatedServiceType = await this.serviceTypeModel
-        .findByIdAndUpdate(id, updateServiceTypeDto, { new: true })
-        .exec();
+      const updatedServiceType = await this.serviceTypeModel.findByIdAndUpdate(
+        service_type_id,
+        updateServiceTypeDto,
+        { new: true }
+      );
+
       if (!updatedServiceType) {
-        throw new NotFoundException(`Service type with ID ${id} not found`);
+        throw new NotFoundException(`Service type with ID ${service_type_id} not found`);
       }
+
       return updatedServiceType;
     } catch (error) {
       throw new InternalServerErrorException(`Error updating service type: ${error.message}`);
     }
   }
+
 }

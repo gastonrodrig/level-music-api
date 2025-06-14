@@ -17,7 +17,7 @@ export class ServiceDetailMedia {
   @Prop({ length: 255 })
   storagePath: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'service-details' })
+  @Prop({ type: Types.ObjectId, ref: 'ServiceDetail', required: true })
   detail_id: Types.ObjectId;
 
   @Prop({ default: Date.now })

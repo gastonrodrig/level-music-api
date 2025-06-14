@@ -13,9 +13,8 @@ import {
  } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
-import { EventService } from '../services/event.service';
-import { CreateEventDto } from '../dto/create-event.dto';
-import { UpdateEventDto } from '../dto';
+import { EventService } from '../services';
+import { CreateEventDto, UpdateEventDto } from '../dto';
 
 @Controller('events')
 @ApiTags('Events')

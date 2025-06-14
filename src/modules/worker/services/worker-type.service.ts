@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { WorkerType } from '../schema/worker-type.schema';
+import { WorkerType } from '../schema';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
-import { SF_WORKER_TYPE } from 'src/core/utils/searchable-fields';
+import { SF_WORKER_TYPE } from 'src/core/utils';
 
 @Injectable()
 export class WorkerTypeService {

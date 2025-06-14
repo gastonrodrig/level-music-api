@@ -3,7 +3,7 @@ import { Estado, Roles, DocType } from '../../../core/constants/app.constants';
 
 @Schema({ collection: 'users' })
 export class User {
-  @Prop({ length: 255, required: true })
+  @Prop({ length: 255, required: false })
   auth_id: string;
 
   @Prop({ length: 255, unique: true }) 
@@ -32,6 +32,9 @@ export class User {
 
   @Prop({ required: false, default: null })
   needs_password_change?: boolean;
+
+  @Prop({ required: true, default: false })
+  created_by_admin: boolean;
   
   @Prop({ default: Date.now })
   created_at: Date;
@@ -44,13 +47,3 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-UserSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-UserSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

@@ -1,4 +1,4 @@
 export enum ResourceType {
-  EQUIPO = 'Equipo',
+  SONIDO = 'Sonido',
   LUZ = 'Luz',
 }

@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsBoolean, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { Types } from "mongoose";
-import { PhaseType } from "../enum/phase-type";
+import { PhaseType } from "../enum/phase-type.enum";
 
 export class CreateActivityTemplateDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
