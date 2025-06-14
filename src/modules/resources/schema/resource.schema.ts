@@ -1,6 +1,6 @@
+import { Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { LocationType, ResourceStatusType, ResourceType } from "../enum";
-import { Document } from "mongoose";
 
 @Schema({ collection: 'resources' })
 export class Resource extends Document {
@@ -40,13 +40,3 @@ export class Resource extends Document {
 
 export const ResourceSchema = SchemaFactory.createForClass(Resource);
 
-// Hook para actualizar fecha de modificación
-ResourceSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-ResourceSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

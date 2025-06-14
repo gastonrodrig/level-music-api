@@ -1,8 +1,8 @@
-import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ServiceDetail } from '../schema/service-detail.schema';
+import { Service, ServiceDetail } from '../schema';
 import { Model, Types } from 'mongoose';
-import { CreateServiceDetailDto, UpdateServiceDto } from '../dto'; 
+import { CreateServiceDetailDto } from '../dto'; 
 import { ServiceDetailMedia } from 'src/modules/uploads';
 import { StorageService } from 'src/modules/firebase/services/storage.service';
 
@@ -13,12 +13,21 @@ export class ServiceDetailService {
     private serviceDetailModel: Model<ServiceDetail>,
     @InjectModel(ServiceDetailMedia.name)
     private serviceDetailMediaModel: Model<ServiceDetailMedia>,
+    @InjectModel(Service.name)
+    private serviceModel: Model<Service>,
     private storageService: StorageService,
   ) {}
 
   async create(createServiceDetailDto: CreateServiceDetailDto): Promise<ServiceDetail> {
     try {
-      const newServiceDetail = new this.serviceDetailModel(createServiceDetailDto);
+      const service = await this.serviceModel.findById(createServiceDetailDto.service_id);
+      if (!service) throw new NotFoundException('Service not found');
+
+      const newServiceDetail = new this.serviceDetailModel({
+        ...createServiceDetailDto,
+        service: service._id,
+      });
+
       return await newServiceDetail.save();
     } catch (error) {
       throw new InternalServerErrorException(`Error creating service detail: ${error.message}`);

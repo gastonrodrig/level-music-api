@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ServiceDetail } from 'src/modules/service/schema/service-detail.schema';
 
 @Schema({ collection: 'service-detail-media' })
 export class ServiceDetailMedia {
@@ -18,7 +17,7 @@ export class ServiceDetailMedia {
   @Prop({ length: 255 })
   storagePath: string;
 
-  @Prop({ type: Types.ObjectId, ref: ServiceDetail.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: 'ServiceDetail', required: true })
   detail_id: Types.ObjectId;
 
   @Prop({ default: Date.now })

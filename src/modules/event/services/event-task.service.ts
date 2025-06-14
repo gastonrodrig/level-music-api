@@ -1,20 +1,47 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { 
+  BadRequestException, 
+  Injectable, 
+  InternalServerErrorException, 
+  NotFoundException 
+} from '@nestjs/common';
 import { CreateEventTaskDto, UpdateEventTaskDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { EventTask } from '../schema/event-task.schema';
-import { SF_EVENT_TASK } from 'src/core/utils/searchable-fields';
+import { SF_EVENT_TASK } from 'src/core/utils';
+import { EventTask, Event, ActivityTemplate } from '../schema';
+import { WorkerType } from 'src/modules/worker/schema';
 
 @Injectable()
 export class EventTaskService {
   constructor(
     @InjectModel(EventTask.name)
-    private eventTaskModel: Model<EventTask>
+    private eventTaskModel: Model<EventTask>,
+    @InjectModel(Event.name)
+    private eventModel: Model<Event>,
+    @InjectModel(ActivityTemplate.name)
+    private activityTemplateModel: Model<ActivityTemplate>,
+    @InjectModel(WorkerType.name)
+    private workerTypeModel: Model<WorkerType>,
   ) {}
 
   async create(createEventTaskDto: CreateEventTaskDto): Promise<EventTask> {
     try {
-      const eventTask = await this.eventTaskModel.create(createEventTaskDto);
+      const event = await this.eventModel.findById(createEventTaskDto.event_id);
+      if (!event) throw new BadRequestException('Event not found');
+
+      const template = await this.activityTemplateModel.findById(createEventTaskDto.template_id);
+      if (!template) throw new BadRequestException('Template not found');
+
+      const workerType = await this.workerTypeModel.findById(createEventTaskDto.worker_type_id);
+      if (!workerType) throw new BadRequestException('Worker type not found');
+
+      const eventTask = new this.eventTaskModel({
+        ...createEventTaskDto,
+        event: event._id,
+        template: template._id,
+        worker_type: workerType._id,
+      });
+
       return await eventTask.save();
     } catch (error) {
       throw new InternalServerErrorException(

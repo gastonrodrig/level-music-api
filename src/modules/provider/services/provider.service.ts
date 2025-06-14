@@ -1,10 +1,10 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Provider } from '../schema/provider.schema';
+import { Provider } from '../schema';
 import { Model } from 'mongoose';
 import { CreateProviderDto, UpdateProviderDto } from '../dto';
-import { SF_PROVIDER } from 'src/core/utils/searchable-fields';
-import { Service } from '../../service/schema/service.schema'; // Importa el modelo Service
+import { SF_PROVIDER } from 'src/core/utils';
+import { Service } from '../../service/schema';
 
 @Injectable()
 export class ProviderService {
@@ -12,7 +12,7 @@ export class ProviderService {
     @InjectModel(Provider.name)
     private providerModel: Model<Provider>,
     @InjectModel(Service.name)
-    private serviceModel: Model<Service>, // Inyecta el modelo Service
+    private serviceModel: Model<Service>,
   ) {}
 
   async create(createProviderDto: CreateProviderDto): Promise<Provider> {

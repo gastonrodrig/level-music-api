@@ -1,12 +1,10 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Resource } from '../schema/resource.schema';
+import { Resource } from '../schema';
 import { CreateResourceDto, UpdateResourceDto, UpdateResourceStatusDto } from '../dto';
-import { SF_RESOURCE } from 'src/core/utils/searchable-fields';
-import { Maintenance } from '../schema/maintenance.schema';
-import { LocationType, MaintenanceStatusType, MaintenanceType, ResourceStatusType } from '../enum';
-import { MaintenanceService } from './maintenance.service';
+import { MaintenanceService } from './';
+import { SF_RESOURCE } from 'src/core/utils';
 
 @Injectable()
 export class ResourceService {
@@ -105,20 +103,22 @@ export class ResourceService {
     }
   }
 
-  async update(
-    resource_id: string,
-    updateResourceDto: UpdateResourceDto,
-  ) {
-    const resouce = await this.resourceModel.findOne({
-      _id: resource_id,
-    });
-    if (!resouce) {
-      throw new BadRequestException('Recurso no encontrado');
-    }
+  async update(resource_id: string, updateResourceDto: UpdateResourceDto) {
+    try {
+      const updatedResource = await this.resourceModel.findOneAndUpdate(
+        { _id: resource_id },
+        updateResourceDto,
+        { new: true }
+      );
 
-    // Solo actualiza los campos requeridos
-    Object.assign(resouce, updateResourceDto);
-    return await resouce.save();
+      if (!updatedResource) {
+        throw new NotFoundException(`Resource with ID ${resource_id} not found`);
+      }
+
+      return updatedResource;
+    } catch (error) {
+      throw new InternalServerErrorException(`Error updating resource: ${error.message}`);
+    }
   }
 
   async updateStatus(resource_id: string, statusDto: UpdateResourceStatusDto): Promise<Resource> {

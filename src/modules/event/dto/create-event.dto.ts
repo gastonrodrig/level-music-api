@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsDate, IsOptional, IsNumber, IsMongoId } from 'class-validator';
+import { IsString, IsDate, IsOptional, IsNumber, IsMongoId, IsEnum, IsNotEmpty } from 'class-validator';
 import { StatusType, PlaceType } from '../enum';
 import { Types } from 'mongoose';
 import { Type } from 'class-transformer';
@@ -7,12 +7,12 @@ import { Type } from 'class-transformer';
 export class CreateEventDto {
   @ApiProperty({ example: 'Nombre del evento', required: true })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   name: string;
 
   @ApiProperty({ example: 'Descripcion del evento', required: true })
   @IsString()
-  @IsOptional()
+  @IsNotEmpty()
   description: string;
 
   @ApiProperty({ example: '2023-12-31T23:59:59.000Z', required: true })
@@ -22,30 +22,32 @@ export class CreateEventDto {
 
   @ApiProperty({ example: '18:00 - 23:00', required: true })
   @IsString()
+  @IsNotEmpty()
   time_range: string;
 
   @ApiProperty({ example: 100, required: false })
-  @IsOptional()
   @IsNumber()
+  @IsOptional()
   attendees_count?: number;
 
   @ApiProperty({ example: 'Calle Falsa 123', required: false })
-  @IsOptional()
   @IsString()
+  @IsOptional()
   exact_address?: string;
 
   @ApiProperty({ example: 'Cerca del parque central', required: false })
-  @IsOptional()
   @IsString()
+  @IsOptional()
   location_reference?: string;
 
   @ApiProperty({ example: 'Abierto', enum: PlaceType, required: true })
   @IsString()
+  @IsNotEmpty()
   place_type: PlaceType;
 
   @ApiProperty({ example: 500, required: false })
-  @IsOptional()
   @IsNumber()
+  @IsOptional()
   place_size?: number;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
@@ -54,15 +56,17 @@ export class CreateEventDto {
   user_id: Types.ObjectId;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsString()
+  @IsMongoId()
+  @IsOptional()
   event_type_id: string;
 
   @ApiProperty({ example: 'Pendiente', enum: StatusType, required: true })
-  @IsString()
+  @IsEnum(StatusType)
+  @IsNotEmpty()
   state: StatusType;
 
   @ApiProperty({ example: 1500.50, required: false })
-  @IsOptional()
   @IsNumber()
+  @IsOptional()
   final_price?: number;
 }

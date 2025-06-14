@@ -1,26 +1,41 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { StorehouseMovement } from '../schema/storehouse-movement.schema';
+import { StorehouseMovement } from '../schema';
 import { Model } from 'mongoose';
 import { CreateStorehouseMovementDto } from '../dto';
-import { SF_STOREHOUSE_MOVEMENT } from 'src/core/utils/searchable-fields';
+import { SF_STOREHOUSE_MOVEMENT } from 'src/core/utils';
+import { Event } from 'src/modules/event/schema';
+import { Resource } from 'src/modules/resources/schema';
 
 @Injectable()
 export class StorehouseMovementService {
   constructor(
     @InjectModel(StorehouseMovement.name)
     private storehouseMovementModel: Model<StorehouseMovement>,
+    @InjectModel(Event.name)
+    private eventModel: Model<Event>,
+    @InjectModel(Resource.name)
+    private resourceModel: Model<Resource>,
   ) {}
 
   async create(createStorehouseMovementDto: CreateStorehouseMovementDto): Promise<StorehouseMovement> {
     try {
-      const storehouseMovement = await this.storehouseMovementModel.create(
-        createStorehouseMovementDto,
-      );
+      const event = await this.eventModel.findById(createStorehouseMovementDto.event_id);
+      if (!event) {
+        throw new NotFoundException('Event not found');
+      }
+
+      const resource = await this.resourceModel.findById(createStorehouseMovementDto.resource_id);
+      if (!resource) {
+        throw new NotFoundException('Resource not found');
+      }
+
+      const storehouseMovement = new this.storehouseMovementModel({
+        ...createStorehouseMovementDto,
+        event: event._id,
+        resource: resource._id,
+      });
+
       return await storehouseMovement.save();
     } catch (error) {
       throw new InternalServerErrorException(

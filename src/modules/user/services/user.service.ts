@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../schema/user.schema';
+import { User } from '../schema';
 import { CreateUserDto, UpdateUserDto } from '../dto';
-import { SF_USER } from 'src/core/utils/searchable-fields';
+import { SF_USER } from 'src/core/utils';
 
 @Injectable()
 export class UserService {
@@ -129,25 +129,23 @@ export class UserService {
 
   async update(user_id: string, updateUserDto: UpdateUserDto) {
     try {
-      const user = await this.userModel.findOne({ _id: user_id });
-      if (!user) {
-        throw new BadRequestException('Usuario no encontrado');
-      }
-
       const [existingUser, existingDocumentNumber] = await Promise.all([
         this.userModel.findOne({ email: updateUserDto.email, _id: { $ne: user_id } }),
         this.userModel.findOne({ document_number: updateUserDto.document_number, _id: { $ne: user_id } }),
       ]);
 
-      if (existingUser) {
-        throw new BadRequestException('ERROR-001');
-      }
-      if (existingDocumentNumber) {
-        throw new BadRequestException('ERROR-002');
-      }
+      if (existingUser) throw new BadRequestException('ERROR-001');
+      if (existingDocumentNumber) throw new BadRequestException('ERROR-002');
 
-      Object.assign(user, updateUserDto);
-      return await user.save();
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        { _id: user_id },
+        updateUserDto,
+        { new: true }
+      );
+
+      if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
+
+      return updatedUser;
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }

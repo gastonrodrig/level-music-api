@@ -12,9 +12,17 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { ProviderService } from '../services/provider.service';
-import { CreateProviderDto, UpdateProviderDto } from '../dto';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiQuery, 
+  ApiResponse,
+} from '@nestjs/swagger';
+import { ProviderService } from '../services';
+import { 
+  CreateProviderDto, 
+  UpdateProviderDto 
+} from '../dto';
 import { Public } from '../../../auth/decorators';
 
 @ApiTags('Providers')

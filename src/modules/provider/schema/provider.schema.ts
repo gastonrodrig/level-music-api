@@ -25,13 +25,3 @@ export class Provider {
   updated_at: Date;
 }
 export const ProviderSchema = SchemaFactory.createForClass(Provider);
-
-ProviderSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-ProviderSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

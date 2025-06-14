@@ -1,7 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
-import { Types } from "mongoose";
-import { Estado } from "../../../core/constants/app.constants";
+import { IsEnum, IsMongoId, IsNotEmpty, IsOptional } from "class-validator";
+import { Estado } from "src/core/constants/app.constants";
 
 export class CreateServiceDto {
   @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
@@ -9,23 +8,13 @@ export class CreateServiceDto {
   @IsNotEmpty()
   status: Estado;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
+  @ApiProperty()
   @IsMongoId()
   @IsOptional()
-  provider: Types.ObjectId;
+  provider_id: string;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
+  @ApiProperty()
   @IsMongoId()
   @IsOptional()
-  service_type: Types.ObjectId;
-
-  @ApiProperty({ type: String, required: true })
-  @IsString()
-  @IsNotEmpty()
-  provider_name: string;
-
-  @ApiProperty({ type: String, required: true })
-  @IsString()
-  @IsNotEmpty()
-  service_type_name: string;
+  service_type_id: string;
 }

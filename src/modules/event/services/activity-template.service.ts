@@ -1,22 +1,42 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { 
+  BadRequestException, 
+  Injectable, 
+  InternalServerErrorException, 
+  NotFoundException 
+} from '@nestjs/common';
 import { CreateActivityTemplateDto, UpdateActivityTemplateDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SF_ACTIVITY_TEMPLATE } from 'src/core/utils/searchable-fields';
-import { ActivityTemplate } from '../schema/activity-template.schema';
-
+import { SF_ACTIVITY_TEMPLATE } from 'src/core/utils';
+import { ActivityTemplate, EventType } from '../schema';
+import { WorkerType } from 'src/modules/worker/schema';
 
 @Injectable()
 export class ActivityTemplateService {
   constructor(
     @InjectModel(ActivityTemplate.name)
-    private activityTemplateModel: Model<ActivityTemplate>
+    private activityTemplateModel: Model<ActivityTemplate>,
+    @InjectModel(EventType.name)
+    private eventTypeModel: Model<EventType>,
+    @InjectModel(WorkerType.name)
+    private workerTypeModel: Model<EventType>
   ) {}
 
   async create(createActivityTemplateDto: CreateActivityTemplateDto): Promise<ActivityTemplate> {
     try {
-      const activityTemplate = await this.activityTemplateModel.create(createActivityTemplateDto);
-      return await activityTemplate.save();
+      const eventType = await this.eventTypeModel.findById(createActivityTemplateDto.event_type_id);
+      if (!eventType) throw new BadRequestException('Event type not found');
+
+      const workerType = await this.workerTypeModel.findById(createActivityTemplateDto.worker_type_id);
+      if (!workerType) throw new BadRequestException('Worker type not found');
+
+      const newActivityTemplate = new this.activityTemplateModel({
+        ...createActivityTemplateDto,
+        event_type: eventType._id,
+        worker_type: workerType._id,
+      })
+
+      return await newActivityTemplate.save();
     } catch (error) {
       throw new InternalServerErrorException(
         `Error creating activity template: ${error.message}`,

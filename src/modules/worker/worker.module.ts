@@ -1,20 +1,53 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { WorkerType, WorkerTypeSchema } from './schema/worker-type.schema';
-import { WorkerTypeService } from './services/worker-type.service';
-import { WorkerTypeController } from './controllers/worker-type.controller';
-import { Worker, WorkerSchema } from './schema/worker.schema';
-import { WorkerService } from './services/worker.service';
-import { WorkerController } from './controllers/worker.controller';
+import { 
+  Worker,
+  WorkerType,
+  WorkerSchema,
+  WorkerTypeSchema,
+} from './schema';
+import {
+  WorkerService,
+  WorkerTypeService,
+} from './services';
+import {
+  WorkerController,
+  WorkerTypeController,
+} from './controllers';
+import { 
+  addWorkerHooks, 
+  addWorkerTypeHooks 
+} from './hooks';
+import { User, UserSchema } from '../user/schema';
+import { getConnectionToken } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { AuthService } from '../firebase/services';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: WorkerType.name, schema: WorkerTypeSchema },
-      { name: Worker.name, schema: WorkerSchema }
-    ])
+      { name: User.name, schema: UserSchema },
+    ]),
+    MongooseModule.forFeatureAsync([
+      {
+        name: WorkerType.name,
+        useFactory: (connection: Connection) => {
+          addWorkerTypeHooks(WorkerTypeSchema, connection);
+          return WorkerTypeSchema;
+        },
+        inject: [getConnectionToken()],
+      },
+      {
+        name: Worker.name,
+        useFactory: (connection: Connection) => {
+          addWorkerHooks(WorkerSchema, connection);
+          return WorkerSchema;
+        },
+        inject: [getConnectionToken()],
+      },
+    ]),
   ],
-  providers: [WorkerTypeService, WorkerService],
+  providers: [WorkerTypeService, WorkerService, AuthService],
   controllers: [WorkerTypeController, WorkerController],
 })
 export class WorkerModule {}

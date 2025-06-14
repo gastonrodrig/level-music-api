@@ -1,8 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { StatusType } from '../enum/status-type.enum';
-import { PlaceType } from '../enum/place-type.enum';
-import { User } from 'src/modules/user/schema/user.schema';
+import { StatusType, PlaceType } from '../enum';
+import { User } from 'src/modules/user/schema';
 import { EventType } from './event-type.schema';
 
 @Schema({ collection: 'events' })
@@ -54,13 +53,3 @@ export class Event {
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);
-
-EventSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-EventSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

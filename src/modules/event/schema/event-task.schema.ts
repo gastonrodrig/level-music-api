@@ -4,22 +4,21 @@ import { Multimedia, MultimediaSchema } from '../../uploads';
 import { PhaseType, TaskStatusType } from "../enum";
 import { Event } from "./event.schema";
 import { ActivityTemplate } from "./activity-template.schema";
-import { WorkerType } from "src/modules/worker/schema/worker-type.schema";
-import { Worker } from "src/modules/worker/schema/worker.schema";
+import { WorkerType, Worker } from "src/modules/worker/schema";
 
 @Schema({ collection: 'event-tasks' })
 export class EventTask {
   @Prop({ type: Types.ObjectId, required: true, ref: Event.name })
-  event_id: Types.ObjectId;
+  event: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, required: false, ref: ActivityTemplate.name, default: null })
-  template_id?: Types.ObjectId;
+  template?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })
-  worker_type_id: Types.ObjectId;
+  worker_type: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, required: false, ref: Worker.name, default: null })
-  worker_id?: Types.ObjectId;
+  worker?: Types.ObjectId;
 
   @Prop({ length: 255 })
   title: string;

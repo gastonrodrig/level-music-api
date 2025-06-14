@@ -1,4 +1,4 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateActivityTemplateDto } from './create-activity-template.dto';
+import { CreateActivityTemplateDto } from './';
 
 export class UpdateActivityTemplateDto extends PartialType(CreateActivityTemplateDto) {}
