@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsString, IsNumber, IsDateString, IsOptional } from 'class-validator';
-import { ResourceType, ResourceStatusType, LocationType } from '../enum';
+import { ResourceType } from '../enum';
 
 export class CreateResourceDto {
   @ApiProperty({ example: 'Nombre del recurso' })

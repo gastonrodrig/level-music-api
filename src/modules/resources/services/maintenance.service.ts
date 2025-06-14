@@ -1,16 +1,10 @@
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Maintenance } from '../schema/maintenance.schema';
 import { Model } from 'mongoose';
+import { Maintenance, Resource } from '../schema';
 import { CreateMaintenanceDto, UpdateMaintenanceStatusDto } from '../dto';
-import { SF_MAINTENANCE } from 'src/core/utils/searchable-fields';
-import { Resource } from '../schema/resource.schema';
 import { MaintenanceStatusType, MaintenanceType, ResourceStatusType } from '../enum';
+import { SF_MAINTENANCE } from 'src/core/utils';
 
 @Injectable()
 export class MaintenanceService {
@@ -24,7 +18,7 @@ export class MaintenanceService {
   async create(createMaintenanceDto: CreateMaintenanceDto): Promise<Maintenance> {
     try {
       // Validar existencia del recurso
-      const resource = await this.resourceModel.findById(createMaintenanceDto.resource_id);
+      const resource = await this.resourceModel.findById(createMaintenanceDto.resource);
       if (!resource) {
         throw new NotFoundException('Recurso no encontrado');
       }
@@ -55,7 +49,7 @@ export class MaintenanceService {
       if (createMaintenanceDto.type === MaintenanceType.CORRECTIVO) {
         await this.maintenanceModel.updateMany(
           {
-            resource_id: createMaintenanceDto.resource_id,
+            resource_id: createMaintenanceDto.resource,
             type: MaintenanceType.PREVENTIVO,
             status: { $in: [MaintenanceStatusType.PROGRAMADO, MaintenanceStatusType.EN_PROGRESO] }
           },
@@ -92,7 +86,6 @@ export class MaintenanceService {
       const [items, total] = await Promise.all([
         this.maintenanceModel
           .find(filter)
-          .populate('resource')	
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)

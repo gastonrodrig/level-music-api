@@ -20,13 +20,3 @@ export class ServiceType {
 }
 
 export const ServiceTypeSchema = SchemaFactory.createForClass(ServiceType);
-
-ServiceTypeSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-ServiceTypeSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

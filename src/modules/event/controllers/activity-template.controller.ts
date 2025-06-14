@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
-import { ActivityTemplateService } from '../services/activity-template.service';
+import { ActivityTemplateService } from '../services';
 import { CreateActivityTemplateDto, UpdateActivityTemplateDto } from '../dto';
 
 @Controller('activity-templates')

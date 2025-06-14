@@ -10,12 +10,18 @@ import {
   UploadedFiles,
   Get,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiConsumes, 
+  ApiBody 
+} from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ServiceDetailService } from '../services/service-detail.service';
-import { CreateServiceDetailDto } from '../dto/create-service-detail.dto';
-import { ServiceDetail } from '../schema/service-detail.schema';
+import { ServiceDetailService } from '../services';
+import { CreateServiceDetailDto } from '../dto';
+import { ServiceDetail } from '../schema';
 
 @ApiTags('Service Details')
 @Controller('service-details')

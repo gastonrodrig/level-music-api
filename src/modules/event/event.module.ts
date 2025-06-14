@@ -1,29 +1,71 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Event, EventSchema } from './schema/event.schema';
-import { EventService } from './services/event.service';
-import { EventController } from './controllers/event.controller';
-import { EventType,EventTypeSchema } from './schema/event-type.schema';
-import { EventTypeService } from './services/event-type.service';
-import { EventTypeController } from './controllers/event-type.controller';
-import { EventTask, EventTaskSchema } from './schema/event-task.schema';
-import { ActivityTemplate, ActivityTemplateSchema } from './schema/activity-template.schema';
-import { EventTaskController } from './controllers/event-task.controller';
-import { ActivityTemplateController } from './controllers/activity-template.controller';
-import { EventTaskService } from './services/event-task.service';
-import { ActivityTemplateService } from './services/activity-template.service';
+import { 
+  Event, 
+  EventType, 
+  EventTask, 
+  ActivityTemplate, 
+  EventSchema, 
+  EventTypeSchema, 
+  EventTaskSchema, 
+  ActivityTemplateSchema, 
+} from './schema';
+import { 
+  ActivityTemplateService, 
+  EventService, 
+  EventTypeService, 
+  EventTaskService 
+} from './services';
+import { 
+  EventController, 
+  EventTypeController, 
+  EventTaskController, 
+  ActivityTemplateController 
+} from './controllers';
+import { 
+  addActivityTemplateHooks, 
+  addEventHooks, 
+  addEventTaskHooks, 
+  addEventTypeHooks 
+} from './hooks';
+import {
+  WorkerType,
+  WorkerTypeSchema
+} from 'src/modules/worker/schema';
+import {
+  User,
+  UserSchema
+} from 'src/modules/user/schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Event.name, schema: EventSchema },
-      { name: EventType.name, schema: EventTypeSchema }, 
-      { name: EventTask.name, schema: EventTaskSchema }, 
-      { name: ActivityTemplate.name, schema: ActivityTemplateSchema }, 
-    ]),
-  ],
-  providers: [EventService, EventTypeService, EventTaskService, ActivityTemplateService],
-  controllers: [EventController, EventTypeController, EventTaskController, ActivityTemplateController], 
-})
+    (() => {
+      addEventHooks(EventSchema);
+      addEventTypeHooks(EventTypeSchema);
+      addActivityTemplateHooks(ActivityTemplateSchema);
+      addEventTaskHooks(EventTaskSchema);
 
+      return MongooseModule.forFeature([
+        { name: Event.name, schema: EventSchema },
+        { name: EventType.name, schema: EventTypeSchema },
+        { name: EventTask.name, schema: EventTaskSchema },
+        { name: ActivityTemplate.name, schema: ActivityTemplateSchema },
+        { name: WorkerType.name, schema: WorkerTypeSchema },
+        { name: User.name, schema: UserSchema },
+      ]);
+    })(),
+  ],
+  providers: [
+    EventService, 
+    EventTypeService, 
+    EventTaskService, 
+    ActivityTemplateService
+  ],
+  controllers: [
+    EventController, 
+    EventTypeController, 
+    EventTaskController, 
+    ActivityTemplateController
+  ], 
+})
 export class EventModule {}

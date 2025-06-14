@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -9,14 +8,22 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   DefaultValuePipe,
   ParseIntPipe,
   Patch,
 } from '@nestjs/common';
-import { ResourceService } from '../services/resource.service';
-import { CreateResourceDto, UpdateResourceDto, UpdateResourceStatusDto } from '../dto';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiQuery, 
+  ApiResponse 
+} from '@nestjs/swagger';
+import { 
+  CreateResourceDto, 
+  UpdateResourceDto, 
+  UpdateResourceStatusDto 
+} from '../dto';
+import { ResourceService } from '../services';
 import { Public } from '../../../auth/decorators';
 
 @Controller('resources')

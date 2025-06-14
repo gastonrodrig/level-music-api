@@ -1,20 +1,44 @@
 import { Module } from "@nestjs/common";
-import { MongooseModule } from "@nestjs/mongoose";
-import { Resource, ResourceSchema } from "./schema/resource.schema";
-import { ResourceService } from "./services/resource.service";
-import { ResourceController } from "./controllers/resource.controller";
-import { Maintenance, MaintenanceSchema } from "./schema/maintenance.schema";
-import { MaintenanceService } from "./services/maintenance.service";
-import { MaintenanceController } from "./controllers/maintenance.controller";
-import { PreventiveMaintenanceSchedulerService } from "./services/maintenance-scheduler.service";
+import { MongooseModule, getConnectionToken } from "@nestjs/mongoose";
 import { ScheduleModule } from '@nestjs/schedule';
+import { 
+  Resource,
+  ResourceSchema,
+  Maintenance,
+  MaintenanceSchema,
+} from "./schema";
+import {
+  ResourceService,
+  MaintenanceService,
+  PreventiveMaintenanceSchedulerService,
+} from "./services";
+import {
+  ResourceController,
+  MaintenanceController,
+} from "./controllers";
+import { addResourceHooks } from "./hooks";
+import { Connection } from "mongoose";
 
 @Module({
   imports: [
+    // Registramos Maintenance normalmente (no requiere hooks)
     MongooseModule.forFeature([
-      { name: Resource.name, schema: ResourceSchema },
       { name: Maintenance.name, schema: MaintenanceSchema },
     ]),
+
+    // Registramos Resource con hooks (requiere connection)
+    MongooseModule.forFeatureAsync([
+      {
+        name: Resource.name,
+        useFactory: (connection: Connection) => {
+          const schema = ResourceSchema;
+          addResourceHooks(schema, connection);
+          return schema;
+        },
+        inject: [getConnectionToken()],
+      }
+    ]),
+
     ScheduleModule.forRoot(), 
   ],
   providers: [

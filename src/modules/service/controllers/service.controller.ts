@@ -1,9 +1,25 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, HttpCode, HttpStatus, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Param,
+  Body,
+  Query,
+  HttpCode,
+  HttpStatus,
+  DefaultValuePipe,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiQuery, 
+  ApiResponse 
+} from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
-import { ServiceService } from '../services/service.service';
-import { CreateServiceDto } from '../dto/create-service.dto';
-import { UpdateServiceDto } from '../dto/update-service.dto';
+import { ServiceService } from '../services';
+import { CreateServiceDto, UpdateServiceDto } from '../dto';
 
 @ApiTags('Services')
 @Controller('services')
@@ -45,7 +61,7 @@ export class ServiceController {
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
   findAllPaginated(
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('search') search?: string,
     @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
     @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
@@ -87,7 +103,10 @@ export class ServiceController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al actualizar el servicio.',
   })
-  async update(@Param('id') id: string, @Body() updateServiceDto: UpdateServiceDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateServiceDto: UpdateServiceDto,
+  ) {
     return this.serviceService.update(id, updateServiceDto);
   }
 }

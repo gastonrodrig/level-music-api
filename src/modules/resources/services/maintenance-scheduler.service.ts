@@ -2,8 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Resource } from '../schema/resource.schema';
-import { Maintenance } from '../schema/maintenance.schema';
+import { Resource, Maintenance } from '../schema';
 import { MaintenanceType, MaintenanceStatusType, ResourceStatusType } from '../enum';
 
 @Injectable()
@@ -17,7 +16,7 @@ export class PreventiveMaintenanceSchedulerService {
     private maintenanceModel: Model<Maintenance>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handlePreventiveMaintenance() {
     this.logger.log('🔧 Iniciando revisión automática de mantenimientos preventivos...');
 

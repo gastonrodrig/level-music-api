@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,7 +13,7 @@ import {
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
 import { CreateStorehouseMovementDto } from '../dto';
-import { StorehouseMovementService } from '../services/storehouse-movement.service';
+import { StorehouseMovementService } from '../services';
 
 @Controller('storehouse-movement')
 @ApiTags('Storehouse-Movement')

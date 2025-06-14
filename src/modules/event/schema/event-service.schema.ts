@@ -1,8 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { Event } from "./event.schema";
-import { Service } from "src/modules/service/schema/service.schema";
-import { ServiceDetail } from "src/modules/service/schema/service-detail.schema";
+import { Service, ServiceDetail } from "src/modules/service/schema";
 
 @Schema({ collection: 'event-services' })
 export class EventService {

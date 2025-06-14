@@ -4,11 +4,11 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { CreateEventTypeDto, UpdateEventTypeDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { EventType } from '../schema/event-type.schema';
-import { SF_EVENT_TYPE } from 'src/core/utils/searchable-fields';
-import { CreateEventTypeDto, UpdateEventTypeDto } from '../dto';
+import { SF_EVENT_TYPE } from 'src/core/utils';
+import { EventType } from '../schema';
 
 @Injectable()
 export class EventTypeService {

@@ -1,11 +1,10 @@
+import { Types, Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { MaintenanceType } from "../enum";
-import { Types } from "mongoose";
-import { MaintenanceStatusType } from "../enum";
+import { MaintenanceType, MaintenanceStatusType } from "../enum";
 import { Resource } from "./resource.schema";
 
 @Schema({ collection: 'maintenances' })
-export class Maintenance {
+export class Maintenance extends Document {
   @Prop({ enum: MaintenanceType, default: MaintenanceType.CORRECTIVO })
   type: MaintenanceType;
 
@@ -14,6 +13,9 @@ export class Maintenance {
 
   @Prop({ type: Types.ObjectId, ref: Resource.name, required: true })
   resource: Types.ObjectId;
+
+  @Prop({ length: 255 })
+  resource_name: string;
 
   @Prop({ enum: MaintenanceStatusType, default: MaintenanceStatusType.PROGRAMADO }) 
   status: string;

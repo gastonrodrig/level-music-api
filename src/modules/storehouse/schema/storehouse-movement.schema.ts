@@ -7,10 +7,10 @@ import { Event } from "src/modules/event/schema/event.schema";
 @Schema({ collection: 'storehouse-movements' })
 export class StorehouseMovement {
   @Prop({ type: Types.ObjectId, ref: Resource.name, required: true })
-  resource_id: string;
+  resource: string;
 
   @Prop({ type: Types.ObjectId, ref: Event.name, required: true })
-  event_id: string;
+  event: string;
 
   @Prop({ enum: MovementType, nullable: true })
   movement_type: MovementType;

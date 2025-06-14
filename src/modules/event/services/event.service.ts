@@ -1,24 +1,45 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { 
+  BadRequestException, 
+  Injectable, 
+  InternalServerErrorException, 
+  NotFoundException 
+} from '@nestjs/common';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Event } from '../schema/event.schema';
-import { SF_EVENT } from 'src/core/utils/searchable-fields';
+import { SF_EVENT } from 'src/core/utils';
+import { Event, EventType } from '../schema';
+import { User } from 'src/modules/user/schema';
 
 @Injectable()
 export class EventService {
   constructor(
     @InjectModel(Event.name)
-    private eventModel: Model<Event>
+    private eventModel: Model<Event>,
+    @InjectModel(EventType.name)
+    private eventTypeModel: Model<EventType>,
+    @InjectModel(User.name)
+    private userModel: Model<User>,
   ) {}
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
     try {
-      const event = await this.eventModel.create(createEventDto);
+      const eventType = await this.eventTypeModel.findById(createEventDto.event_type_id);
+      if (!eventType) throw new BadRequestException('Event type not found');
+
+      const user = await this.userModel.findById(createEventDto.user_id);
+      if (!user) throw new BadRequestException('User not found');
+
+      const event = new this.eventModel({
+        ...createEventDto,
+        event_type: eventType._id,
+        user: user._id,
+      });
+
       return await event.save();
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error creating event type: ${error.message}`,
+        `Error creating event: ${error.message}`,
       );
     }
   }

@@ -24,13 +24,3 @@ export class EventType {
 }
 
 export const EventTypeSchema = SchemaFactory.createForClass(EventType);
-
-EventTypeSchema.pre('save', function (next) {
-  this.updated_at = new Date();
-  next();
-});
-
-EventTypeSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updated_at: new Date() });
-  next();
-});

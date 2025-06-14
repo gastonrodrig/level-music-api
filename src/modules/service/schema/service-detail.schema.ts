@@ -6,7 +6,7 @@ import { Service } from "./service.schema";
 @Schema({ collection: 'service-details' })
 export class ServiceDetail {
   @Prop({ type: Types.ObjectId, required: true, ref: Service.name })
-  service: Types.ObjectId;
+  service_id: Types.ObjectId;
 
   @Prop({ type: Object })  
   details: Object;
