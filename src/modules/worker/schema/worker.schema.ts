@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { WorkerType } from './worker-type.schema';
 import { User } from 'src/modules/user/schema';
+import { DocType } from 'src/core/constants/app.constants';
 
 @Schema({ collection: 'workers' })
 export class Worker {
@@ -27,9 +28,21 @@ export class Worker {
   last_name: string;
 
   @Prop({ type: String })
+  email: string;
+
+  @Prop({ type: String })
+  phone: string;
+
+  @Prop({ enum: DocType, default: DocType.DNI, nullable: true })
+  document_type: DocType;
+
+  @Prop({ length: 255, nullable: true })
+  document_number: string;
+
+  @Prop({ type: String })
   status: string;
 
-  @Prop({ type: String }) 
+  @Prop({ type: String })
   role: string;
 }
 
