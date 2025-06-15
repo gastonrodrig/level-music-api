@@ -70,6 +70,10 @@ export class WorkerService {
           worker_type_name: worker_type.name,
           first_name: createWorkerDto.first_name,
           last_name: createWorkerDto.last_name,
+          email: createWorkerDto.email,
+          phone: createWorkerDto.phone,
+          document_type: createWorkerDto.document_type,
+          document_number: createWorkerDto.document_number,
           role: createWorkerDto.role,
           status: createWorkerDto.status,
         });
@@ -81,6 +85,10 @@ export class WorkerService {
           worker_type_name: worker_type.name,
           first_name: createWorkerDto.first_name,
           last_name: createWorkerDto.last_name,
+          email: createWorkerDto.email,
+          phone: createWorkerDto.phone,
+          document_type: createWorkerDto.document_type,
+          document_number: createWorkerDto.document_number,
           role: createWorkerDto.role,
           status: createWorkerDto.status,
         });
@@ -89,16 +97,6 @@ export class WorkerService {
       }
     } catch (error) {
       throw new InternalServerErrorException(`Error creating worker: ${error.message}`);
-    }
-  }
-
-  async findAll(): Promise<Worker[]> {
-    try {
-      return await this.workerModel.find();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding workers: ${error.message}`,
-      );
     }
   }
 
@@ -163,16 +161,42 @@ export class WorkerService {
 
   async update(worker_id: string, updateWorkerDto: UpdateWorkerDto) {
     try {
+      const worker = await this.workerModel.findById(worker_id);
+      if (!worker) throw new NotFoundException(`Worker not found`);
+
+      const workerType = await this.workerTypeModel.findById(worker.worker_type);
+      if (!workerType) throw new NotFoundException(`Worker type not found`);
+
+      // Si es Almacenero o Transportista, actualizar también el usuario y Firebase
+      if (workerType.name === 'Almacenero' || workerType.name === 'Transportista') {
+        if (!worker.user) throw new NotFoundException(`User not found for this worker`);
+
+        const user = await this.userModel.findById(worker.user);
+        if (!user) throw new NotFoundException(`User not found`);
+
+        await this.authService.updateUserEmail(user.auth_id, { 
+          email: updateWorkerDto.email 
+        });
+
+        await this.userModel.findByIdAndUpdate(worker.user, {
+          email: updateWorkerDto.email,
+          phone: updateWorkerDto.phone,
+          document_type: updateWorkerDto.document_type,
+          document_number: updateWorkerDto.document_number,
+          first_name: updateWorkerDto.first_name,
+          last_name: updateWorkerDto.last_name,
+          status: updateWorkerDto.status,
+        });
+      }
+      // Actualizar el trabajador
       const updatedWorker = await this.workerModel.findOneAndUpdate(
         { _id: worker_id },
         updateWorkerDto,
         { new: true }
       );
-
       if (!updatedWorker) {
         throw new NotFoundException(`Worker not found`);
       }
-
       return updatedWorker;
     } catch (error) {
       throw new InternalServerErrorException(`Error updating worker: ${error.message}`);
