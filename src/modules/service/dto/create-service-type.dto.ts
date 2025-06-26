@@ -1,21 +1,32 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsOptional, IsEnum } from "class-validator";
+import { IsString, IsEnum, IsNotEmpty, ValidateNested, IsArray } from "class-validator";
+import { Type } from "class-transformer";
 import { Estado } from "src/core/constants/app.constants";
+import { CustomFieldDto } from "./create-service-type-custom-field.dto";
 
 export class CreateServiceTypeDto {
-  @ApiProperty({ example: "Comida, Fotografia, Toldos", required: false })
+  @ApiProperty({ example: "Fotografía" })
   @IsString()
-  @IsOptional()
-  name?: string;
+  @IsNotEmpty()
+  name: string;
 
-  @ApiProperty({ example: "Descripcion del servicio", required: false })
+  @ApiProperty({ example: "Servicio de cobertura de fotos" })
   @IsString()
-  @IsOptional()
-  description?: string;
-  
+  @IsNotEmpty()
+  description: string;
+
   @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
   @IsEnum(Estado)
-  @IsOptional()
-  status?: Estado;
+  @IsNotEmpty()
+  status: Estado;
+
+  @ApiProperty({
+    type: [CustomFieldDto],
+    required: false,
+    description: "Lista de atributos personalizados para el tipo de servicio"
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomFieldDto)
+  attributes?: CustomFieldDto[];
 }
-  
