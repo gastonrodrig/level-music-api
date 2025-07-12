@@ -1,0 +1,58 @@
+name: Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Clona el repositorio
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      # Se autentica en GCP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Configura GCP con el ID del proyecto
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # Fija la región por defecto para Cloud Run
+      - name: Set default Cloud Run region
+        run: |
+          gcloud config set run/region ${{ secrets.GCP_REGION }}
+
+      # Construye la imagen con Buildpacks y la sube a Container Registry
+      - name: Build container image
+        run: |
+          gcloud builds submit \
+            --pack image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:$GITHUB_SHA
+
+      # Despliega en Cloud Run
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v0
+        with:
+          service: level-music-app
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          region: ${{ secrets.GCP_REGION }}
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:$GITHUB_SHA
+          env_vars: |
+            PORT=${{ secrets.PORT }}
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_CREDENTIALS_PATH }}
+            FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }}
+            GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
+            GMAIL_USER=${{ secrets.GMAIL_USER }}
+            GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
+
