@@ -33,9 +33,8 @@ jobs:
       # Construye la imagen con Google Cloud Buildpacks
       - name: Build and push image with Buildpacks
         run: |
-          gcloud builds submit \
-            --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }} \
-            --pack=builder=gcr.io/buildpacks/builder
+          gcloud builds submit . \
+            --pack=builder=gcr.io/buildpacks/builder,image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
 
       # Despliega en Cloud Run
       - name: Deploy to Cloud Run
