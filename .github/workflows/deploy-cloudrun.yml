@@ -48,7 +48,7 @@ jobs:
           env_vars: |
             PORT=${{ secrets.PORT }}
             MONGO_URI=${{ secrets.MONGO_URI }}
-            FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_CREDENTIALS_PATH }}
+            FIREBASE_CREDENTIALS_PATH=${{ secrets.FIREBASE_SA_B64 }}
             FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}

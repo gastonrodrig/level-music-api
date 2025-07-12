@@ -10,8 +10,10 @@ import { FirebaseAuthGuard } from './auth/guards';
 dotenv.config();
 
 async function bootstrap() {
+  const saJson = Buffer.from(process.env.FIREBASE_CREDENTIALS_PATH!, 'base64').toString();
+  const serviceAccount = JSON.parse(saJson);
   admin.initializeApp({
-    credential: admin.credential.cert(require(process.env.FIREBASE_CREDENTIALS_PATH)),
+    credential: admin.credential.cert(serviceAccount),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 
