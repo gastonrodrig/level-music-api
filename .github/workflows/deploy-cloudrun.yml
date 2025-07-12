@@ -48,7 +48,7 @@ jobs:
           context: .
           push: true
           tags: gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
-          builder: gcr.io/buildpacks/builder
+          builder: gcr.io/buildpacks/builder:v1
 
       # 8. Despliega en Cloud Run
       - name: Deploy to Cloud Run
