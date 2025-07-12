@@ -30,11 +30,12 @@ jobs:
         run: |
           gcloud config set run/region ${{ secrets.GCP_REGION }}
 
-      # Construye la imagen con Buildpacks y la sube a Container Registry
-      - name: Build container image
+      # Construye la imagen con Google Cloud Buildpacks
+      - name: Build and push image with Buildpacks
         run: |
           gcloud builds submit \
-            --pack image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:$GITHUB_SHA
+            --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }} \
+            --pack
 
       # Despliega en Cloud Run
       - name: Deploy to Cloud Run
