@@ -33,8 +33,9 @@ jobs:
       - name: Build container image with Buildpacks
         uses: mamezou-tech/buildpacks-action@v0.7.0
         with:
-          image:   gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
+          image:   gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app
           builder: gcr.io/buildpacks/builder:v1
+          tag:     latest
 
       # 6. Despliega en Cloud Run
       - name: Deploy to Cloud Run
