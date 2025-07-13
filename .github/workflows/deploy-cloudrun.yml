@@ -29,23 +29,24 @@ jobs:
       - name: Set default Cloud Run region
         run: gcloud config set run/region ${{ secrets.GCP_REGION }}
 
-      # 5. Construye la imagen con Buildpacks
-      - name: Build container image with Buildpacks
-        uses: mamezou-tech/buildpacks-action@v0.7.0
+      # 5. Construye y publica la imagen con Docker
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
         with:
-          image:   gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app
-          builder: gcr.io/buildpacks/builder:v1
-          publish: true
-          tag:     latest
+          context: .
+          push: true
+          tags: gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
+          cache-from: type=registry,ref=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:latest
+          cache-to: type=registry,mode=max,ref=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:latest
 
       # 6. Despliega en Cloud Run
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v1
         with:
-          service:               level-music-app
-          project_id:            ${{ secrets.GCP_PROJECT_ID }}
-          region:              ${{ secrets.GCP_REGION }}
-          image:                 gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
+          service: level-music-app
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          region: ${{ secrets.GCP_REGION }}
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
           env_vars: |
             MONGO_URI=${{ secrets.MONGO_URI }}
             FIREBASE_CREDENTIALS_PATH=${{ secrets.FIREBASE_SA_B64 }}
