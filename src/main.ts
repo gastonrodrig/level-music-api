@@ -21,6 +21,24 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn', 'debug', 'verbose'],
   });
 
+  const config = new DocumentBuilder()
+    .setTitle(APP_NAME)
+    .setDescription(APP_DESCRIPTION)
+    .setVersion(API_VERSION)
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        in: 'header',
+      },
+      'firebase-auth'
+    )
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
+
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new FirebaseAuthGuard(reflector));
 
@@ -39,24 +57,6 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     })
   );
-
-  const config = new DocumentBuilder()
-    .setTitle(APP_NAME)
-    .setDescription(APP_DESCRIPTION)
-    .setVersion(API_VERSION)
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        in: 'header',
-      },
-      'firebase-auth'
-    )
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
 
   const port = parseInt(process.env.PORT ?? '3000', 10);
   await app.listen(port, '0.0.0.0');
