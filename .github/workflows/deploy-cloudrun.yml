@@ -36,8 +36,6 @@ jobs:
           context: .
           push: true
           tags: gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
-          cache-from: type=registry,ref=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:latest
-          cache-to: type=registry,mode=max,ref=gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:latest
 
       # 6. Despliega en Cloud Run
       - name: Deploy to Cloud Run
