@@ -10,7 +10,6 @@ import { ServiceModule } from './modules/service/service.module';
 import { StorehouseMovementModule } from './modules/storehouse/storehouse.module';
 import { ProviderModule } from './modules/provider/provider.module';
 import { MailModule } from './modules/mail/mail.module';
-import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -24,7 +23,6 @@ import { HealthModule } from './health/health.module';
       }),
       inject: [ConfigService],
     }),
-    HealthModule,
     MailModule,
     UserModule,
     EventModule,
