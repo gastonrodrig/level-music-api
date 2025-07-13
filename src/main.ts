@@ -53,8 +53,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: [
-      'https://level-music-app-v7grhhkxiq-uc.a.run.app',
-      'http://localhost:3000',   // si pruebas la API directamente
+      'http://localhost:5173',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: 'Content-Type, Accept, Authorization',
