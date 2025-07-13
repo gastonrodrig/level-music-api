@@ -1,23 +1,33 @@
-FROM node:20-alpine AS build
+# 1) Build stage: instalo todo y compilo
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Instala deps de producción
+# Copio package.json + lock
 COPY package*.json ./
-RUN npm ci --only=production
 
-# Copia y compila
+# Instalo TODAS las deps (dev y prod) para poder usar nest CLI
+RUN npm ci
+
+# Copio el resto y ejecuto build
 COPY . .
 RUN npm run build
 
-# ===== etapa de runtime =====
-FROM node:20-alpine AS runtime
+# 2) Runtime stage: solo prod deps + dist
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
+# Copio prod deps
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Variables de entorno en Cloud Run inyectan aquí
+# Copio el resultado del build
+COPY --from=builder /app/dist ./dist
+
+# Establezco entorno de producción
 ENV NODE_ENV=production
 
-# Arranca la app
+# Exponemos el puerto (no obligatorio, Cloud Run lo infiere)
+EXPOSE 3000
+
+# Arranco la app
 CMD ["node", "dist/main"]
