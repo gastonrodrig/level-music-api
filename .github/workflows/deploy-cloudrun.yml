@@ -35,6 +35,7 @@ jobs:
         with:
           image:   gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app
           builder: gcr.io/buildpacks/builder:v1
+          publish: true
           tag:     latest
 
       # 6. Despliega en Cloud Run
