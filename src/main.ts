@@ -42,13 +42,6 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new FirebaseAuthGuard(reflector));
 
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Content-Type, Accept, Authorization',
-    credentials: true,
-  });
-
   app.setGlobalPrefix(API_PREFIX);
 
   app.useGlobalPipes(
@@ -57,6 +50,16 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     })
   );
+
+  app.enableCors({
+    origin: [
+      'https://level-music-app-v7grhhkxiq-uc.a.run.app',
+      'http://localhost:3000',   // si pruebas la API directamente
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    credentials: true,
+  });
 
   const port = parseInt(process.env.PORT ?? '3000', 10);
   await app.listen(port, '0.0.0.0');
