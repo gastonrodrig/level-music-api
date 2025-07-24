@@ -31,6 +31,9 @@ export class Resource extends Document {
   @Prop() 
   maintenance_interval_days: number;
 
+  @Prop({ default: 1 })
+  maintenance_count: number;
+
   @Prop({ default: Date.now })
   created_at: Date;
 

@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Maintenance, Resource } from '../schema';
 import { CreateMaintenanceDto, UpdateMaintenanceStatusDto } from '../dto';
 import { MaintenanceStatusType, MaintenanceType, ResourceStatusType } from '../enum';
-import { SF_MAINTENANCE } from 'src/core/utils';
+import { SF_MAINTENANCE, toObjectId } from 'src/core/utils';
+import * as dayjs from 'dayjs';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class MaintenanceService {
@@ -18,48 +20,87 @@ export class MaintenanceService {
   async create(createMaintenanceDto: CreateMaintenanceDto): Promise<Maintenance> {
     try {
       // Validar existencia del recurso
-      const resource = await this.resourceModel.findById(createMaintenanceDto.resource);
+      const resource = await this.resourceModel.findById(createMaintenanceDto.resource_id);
       if (!resource) {
         throw new NotFoundException('Recurso no encontrado');
       }
 
-      if (createMaintenanceDto.type === MaintenanceType.CORRECTIVO) {
-        if (resource.status !== ResourceStatusType.DAÑADO) {
-          throw new BadRequestException('Solo se puede crear mantenimiento correctivo si el recurso está dañado');
-        }
-
-        // Validar que no existan preventivos pendientes
-        const preventivoPendiente = await this.maintenanceModel.findOne({
-          resource_id: resource._id,
-          type: MaintenanceType.PREVENTIVO,
-          status: { $in: [MaintenanceStatusType.PROGRAMADO, MaintenanceStatusType.EN_PROGRESO] }
-        });
-
-        if (preventivoPendiente) {
-          throw new BadRequestException('No se puede crear un correctivo mientras exista un preventivo pendiente');
-        }
-      } else {
+      // Validar que el tipo de mantenimiento sea correctivo
+      if (createMaintenanceDto.type !== MaintenanceType.CORRECTIVO) { 
         throw new BadRequestException('Solo se pueden crear mantenimientos de tipo correctivo');
       }
 
-      // Si pasa validaciones, creamos el mantenimiento
-      const maintenance = new this.maintenanceModel(createMaintenanceDto);
-
-      // Si es correctivo, cancelamos cualquier preventivo (por seguridad, doble validación)
-      if (createMaintenanceDto.type === MaintenanceType.CORRECTIVO) {
-        await this.maintenanceModel.updateMany(
-          {
-            resource_id: createMaintenanceDto.resource,
-            type: MaintenanceType.PREVENTIVO,
-            status: { $in: [MaintenanceStatusType.PROGRAMADO, MaintenanceStatusType.EN_PROGRESO] }
-          },
-          { $set: { status: MaintenanceStatusType.CANCELADO } }
+      // Validar que no esté ya en mantenimiento
+      if (resource.status === ResourceStatusType.MANTENIMIENTO) {
+        throw new HttpException(
+          { code: errorCodes.RESOURCE_UNDER_MAINTENANCE, message: 'El recurso ya se encuentra en mantenimiento.' },
+          HttpStatus.BAD_REQUEST
         );
       }
 
-      return await maintenance.save();
+      // Validar que esté dañado
+      if (resource.status !== ResourceStatusType.DAÑADO) {
+        throw new HttpException(
+          { code: errorCodes.RESOURCE_NOT_DAMAGED, message: 'El recurso debe encontrarse dañado.' },
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      // Se crea el mantenimiento
+      const maintenance = new this.maintenanceModel({
+        ...createMaintenanceDto,
+        resource: resource._id,
+        resource_serial_number: resource.serial_number,
+        resource_name: resource.name,
+        resource_type: resource.resource_type,
+      });
+      
+      const saved = await maintenance.save();
+
+      // Actualizamos el recurso
+      const updatedResource = await this.resourceModel.findByIdAndUpdate(
+        createMaintenanceDto.resource_id,
+        {
+          status: ResourceStatusType.MANTENIMIENTO,
+          $inc: { maintenance_count: 1 },
+        },
+        { new: true }
+      );
+
+      // Buscamos preventivos pendientes (solo deberia dar 1 en realidad, SIEMPRE)
+      const pendingPreventives = await this.maintenanceModel.find({
+        resource: toObjectId(createMaintenanceDto.resource_id),
+        type: MaintenanceType.PREVENTIVO,
+        status: {
+          $in: [
+            MaintenanceStatusType.PROGRAMADO,
+            MaintenanceStatusType.EN_PROGRESO,
+          ],
+        },
+      });
+
+      // re-agendamos su fecha a partir del correctivo
+      const interval = updatedResource.maintenance_interval_days;
+      for (const prev of pendingPreventives) {
+        const newDate = dayjs(saved.date).add(interval, "day").toDate();
+
+        await this.maintenanceModel.findByIdAndUpdate(prev._id, {
+          date: newDate,
+          status: MaintenanceStatusType.PROGRAMADO, 
+        });
+      }
+
+      // Actualizamos la fecha del próximo mantenimiento del recurso
+      const nextDate = dayjs(saved.date).add(interval, "day").toDate();
+      await this.resourceModel.findByIdAndUpdate(
+        createMaintenanceDto.resource_id,
+        { next_maintenance_date: nextDate }
+      );
+
+      return saved;
     } catch (error) {
-      throw new InternalServerErrorException(`Error creating maintenance: ${error.message}`);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error creating the maintenance: ${error.message}`);
     }
   }
 
@@ -107,6 +148,9 @@ export class MaintenanceService {
       type: MaintenanceType.PREVENTIVO,
       status: MaintenanceStatusType.PROGRAMADO,
       resource: resource._id,
+      resource_serial_number: resource.serial_number,
+      resource_name: resource.name,
+      resource_type: resource.resource_type,
       date: resource.next_maintenance_date,
       description: 'Mantenimiento preventivo inicial generado automáticamente',
     });
@@ -114,41 +158,62 @@ export class MaintenanceService {
     return maintenance.save();
   }
 
-  async updateStatus(maintenanceId: string, statusDto: UpdateMaintenanceStatusDto): Promise<Maintenance> {
-    const maintenance = await this.maintenanceModel.findById(maintenanceId);
-    if (!maintenance) {
-      throw new NotFoundException('Mantenimiento no encontrado');
+  async updateStatus(maintenanceId: string, updateMaintenanceStatusDto: UpdateMaintenanceStatusDto): Promise<Maintenance> {
+    try {
+      const maintenance = await this.maintenanceModel.findById(maintenanceId);
+      if (!maintenance) {
+        throw new NotFoundException('Mantenimiento no encontrado');
+      }
+
+      // Validar que el mantenimiento no esté ya finalizado
+      if (maintenance.status === MaintenanceStatusType.FINALIZADO) {
+        throw new HttpException(
+          { code: errorCodes.RESOURCE_ALREADY_FINISHED_MAINTENANCE, message: 'El mantenimiento ya se encuentra finalizado.' },
+          HttpStatus.BAD_REQUEST
+        );
+      }
+
+      // Se verifican que no hayan otros mantenimientos sin finalizar
+      if (updateMaintenanceStatusDto.status === MaintenanceStatusType.EN_PROGRESO) {
+        const pendiente = await this.maintenanceModel.findOne({
+          resource: maintenance.resource,
+          status: { $ne: MaintenanceStatusType.FINALIZADO },
+          date: { $lt: maintenance.date },
+        });
+
+        if (pendiente) {
+          throw new HttpException(
+            { code: errorCodes.PREVIOUS_MAINTENANCE_NOT_FINALIZED, message: 'Debe finalizar primero los mantenimientos anteriores de este recurso.' },
+            HttpStatus.BAD_REQUEST
+          );
+        }
+
+        // Cambiamos el estado del recurso a mantenimiento
+        await this.resourceModel.findByIdAndUpdate(
+          maintenance.resource,
+          { status: ResourceStatusType.MANTENIMIENTO }
+        );
+      }
+
+      maintenance.status = updateMaintenanceStatusDto.status;
+      await maintenance.save();
+
+      // Si pasa a estado finalizado, se actualiza a la ultima fecha que se hizo mantenimiento
+      if (updateMaintenanceStatusDto.status === MaintenanceStatusType.FINALIZADO) {
+        await this.resourceModel.findByIdAndUpdate(
+          maintenance.resource,
+          {
+            last_maintenance_date: maintenance.date, // actualizamos la fecha
+            status: ResourceStatusType.DISPONIBLE, // pasa a Disponible
+            $inc: { maintenance_count: 1 }, // incrementamos el contador de mantenimientos
+          }
+        );
+      }
+
+      return maintenance;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error updating maintenance status: ${error.message}`);
     }
-
-    if (maintenance.status === MaintenanceStatusType.FINALIZADO) {
-      throw new BadRequestException('Este mantenimiento ya está finalizado');
-    }
-
-    maintenance.status = statusDto.status;
-    await maintenance.save();
-
-    // Si pasa a EN_PROGRESO → poner recurso en MANTENIMIENTO
-    if (statusDto.status === MaintenanceStatusType.EN_PROGRESO) {
-      await this.resourceModel.findByIdAndUpdate(
-        maintenance.resource,
-        { status: ResourceStatusType.MANTENIMIENTO }
-      );
-    }
-
-    // Si pasa a FINALIZADO → actualizar ultima fecha de mantenimiento
-    if (statusDto.status === MaintenanceStatusType.FINALIZADO) {
-      await this.resourceModel.findByIdAndUpdate(
-        maintenance.resource,
-        { last_maintenance_date: maintenance.date }
-      );
-
-      // El recurso pasa a estado DISPONIBLE
-      await this.resourceModel.findByIdAndUpdate(
-        maintenance.resource,
-        { status: ResourceStatusType.DISPONIBLE }
-      );
-    }
-
-    return maintenance;
   }
 }

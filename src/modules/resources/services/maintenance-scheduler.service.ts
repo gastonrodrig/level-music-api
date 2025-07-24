@@ -56,6 +56,9 @@ export class PreventiveMaintenanceSchedulerService {
         type: MaintenanceType.PREVENTIVO,
         status: MaintenanceStatusType.PROGRAMADO,
         resource: resource._id,
+        resource_serial_number: resource.serial_number,
+        resource_name: resource.name,
+        resource_type: resource.resource_type,
         date: expectedNextDate,
         description: 'Mantenimiento preventivo generado automáticamente.',
       });

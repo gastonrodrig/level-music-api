@@ -15,7 +15,13 @@ export class Maintenance extends Document {
   resource: Types.ObjectId;
 
   @Prop({ length: 255 })
+  resource_serial_number: string;
+
+  @Prop({ length: 255 })
   resource_name: string;
+
+  @Prop({ length: 255 })
+  resource_type: string;
 
   @Prop({ enum: MaintenanceStatusType, default: MaintenanceStatusType.PROGRAMADO }) 
   status: string;

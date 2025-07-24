@@ -1,16 +1,21 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Resource } from '../schema';
+import { Maintenance, Resource } from '../schema';
 import { CreateResourceDto, UpdateResourceDto, UpdateResourceStatusDto } from '../dto';
 import { MaintenanceService } from './';
-import { SF_RESOURCE } from 'src/core/utils';
+import { SF_RESOURCE, getCurrentDate, toObjectId } from 'src/core/utils';
+import { MaintenanceStatusType, MaintenanceType } from '../enum';
+import * as dayjs from 'dayjs';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class ResourceService {
   constructor(
     @InjectModel(Resource.name)
     private resourceModel: Model<Resource>,
+    @InjectModel(Maintenance.name)
+    private maintenanceModel: Model<Maintenance>,
     private maintenanceService: MaintenanceService,
   ) {}
 
@@ -80,11 +85,19 @@ export class ResourceService {
   }
 
   async findBySerial(serial: string): Promise<Resource> {
-    const resource = await this.resourceModel.findOne({ serial_number: serial });
-    if (!resource) {
-      throw new NotFoundException('Equipo no encontrado');
+    try {
+      const resource = await this.resourceModel.findOne({ serial_number: serial });
+      if (!resource) {
+        throw new HttpException(
+          { code: errorCodes.RESOURCE_NOT_FOUND, message: 'Recurso no encontrado.' },
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      return resource;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error finding the resource by serial #: ${error.message}`);
     }
-    return resource;
   }
 
   async findOne(resource_id: string): Promise<Resource> {
@@ -105,17 +118,44 @@ export class ResourceService {
 
   async update(resource_id: string, updateResourceDto: UpdateResourceDto) {
     try {
-      const updatedResource = await this.resourceModel.findOneAndUpdate(
-        { _id: resource_id },
-        updateResourceDto,
-        { new: true }
-      );
-
-      if (!updatedResource) {
+      // Valida que el recurso exista
+      const resource = await this.resourceModel.findById(resource_id);
+      if (!resource) {
         throw new NotFoundException(`Resource with ID ${resource_id} not found`);
       }
 
-      return updatedResource;
+      // Si viene con valor null, lo dejo como null
+      if (updateResourceDto.last_maintenance_date === null) {
+        resource.last_maintenance_date = null;
+      } else if (updateResourceDto.last_maintenance_date != null) {
+        // si viene con valor, lo actualizo
+        resource.last_maintenance_date = new Date(updateResourceDto.last_maintenance_date);
+      }
+
+      // Si cambió el intervalo, recalcula next_maintenance_date
+      const newInterval = updateResourceDto.maintenance_interval_days;
+      const baseDate = resource.last_maintenance_date ?? getCurrentDate();
+      const nextDate = dayjs(baseDate).add(newInterval, "day").toDate();
+
+      // Reprograma el preventivo en estado PROGRAMADO
+      await this.maintenanceModel.updateMany(
+        { 
+          resource: toObjectId(resource_id),
+          type: MaintenanceType.PREVENTIVO,
+          status: MaintenanceStatusType.PROGRAMADO
+        },
+        { $set: { date: nextDate } }
+      );
+
+      // Ajusta el campo en el recurso
+      resource.next_maintenance_date = nextDate;
+      resource.maintenance_interval_days = newInterval;
+
+      resource.name = updateResourceDto.name;
+      resource.description = updateResourceDto.description;
+      resource.resource_type = updateResourceDto.resource_type;
+
+      return await resource.save();
     } catch (error) {
       throw new InternalServerErrorException(`Error updating resource: ${error.message}`);
     }
