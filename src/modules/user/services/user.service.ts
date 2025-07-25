@@ -2,14 +2,20 @@ import { BadRequestException, Injectable, InternalServerErrorException, NotFound
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../schema';
-import { CreateUserDto, UpdateUserDto } from '../dto';
+import { CreateClientDto, CreateUserDto, UpdateUserDto } from '../dto';
 import { SF_USER } from 'src/core/utils';
+import { generateRandomPassword } from 'src/core/utils/password-utils';
+import { AuthService } from 'src/modules/firebase/services';
+import { MailService } from 'src/modules/mail/service';
+import { Estado, Roles } from 'src/core/constants/app.constants';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<User>,
+    private authService: AuthService, 
+    private mailService: MailService, 
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -35,6 +41,56 @@ export class UserService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
+
+ async createClient(createClientDto: CreateClientDto): Promise<User> {
+  try {
+    // 1. Validar email y documento únicos
+    const [existingEmail, existingDoc] = await Promise.all([
+      this.userModel.findOne({ email: createClientDto.email }),
+      this.userModel.findOne({ document_number: createClientDto.document_number }),
+    ]);
+
+    if (existingEmail) throw new BadRequestException('ERROR-001');
+    if (existingDoc) throw new BadRequestException('ERROR-002');
+
+    // 2. Generar contraseña aleatoria
+    const password = generateRandomPassword();
+
+    // 3. Crear usuario en Firebase
+    const firebaseUser = await this.authService.createUserWithEmail({
+      email: createClientDto.email,
+      password,
+    });
+
+    if (!firebaseUser.success || !firebaseUser.uid) {
+      throw new InternalServerErrorException(firebaseUser.message);
+    }
+
+    // 4. Armar datos finales con lógica de negocio
+    const userToCreate = {
+      ...createClientDto,
+      auth_id: firebaseUser.uid,
+      role: Roles.CLIENTE,
+      status: Estado.ACTIVO,
+      created_by_admin: true,
+      needs_password_change: true,
+    };
+
+    const newUser = new this.userModel(userToCreate);
+    await newUser.save();
+
+    // 5. Enviar correo con credenciales
+    await this.mailService.sendTemporalCredentials({
+      to: createClientDto.email,
+      email: createClientDto.email,
+      password,
+    });
+
+    return newUser;
+  } catch (error) {
+    throw new InternalServerErrorException(error.message || 'Error al crear el cliente');
+  }
+}
 
   async findAllCustomersPaginated(
     limit = 5,

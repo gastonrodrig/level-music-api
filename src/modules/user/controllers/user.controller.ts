@@ -14,7 +14,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { CreateUserDto, UpdateUserDto } from '../dto';
+import { CreateClientDto, UpdateUserDto } from '../dto';
 import {
   ApiTags,
   ApiOperation,
@@ -30,21 +30,22 @@ import { FirebaseAuthGuard } from 'src/auth/guards';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear un nuevo usuario' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'El usuario ha sido creado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear el usuario.',
-  })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
-  }
+  @Post('client')
+@Public()
+@HttpCode(HttpStatus.CREATED)
+@ApiOperation({ summary: 'Registrar un nuevo cliente' })
+@ApiResponse({
+  status: HttpStatus.CREATED,
+  description: 'El cliente ha sido creado correctamente.',
+})
+@ApiResponse({
+  status: HttpStatus.BAD_REQUEST,
+  description: 'Error al crear el cliente.',
+})
+createClient(@Body() createClientDto: CreateClientDto) {
+  return this.userService.createClient(createClientDto);
+}
+
 
   @Get('customers-paginated')
   @Public()

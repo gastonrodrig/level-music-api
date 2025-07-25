@@ -4,7 +4,7 @@ import { AuthController } from './controllers';
 
 @Module({
   providers: [StorageService, AuthService],
-  exports: [StorageService],
+  exports: [StorageService, AuthService],
   controllers: [AuthController]
 })
 export class FirebaseModule {}
