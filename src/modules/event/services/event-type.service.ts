@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -9,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT_TYPE } from 'src/core/utils';
 import { EventType } from '../schema';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class EventTypeService {
@@ -19,9 +22,23 @@ export class EventTypeService {
 
   async create(createEventTypeDto: CreateEventTypeDto): Promise<EventType> {
     try {
+      const existing = await this.eventTypeModel.findOne({
+        type: createEventTypeDto.type,
+      });
+      if (existing) {
+        throw new HttpException(
+          {
+            code: errorCodes.EVENT_TYPE_ALREADY_EXISTS,
+            message: `El tipo de evento "${createEventTypeDto.type}" ya existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const eventType = await this.eventTypeModel.create(createEventTypeDto);
       return await eventType.save();
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error creating event type: ${error.message}`,
       );
@@ -86,15 +103,40 @@ export class EventTypeService {
     }
   }
 
-  async update(event_type_id: string, updateEventTypeDto: UpdateEventTypeDto): Promise<EventType> {
+  async update(
+    event_type_id: string,
+    updateEventTypeDto: UpdateEventTypeDto,
+  ): Promise<EventType> {
     try {
-      const eventType = await this.eventTypeModel.findOne({ _id: event_type_id });
-      if (!eventType) {
-        throw new BadRequestException('Tipo de evento no encontrado');
+      const existingType = await this.eventTypeModel.findOne({
+        type: updateEventTypeDto.type,
+        _id: { $ne: event_type_id },
+      });
+
+      if (existingType) {
+        throw new HttpException(
+          {
+            code: errorCodes.EVENT_TYPE_ALREADY_EXISTS,
+            message: `El tipo de evento "${updateEventTypeDto.type}" ya existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
       }
-      Object.assign(eventType, updateEventTypeDto);
-      return await eventType.save();
+      const updateEventType = await this.eventTypeModel.findByIdAndUpdate(
+        event_type_id,
+        updateEventTypeDto,
+        { new: true },
+      );
+
+      if (!updateEventType) {
+        throw new NotFoundException(
+          `Event type with ID '${event_type_id}' not found`,
+        );
+      }
+
+      return updateEventType;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
