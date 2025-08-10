@@ -22,6 +22,8 @@ import { User, UserSchema } from '../user/schema';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { AuthService } from '../firebase/services';
+import { FirebaseModule } from '../firebase/firebase.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -46,8 +48,10 @@ import { AuthService } from '../firebase/services';
         inject: [getConnectionToken()],
       },
     ]),
+    FirebaseModule,
+    MailModule
   ],
-  providers: [WorkerTypeService, WorkerService, AuthService],
+  providers: [WorkerTypeService, WorkerService],
   controllers: [WorkerTypeController, WorkerController],
 })
 export class WorkerModule {}

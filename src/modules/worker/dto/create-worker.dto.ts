@@ -1,7 +1,7 @@
-import { IsNotEmpty, IsMongoId, IsString, IsEnum, IsOptional, IsEmail, MinLength } from 'class-validator';
+import { IsNotEmpty, IsMongoId, IsString, IsOptional, IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Types } from 'mongoose';
-import { Estado, DocType } from 'src/core/constants/app.constants';
+import { DocType } from 'src/core/constants/app.constants';
 
 export class CreateWorkerDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
@@ -13,11 +13,6 @@ export class CreateWorkerDto {
   @IsEmail()
   @IsNotEmpty()
   email: string;
-
-  @ApiProperty({ required: true, minLength: 6 })
-  @IsString()
-  @MinLength(6)
-  password: string;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -47,8 +42,4 @@ export class CreateWorkerDto {
   @IsString()
   @IsNotEmpty()
   role: string;
-
-  @ApiProperty({ required: true })
-  @IsEnum(Estado)
-  status: Estado;
 }

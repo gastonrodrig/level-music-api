@@ -1,9 +1,16 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ServiceType } from '../schema';
 import { Model } from 'mongoose';
 import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
 import { SF_SERVICE_TYPE } from 'src/core/utils';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class ServiceTypeService {
@@ -12,11 +19,29 @@ export class ServiceTypeService {
     private serviceTypeModel: Model<ServiceType>,
   ) {}
 
-  async create(createServiceTypeDto: CreateServiceTypeDto): Promise<ServiceType> {
+  async create(
+    createServiceTypeDto: CreateServiceTypeDto,
+  ): Promise<ServiceType> {
     try {
-      const serviceType = await this.serviceTypeModel.create(createServiceTypeDto);
+      // Validar si el tipo de servicio ya existe
+      const existing = await this.serviceTypeModel.findOne({
+        name: createServiceTypeDto.name,
+      });
+      if (existing) {
+        throw new HttpException(
+          {
+            code: errorCodes.SERVICE_TYPE_ALREADY_EXISTS,
+            message: `El tipo de servicio "${createServiceTypeDto.name}" ya existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const serviceType =
+        await this.serviceTypeModel.create(createServiceTypeDto);
       return await serviceType.save();
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error creating service type: ${error.message}`,
       );
@@ -32,12 +57,12 @@ export class ServiceTypeService {
   ): Promise<{ total: number; items: ServiceType[] }> {
     try {
       const filter = search
-      ? {
-          $or: SF_SERVICE_TYPE.map(field => ({
-            [field]: { $regex: search, $options: 'i' }
-          })),
-        }
-      : {};
+        ? {
+            $or: SF_SERVICE_TYPE.map((field) => ({
+              [field]: { $regex: search, $options: 'i' },
+            })),
+          }
+        : {};
 
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
@@ -51,9 +76,7 @@ export class ServiceTypeService {
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.serviceTypeModel
-          .countDocuments(filter)
-          .exec(),
+        this.serviceTypeModel.countDocuments(filter).exec(),
       ]);
 
       return { total, items };
@@ -66,38 +89,65 @@ export class ServiceTypeService {
 
   async findOne(service_type_id: string): Promise<ServiceType> {
     try {
-      const serviceType = await this.serviceTypeModel.findOne({ _id: service_type_id });
+      const serviceType = await this.serviceTypeModel.findOne({
+        _id: service_type_id,
+      });
       if (!serviceType) {
-        throw new InternalServerErrorException('Service type not found');
+        throw new NotFoundException(
+          `Service type with ID '${service_type_id}' not found`,
+        );
       }
 
       return serviceType;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
         `Error finding service type: ${error.message}`,
       );
     }
   }
 
-  async update(service_type_id: string, updateServiceTypeDto: UpdateServiceTypeDto): Promise<ServiceType> {
+  async update(
+    service_type_id: string,
+    updateServiceTypeDto: UpdateServiceTypeDto,
+  ): Promise<ServiceType> {
     try {
+      // Validar que el tipo de servicio no tenga el mismo nombre en otro registro
+      const existingName = await this.serviceTypeModel.findOne({
+        name: updateServiceTypeDto.name,
+        _id: { $ne: service_type_id },
+      });
+
+      if (existingName) {
+        throw new HttpException(
+          {
+            code: errorCodes.SERVICE_TYPE_ALREADY_EXISTS,
+            message: `El tipo de servicio "${updateServiceTypeDto.name}" ya existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Actualizar el tipo de servicio
       const updatedServiceType = await this.serviceTypeModel.findByIdAndUpdate(
         service_type_id,
         updateServiceTypeDto,
-        { new: true }
+        { new: true },
       );
 
+      // Si no se encontró, lanzar una excepción
       if (!updatedServiceType) {
-        throw new NotFoundException(`Service type with ID ${service_type_id} not found`);
+        throw new NotFoundException(
+          `Service type with ID ${service_type_id} not found`,
+        );
       }
 
       return updatedServiceType;
     } catch (error) {
-      throw new InternalServerErrorException(`Error updating service type: ${error.message}`);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error updating service type: ${error.message}`,
+      );
     }
   }
-
 }

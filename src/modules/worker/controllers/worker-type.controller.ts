@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -11,12 +10,12 @@ import {
   HttpStatus,
   DefaultValuePipe,
   ParseIntPipe,
-  ParseEnumPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { WorkerTypeService } from '../services/worker-type.service';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { Public } from '../../../auth/decorators';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('worker-type')
 @ApiTags('Worker Type')
@@ -24,7 +23,8 @@ export class WorkerTypeController {
   constructor(private readonly workerTypeService: WorkerTypeService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo tipo de trabajador' })
   @ApiResponse({
@@ -40,7 +40,8 @@ export class WorkerTypeController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener tipos de trabajadores con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -73,7 +74,8 @@ export class WorkerTypeController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un tipo de trabajador por ID' })
   @ApiResponse({
@@ -89,7 +91,8 @@ export class WorkerTypeController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un tipo de trabajador por ID' })
   @ApiResponse({

@@ -1,3 +1,3 @@
-export * from './create-user.dto';
-export * from './update-user.dto';
-export * from './create-client.dto';
+export * from './create-client-landing.dto';
+export * from './create-client-admin.dto';
+export * from './update-client-admin.dto';

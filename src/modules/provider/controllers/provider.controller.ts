@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Put,
-  Delete,
   Param,
   Body,
   Query,
@@ -11,19 +10,21 @@ import {
   HttpStatus,
   DefaultValuePipe,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { 
   ApiTags, 
   ApiOperation, 
   ApiQuery, 
   ApiResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ProviderService } from '../services';
 import { 
   CreateProviderDto, 
   UpdateProviderDto 
 } from '../dto';
-import { Public } from '../../../auth/decorators';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @ApiTags('Providers')
 @Controller('providers')
@@ -31,7 +32,8 @@ export class ProviderController {
   constructor(private readonly providerService: ProviderService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo proveedor' })
   @ApiResponse({
@@ -47,7 +49,8 @@ export class ProviderController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener proveedores con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -80,7 +83,8 @@ export class ProviderController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un proveedor por ID' })
   @ApiResponse({
@@ -96,7 +100,8 @@ export class ProviderController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un proveedor por ID' })
   @ApiResponse({

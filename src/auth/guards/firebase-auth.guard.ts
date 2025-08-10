@@ -26,7 +26,7 @@ export class FirebaseAuthGuard implements CanActivate {
       throw new UnauthorizedException('Token no enviado');
     }
 
-    const token = authHeader.split('Bearer ')[1];
+    const token = authHeader.split(' ')[1];
 
     try {
       const decoded = await admin.auth().verifyIdToken(token);

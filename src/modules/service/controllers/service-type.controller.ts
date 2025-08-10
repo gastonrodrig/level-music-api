@@ -8,18 +8,20 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  UseGuards,
   DefaultValuePipe,
   ParseIntPipe,
 } from '@nestjs/common';
+import { ServiceTypeService } from '../services';
+import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
 import { 
   ApiTags, 
   ApiOperation, 
   ApiQuery, 
-  ApiResponse 
+  ApiResponse,
+  ApiBearerAuth
 } from '@nestjs/swagger';
-import { Public } from '../../../auth/decorators';
-import { ServiceTypeService } from '../services';
-import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @ApiTags('Service Types')
 @Controller('service-types')
@@ -27,7 +29,8 @@ export class ServiceTypeController {
   constructor(private readonly serviceTypeService: ServiceTypeService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo tipo de servicio' })
   @ApiResponse({
@@ -43,11 +46,10 @@ export class ServiceTypeController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Obtener tipos de servicio con paginación, búsqueda y orden',
-  })
+  @ApiOperation({ summary: 'Obtener tipos de servicio con paginación, búsqueda y orden.' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de tipos de servicio obtenida paginada correctamente.',
@@ -78,7 +80,8 @@ export class ServiceTypeController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un tipo de servicio por ID' })
   @ApiResponse({
@@ -94,7 +97,8 @@ export class ServiceTypeController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un tipo de servicio por ID' })
   @ApiResponse({

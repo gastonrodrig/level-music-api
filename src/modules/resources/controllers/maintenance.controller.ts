@@ -10,8 +10,10 @@ import {
   Post,
   Query,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { 
+  ApiBearerAuth,
   ApiOperation, 
   ApiQuery, 
   ApiResponse, 
@@ -22,7 +24,7 @@ import {
   UpdateMaintenanceStatusDto 
 } from '../dto';
 import { MaintenanceService } from '../services';
-import { Public } from 'src/auth/decorators';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('maintenance')
 @ApiTags('Maintenance')
@@ -30,7 +32,8 @@ export class MaintenanceController {
   constructor(private readonly maintenanceServices: MaintenanceService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo mantenimiento' })
   @ApiResponse({
@@ -46,7 +49,8 @@ export class MaintenanceController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Obtener mantenimiento con paginación, búsqueda y orden',
@@ -106,7 +110,8 @@ export class MaintenanceController {
   }
 
   @Patch(':id/status')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar estado del mantenimiento' })
   @ApiResponse({

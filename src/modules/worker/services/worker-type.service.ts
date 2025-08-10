@@ -1,5 +1,6 @@
 import {
-  BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -9,6 +10,7 @@ import { Model } from 'mongoose';
 import { WorkerType } from '../schema';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
 import { SF_WORKER_TYPE } from 'src/core/utils';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class WorkerTypeService {
@@ -19,11 +21,26 @@ export class WorkerTypeService {
 
   async create(createWorkerTypeDto: CreateWorkerTypeDto): Promise<WorkerType> {
     try {
+      // Validar si el tipo de trabajador ya existe
+      const existing = await this.workerTypeModel.findOne({
+        name: createWorkerTypeDto.name,
+      });
+      if (existing) {
+        throw new HttpException(
+          {
+            code: errorCodes.WORKER_TYPE_ALREADY_EXISTS,
+            message: `El tipo de trabajador "${createWorkerTypeDto.name}" ya existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const worker = await this.workerTypeModel.create(createWorkerTypeDto);
       return await worker.save();
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
-        `Error creating worker: ${error.message}`,
+        `Error creating worker type: ${error.message}`,
       );
     }
   }
@@ -75,16 +92,16 @@ export class WorkerTypeService {
         _id: worker_type_id,
       });
       if (!workerType) {
-        throw new BadRequestException('Tipo de trabajador no encontrado');
+        throw new NotFoundException(
+          `Worker type with ID '${worker_type_id}' not found`,
+        );
       }
 
       return workerType;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
-        `Error finding workerType: ${error.message}`,
+        `Error finding worker type: ${error.message}`,
       );
     }
   }
@@ -93,25 +110,43 @@ export class WorkerTypeService {
     worker_type_id: string,
     updateWorkerTypeDto: UpdateWorkerTypeDto,
   ) {
-    const workerType = await this.workerTypeModel.findOne({
-      _id: worker_type_id,
-    });
-    if (!workerType) {
-      throw new BadRequestException('Tipo de trabajador no encontrado');
+    try {
+      // Validar que el tipo de trabajador no tenga el mismo nombre en otro registro
+      const existingName = await this.workerTypeModel.findOne({
+        name: updateWorkerTypeDto.name,
+        _id: { $ne: worker_type_id },
+      });
+
+      if (existingName) {
+        throw new HttpException(
+          {
+            code: errorCodes.WORKER_TYPE_ALREADY_EXISTS,
+            message: `El tipo de trabajador "${updateWorkerTypeDto.name}" ya existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Actualizar el tipo de trabajador
+      const updatedWorkerType = await this.workerTypeModel.findByIdAndUpdate(
+        worker_type_id,
+        updateWorkerTypeDto,
+        { new: true },
+      );
+
+      // Si no se encontró, lanzar una excepción
+      if (!updatedWorkerType) {
+        throw new NotFoundException(
+          `Worker type with ID ${worker_type_id} not found`,
+        );
+      }
+
+      return updatedWorkerType;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error updating worker type: ${error.message}`,
+      );
     }
-
-    Object.assign(workerType, updateWorkerTypeDto);
-    return await workerType.save();
-  }
-
-  async remove(worker_type_id: string) {
-    const workerType = await this.workerTypeModel.findOneAndDelete({
-      _id: worker_type_id,
-    });
-    if (!workerType) {
-      throw new BadRequestException('Tipo de trabajador no encontrado');
-    }
-
-    return { success: true };
   }
 }

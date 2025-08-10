@@ -1,27 +1,27 @@
-import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { DocType, Estado } from '../../../core/constants/app.constants';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { DocType } from 'src/core/constants/app.constants';
 
-export class UpdateUserDto {
+export class CreateClientAdminDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
-  @IsOptional()
-  email?: string;
+  @IsNotEmpty()
+  email: string;
 
   @ApiProperty({ example: 'John' })
   @IsString()
   @IsOptional()
-  first_name?: string;
+  first_name: string;
 
   @ApiProperty({ example: 'Doe' })
   @IsString()
   @IsOptional()
-  last_name?: string;
+  last_name: string;
 
   @ApiProperty({ example: '1234567890' })
   @IsString()
   @IsOptional()
-  phone?: string;
+  phone: string;
 
   @ApiProperty({ enum: DocType, example: DocType.DNI, required: false })
   @IsEnum(DocType)
@@ -31,10 +31,5 @@ export class UpdateUserDto {
   @ApiProperty({ example: '12345678', required: false })
   @IsString()
   @IsOptional()
-  document_number?: string;
-
-  @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
-  @IsEnum(Estado)
-  @IsOptional()
-  status?: Estado;
+  document_number?: string; 
 }

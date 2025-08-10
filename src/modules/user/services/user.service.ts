@@ -1,96 +1,141 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../schema';
-import { CreateClientDto, CreateUserDto, UpdateUserDto } from '../dto';
+import { CreateClientAdminDto, CreateClientLandingDto, UpdateClientAdminDto } from '../dto';
 import { SF_USER } from 'src/core/utils';
 import { generateRandomPassword } from 'src/core/utils/password-utils';
 import { AuthService } from 'src/modules/firebase/services';
 import { MailService } from 'src/modules/mail/service';
 import { Estado, Roles } from 'src/core/constants/app.constants';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<User>,
-    private authService: AuthService, 
-    private mailService: MailService, 
+    private authService: AuthService,
+    private mailService: MailService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async createClientLanding(createClientLandingDto: CreateClientLandingDto): Promise<User> {
     try {
-      const [existingUser, existingDocumentNumber] = await Promise.all([
-        this.userModel.findOne({ email: createUserDto.email }),
-        this.userModel.findOne({ document_number: createUserDto.document_number }),
+      // Validar email y documento únicos
+      const [existingEmail, existingDoc] = await Promise.all([
+        this.userModel.findOne({ email: createClientLandingDto.email }),
+        this.userModel.findOne({ document_number: createClientLandingDto.document_number }),
       ]);
 
-      if (existingUser) {
-        throw new BadRequestException('ERROR-001');
-      }
-      
-      if(createUserDto.created_by_admin) { 
-        if (existingDocumentNumber) {
-          throw new BadRequestException('ERROR-002');
-        }
+      if (existingEmail) {
+        throw new HttpException(
+          {
+            code: errorCodes.EMAIL_ALREADY_EXISTS,
+            message: 'El correo ya fue registrado previamnente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      const user = await this.userModel.create(createUserDto);
+      if (existingDoc) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Crea el usuario en la base de datos
+      const user = await this.userModel.create(createClientLandingDto);
       return await user.save();
     } catch (error) {
-      throw new InternalServerErrorException(`Error: ${error.message}`);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error creating client: ${error.message}`,
+      );
     }
   }
 
- async createClient(createClientDto: CreateClientDto): Promise<User> {
-  try {
-    // 1. Validar email y documento únicos
-    const [existingEmail, existingDoc] = await Promise.all([
-      this.userModel.findOne({ email: createClientDto.email }),
-      this.userModel.findOne({ document_number: createClientDto.document_number }),
-    ]);
+  async createClientAdmin(
+    createClientAdminDto: CreateClientAdminDto,
+  ): Promise<User> {
+    try {
+      // Validar email y documento únicos
+      const [existingEmail, existingDoc] = await Promise.all([
+        this.userModel.findOne({ email: createClientAdminDto.email }),
+        this.userModel.findOne({ document_number: createClientAdminDto.document_number }),
+      ]);
 
-    if (existingEmail) throw new BadRequestException('ERROR-001');
-    if (existingDoc) throw new BadRequestException('ERROR-002');
+      if (existingEmail) {
+        throw new HttpException(
+          {
+            code: errorCodes.EMAIL_ALREADY_EXISTS,
+            message: 'El correo ya fue registrado previamnente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    // 2. Generar contraseña aleatoria
-    const password = generateRandomPassword();
+      if (existingDoc) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    // 3. Crear usuario en Firebase
-    const firebaseUser = await this.authService.createUserWithEmail({
-      email: createClientDto.email,
-      password,
-    });
+      // Generar contraseña aleatoria
+      const password = generateRandomPassword();
 
-    if (!firebaseUser.success || !firebaseUser.uid) {
-      throw new InternalServerErrorException(firebaseUser.message);
+      // Crear usuario en Firebase
+      const firebaseUser = await this.authService.createUserWithEmail({
+        email: createClientAdminDto.email,
+        password,
+      });
+
+      if (!firebaseUser.success || !firebaseUser.uid) {
+        throw new InternalServerErrorException(firebaseUser.message);
+      }
+
+      // Armar datos finales con lógica de negocio
+      const userToCreate = {
+        ...createClientAdminDto,
+        auth_id: firebaseUser.uid,
+        role: Roles.CLIENTE,
+        status: Estado.ACTIVO,
+        created_by_admin: true,
+        needs_password_change: true,
+      };
+
+      const newUser = new this.userModel(userToCreate);
+      await newUser.save();
+
+      // Enviar correo con credenciales
+      await this.mailService.sendTemporalCredentials({
+        to: createClientAdminDto.email,
+        email: createClientAdminDto.email,
+        password,
+      });
+
+      return newUser;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error creating client: ${error.message}`,
+      );
     }
-
-    // 4. Armar datos finales con lógica de negocio
-    const userToCreate = {
-      ...createClientDto,
-      auth_id: firebaseUser.uid,
-      role: Roles.CLIENTE,
-      status: Estado.ACTIVO,
-      created_by_admin: true,
-      needs_password_change: true,
-    };
-
-    const newUser = new this.userModel(userToCreate);
-    await newUser.save();
-
-    // 5. Enviar correo con credenciales
-    await this.mailService.sendTemporalCredentials({
-      to: createClientDto.email,
-      email: createClientDto.email,
-      password,
-    });
-
-    return newUser;
-  } catch (error) {
-    throw new InternalServerErrorException(error.message || 'Error al crear el cliente');
   }
-}
 
   async findAllCustomersPaginated(
     limit = 5,
@@ -106,8 +151,8 @@ export class UserService {
       // Filtro de búsqueda (si hay search)
       const searchFilter = search
         ? {
-            $or: SF_USER.map(field => ({
-              [field]: { $regex: search, $options: 'i' }
+            $or: SF_USER.map((field) => ({
+              [field]: { $regex: search, $options: 'i' },
             })),
           }
         : {};
@@ -122,10 +167,7 @@ export class UserService {
       };
 
       // Unimos todos los filtros usando $and
-      const filters: any[] = [
-        baseFilter,
-        completeFieldsFilter,
-      ];
+      const filters: any[] = [baseFilter, completeFieldsFilter];
 
       if (search) {
         filters.push(searchFilter);
@@ -147,9 +189,7 @@ export class UserService {
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.userModel
-          .countDocuments(finalFilter)
-          .exec(),
+        this.userModel.countDocuments(finalFilter).exec(),
       ]);
 
       return { total, items };
@@ -168,9 +208,7 @@ export class UserService {
       }
       return user;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
+      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
@@ -183,26 +221,63 @@ export class UserService {
     }
   }
 
-  async update(user_id: string, updateUserDto: UpdateUserDto) {
+  async updateClientAdmin(user_id: string, updateUserDto: UpdateClientAdminDto): Promise<User> {
     try {
-      const [existingUser, existingDocumentNumber] = await Promise.all([
-        this.userModel.findOne({ email: updateUserDto.email, _id: { $ne: user_id } }),
-        this.userModel.findOne({ document_number: updateUserDto.document_number, _id: { $ne: user_id } }),
+      // Validar email y documento únicos
+      const [existingEmail, existingDocumentNumber] = await Promise.all([
+        this.userModel.findOne({
+          email: updateUserDto.email,
+          _id: { $ne: user_id },
+        }),
+        this.userModel.findOne({
+          document_number: updateUserDto.document_number,
+          _id: { $ne: user_id },
+        }),
       ]);
 
-      if (existingUser) throw new BadRequestException('ERROR-001');
-      if (existingDocumentNumber) throw new BadRequestException('ERROR-002');
+      if (existingEmail) {
+        throw new HttpException(
+          {
+            code: errorCodes.EMAIL_ALREADY_EXISTS,
+            message: 'El correo ya fue registrado previamnente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
+      if (existingDocumentNumber) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Actualizar usuario
       const updatedUser = await this.userModel.findOneAndUpdate(
         { _id: user_id },
         updateUserDto,
-        { new: true }
+        { new: true },
       );
 
+      // Si no se encontró el usuario, lanzar excepción
       if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
+
+      // Actualizar email en Firebase
+      const firebaseResponse = await this.authService.updateUserEmail(
+        updatedUser.auth_id,
+        { email: updateUserDto.email },
+      );
+
+      if (!firebaseResponse.success || !firebaseResponse.uid) {
+        throw new InternalServerErrorException(firebaseResponse.message);
+      }
 
       return updatedUser;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }

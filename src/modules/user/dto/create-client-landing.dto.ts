@@ -2,7 +2,7 @@ import { IsEmail, IsNotEmpty, IsString, IsEnum, IsOptional, IsBoolean } from 'cl
 import { ApiProperty } from '@nestjs/swagger';
 import { DocType, Estado, Roles } from '../../../core/constants/app.constants';
 
-export class CreateUserDto {
+export class CreateClientLandingDto {
   @ApiProperty({ example: 'auth_id_example' })
   @IsString()
   @IsOptional()

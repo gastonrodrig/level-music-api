@@ -14,7 +14,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { CreateClientDto, UpdateUserDto } from '../dto';
+import { CreateClientAdminDto, CreateClientLandingDto, UpdateClientAdminDto } from '../dto';
 import {
   ApiTags,
   ApiOperation,
@@ -30,29 +30,45 @@ import { FirebaseAuthGuard } from 'src/auth/guards';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('client')
-@Public()
-@HttpCode(HttpStatus.CREATED)
-@ApiOperation({ summary: 'Registrar un nuevo cliente' })
-@ApiResponse({
-  status: HttpStatus.CREATED,
-  description: 'El cliente ha sido creado correctamente.',
-})
-@ApiResponse({
-  status: HttpStatus.BAD_REQUEST,
-  description: 'Error al crear el cliente.',
-})
-createClient(@Body() createClientDto: CreateClientDto) {
-  return this.userService.createClient(createClientDto);
-}
+  // no se usa
+  @Post()
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear un nuevo usuario' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'El usuario ha sido creado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear el usuario.',
+  })
+  create(@Body() createClientLandingDto: CreateClientLandingDto) {
+    return this.userService.createClientLanding(createClientLandingDto);
+  }
 
+  @Post('client-admin')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Registrar un nuevo cliente desde administrador' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'El cliente ha sido creado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear el cliente.',
+  })
+  createClientAdmin(@Body() createClientAdminDto: CreateClientAdminDto) {
+    return this.userService.createClientAdmin(createClientAdminDto);
+  }
 
   @Get('customers-paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Obtener clientes con paginación, búsqueda y orden',
-  })
+  @ApiOperation({ summary: 'Obtener clientes con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de clientes obtenida paginada correctamente.',
@@ -61,36 +77,11 @@ createClient(@Body() createClientDto: CreateClientDto) {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al obtener los clientes paginados.',
   })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items por página',
-  })
-  @ApiQuery({
-    name: 'offset',
-    required: false,
-    type: Number,
-    description: 'Offset',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Texto para filtrar',
-  })
-  @ApiQuery({
-    name: 'sortField',
-    required: false,
-    type: String,
-    description: 'Campo para ordenar',
-  })
-  @ApiQuery({
-    name: 'sortOrder',
-    required: false,
-    enum: ['asc', 'desc'],
-    description: 'Dirección de orden',
-  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
   findAllCustomersPaginated(
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
@@ -108,7 +99,8 @@ createClient(@Body() createClientDto: CreateClientDto) {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un usuario por ID' })
   @ApiResponse({
@@ -124,7 +116,8 @@ createClient(@Body() createClientDto: CreateClientDto) {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un usuario por ID' })
   @ApiResponse({
@@ -135,8 +128,8 @@ createClient(@Body() createClientDto: CreateClientDto) {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al actualizar el usuario.',
   })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(id, updateUserDto);
+  update(@Param('id') id: string, @Body() updateClientAdminDto: UpdateClientAdminDto) {
+    return this.userService.updateClientAdmin(id, updateClientAdminDto);
   }
 
   @Get('find/:email')
@@ -156,7 +149,8 @@ createClient(@Body() createClientDto: CreateClientDto) {
   }
 
   @Patch('reset-password-flag/:uid')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Resetear el flag de cambio de contraseña para un usuario',

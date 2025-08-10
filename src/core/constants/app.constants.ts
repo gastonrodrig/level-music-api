@@ -7,7 +7,7 @@ export const API_PREFIX = 'api/v1';
 export enum Roles {
   ADMIN = 'Administrador',
   CLIENTE = 'Cliente',
-  TRABAJADOR = 'Trabajador',
+  PERSONAL_EXTERNO = 'Personal Externo',
   ALMACENERO = 'Almacenero',
   TRANSPORTISTA = 'Transportista',
 }

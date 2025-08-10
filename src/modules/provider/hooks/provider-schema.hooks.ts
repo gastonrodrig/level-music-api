@@ -19,7 +19,7 @@ export function addProviderHooks(schema: any, connection: Connection) {
   schema.post('findOneAndUpdate', async function (doc: any) {
     if (!doc) return;
     await ServiceModel.updateMany(
-      { provider: doc._id.toString() },
+      { provider: doc._id },
       { $set: { provider_name: doc.name } }
     );
   });

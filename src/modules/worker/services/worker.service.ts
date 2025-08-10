@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -12,6 +14,10 @@ import { WorkerType } from '../schema';
 import { SF_WORKER } from 'src/core/utils';
 import { User } from 'src/modules/user/schema';
 import { AuthService } from 'src/modules/firebase/services';
+import { errorCodes } from 'src/core/common';
+import { generateRandomPassword } from 'src/core/utils/password-utils';
+import { Estado } from 'src/core/constants/app.constants';
+import { MailService } from 'src/modules/mail/service';
 
 @Injectable()
 export class WorkerService {
@@ -23,80 +29,115 @@ export class WorkerService {
     @InjectModel(User.name)
     private userModel: Model<User>,
     private authService: AuthService,
+    private mailService: MailService,
   ) {}
 
   async create(createWorkerDto: CreateWorkerDto): Promise<Worker> {
     try {
-      const worker_type = await this.workerTypeModel.findById(createWorkerDto.worker_type_id);
-      if (!worker_type) throw new BadRequestException('Tipo de trabajador no encontrado');
+      // Validar email y documento únicos; y tipo de trabajador existente
+      const [workerType, existingEmail, existingDoc] = await Promise.all([
+        this.workerTypeModel.findById(createWorkerDto.worker_type_id),
+        this.workerModel.findOne({ email: createWorkerDto.email }),
+        this.workerModel.findOne({
+          document_number: createWorkerDto.document_number,
+        }), 
+      ]);
 
-      let auth_id: string | null = null;
+      if (!workerType) {
+        throw new HttpException(
+          {
+            code: errorCodes.WORKER_TYPE_NOT_FOUND,
+            message: `El tipo de trabajador "${createWorkerDto.worker_type_id}" no existe.`,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (existingEmail) {
+        throw new HttpException(
+          {
+            code: errorCodes.EMAIL_ALREADY_EXISTS,
+            message: 'El correo ya fue registrado previamnente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (existingDoc) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
       // Solo crear en Firebase si corresponde
-      if (worker_type.name === 'Almacenero' || worker_type.name === 'Transportista') {
+      if (
+        workerType.name === 'Personal Externo' ||
+        workerType.name === 'Transportista'
+      ) {
+        // Generar contraseña aleatoria
+        const password = generateRandomPassword();
+
+        // Crear usuario en Firebase
         const firebaseResult = await this.authService.createUserWithEmail({
           email: createWorkerDto.email,
-          password: createWorkerDto.password,
+          password,
         });
 
-        if (!firebaseResult.success) {
-          throw new BadRequestException(firebaseResult.message);
+        if (!firebaseResult.success || !firebaseResult.uid) {
+          throw new InternalServerErrorException(firebaseResult.message);
         }
 
-        auth_id = firebaseResult.uid;
-
-        // Crear User
-        const newUser = new this.userModel({
-          auth_id: auth_id,
-          email: createWorkerDto.email,
-          phone: createWorkerDto.phone,
-          document_type: createWorkerDto.document_type,
-          document_number: createWorkerDto.document_number,
-          first_name: createWorkerDto.first_name,
-          last_name: createWorkerDto.last_name,
-          role: createWorkerDto.role,
-          status: createWorkerDto.status,
+        // Crear usuario en la BD
+        const userToCreate = {
+          ...createWorkerDto,
+          auth_id: firebaseResult.uid,
+          status: Estado.ACTIVO,
           created_by_admin: true,
           needs_password_change: true,
-          profile_picture: null
-        });
+        };
 
+        const newUser = new this.userModel(userToCreate);
         const user = await newUser.save();
 
-        // Crear Worker en Mongo
-        const worker = new this.workerModel({
-          worker_type: worker_type._id,
-          user: user._id,
-          worker_type_name: worker_type.name,
-          first_name: createWorkerDto.first_name,
-          last_name: createWorkerDto.last_name,
+        // Enviar correo con credenciales
+        await this.mailService.sendTemporalCredentials({
+          to: createWorkerDto.email,
           email: createWorkerDto.email,
-          phone: createWorkerDto.phone,
-          document_type: createWorkerDto.document_type,
-          document_number: createWorkerDto.document_number,
-          role: createWorkerDto.role,
-          status: createWorkerDto.status,
+          password,
         });
 
+        // Crear trabajador en la BD
+        const workerToCreate = {
+          ...createWorkerDto,
+          worker_type: workerType._id,
+          user: user._id,
+          worker_type_name: workerType.name,
+          status: Estado.ACTIVO
+        };
+
+        const worker = new this.workerModel(workerToCreate);
         return await worker.save();
       } else {
-        const worker = new this.workerModel({
-          worker_type: worker_type._id,
-          worker_type_name: worker_type.name,
-          first_name: createWorkerDto.first_name,
-          last_name: createWorkerDto.last_name,
-          email: createWorkerDto.email,
-          phone: createWorkerDto.phone,
-          document_type: createWorkerDto.document_type,
-          document_number: createWorkerDto.document_number,
-          role: createWorkerDto.role,
-          status: createWorkerDto.status,
-        });
+        // Crear trabajador en la BD (sin Firebase y usuario)
+        const workerToCreate = {
+          ...createWorkerDto,
+          worker_type: workerType._id,
+          worker_type_name: workerType.name,
+          status: Estado.ACTIVO
+        };
 
+        const worker = new this.workerModel(workerToCreate);
         return await worker.save();
       }
     } catch (error) {
-      throw new InternalServerErrorException(`Error creating worker: ${error.message}`);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error creating worker: ${error.message}`,
+      );
     }
   }
 
@@ -109,12 +150,12 @@ export class WorkerService {
   ): Promise<{ total: number; items: Worker[] }> {
     try {
       const filter = search
-      ? {
-          $or: SF_WORKER.map(field => ({
-            [field]: { $regex: search, $options: 'i' }
-          })),
-        }
-      : {};
+        ? {
+            $or: SF_WORKER.map((field) => ({
+              [field]: { $regex: search, $options: 'i' },
+            })),
+          }
+        : {};
 
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
@@ -128,15 +169,13 @@ export class WorkerService {
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.workerModel
-          .countDocuments(filter)
-          .exec(),
+        this.workerModel.countDocuments(filter).exec(),
       ]);
 
       return { total, items };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error finding worker types with pagination: ${error.message}`,
+        `Error finding workers with pagination: ${error.message}`,
       );
     }
   }
@@ -147,37 +186,69 @@ export class WorkerService {
       if (!worker) {
         throw new BadRequestException('Trabajador no encontrado');
       }
-
       return worker;
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        `Error finding worker: ${error.message}`,
-      );
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(`Error finding worker: ${error.message}`);
     }
   }
 
   async update(worker_id: string, updateWorkerDto: UpdateWorkerDto) {
     try {
+      // Validar email y documento únicos
+      const [existingEmail, existingDocumentNumber] = await Promise.all([
+        this.workerModel.findOne({ 
+          email: updateWorkerDto.email,
+          _id: { $ne: worker_id },
+        }),
+        this.workerModel.findOne({
+          document_number: updateWorkerDto.document_number,
+          _id: { $ne: worker_id },
+        }),
+      ])
+
+      if (existingEmail) {
+        throw new HttpException(
+          {
+            code: errorCodes.EMAIL_ALREADY_EXISTS,
+            message: 'El correo ya fue registrado previamnente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (existingDocumentNumber) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Buscar trabajador
       const worker = await this.workerModel.findById(worker_id);
-      if (!worker) throw new NotFoundException(`Worker not found`);
 
+      // Buscar tipo de trabajador
       const workerType = await this.workerTypeModel.findById(worker.worker_type);
-      if (!workerType) throw new NotFoundException(`Worker type not found`);
 
-      // Si es Almacenero o Transportista, actualizar también el usuario y Firebase
-      if (workerType.name === 'Almacenero' || workerType.name === 'Transportista') {
-        if (!worker.user) throw new NotFoundException(`User not found for this worker`);
-
+      // Si es Personal Externo o Transportista, actualizar también el usuario y Firebase
+      if (
+        workerType.name === 'Personal Externo' ||
+        workerType.name === 'Transportista'
+      ) {
         const user = await this.userModel.findById(worker.user);
-        if (!user) throw new NotFoundException(`User not found`);
 
-        await this.authService.updateUserEmail(user.auth_id, { 
-          email: updateWorkerDto.email 
+        // Si no existe el usuario, lanzar excepción
+        if (!user) throw new BadRequestException(`User not found`);
+
+        // Actualizar usuario en Firebase
+        await this.authService.updateUserEmail(user.auth_id, {
+          email: updateWorkerDto.email,
         });
 
+        // Actualizar usuario en la BD
         await this.userModel.findByIdAndUpdate(worker.user, {
           email: updateWorkerDto.email,
           phone: updateWorkerDto.phone,
@@ -188,18 +259,25 @@ export class WorkerService {
           status: updateWorkerDto.status,
         });
       }
+
       // Actualizar el trabajador
       const updatedWorker = await this.workerModel.findOneAndUpdate(
         { _id: worker_id },
         updateWorkerDto,
-        { new: true }
+        { new: true },
       );
+      
+      // Si no se encontró el trabajador, lanzar excepción
       if (!updatedWorker) {
-        throw new NotFoundException(`Worker not found`);
+        throw new BadRequestException(`Worker not found`);
       }
+
       return updatedWorker;
     } catch (error) {
-      throw new InternalServerErrorException(`Error updating worker: ${error.message}`);
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error updating worker: ${error.message}`,
+      );
     }
   }
 }

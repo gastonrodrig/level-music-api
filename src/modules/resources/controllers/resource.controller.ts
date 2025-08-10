@@ -11,20 +11,22 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { 
   ApiTags, 
   ApiOperation, 
   ApiQuery, 
-  ApiResponse 
+  ApiResponse, 
+  ApiBearerAuth
 } from '@nestjs/swagger';
 import { 
   CreateResourceDto, 
   UpdateResourceDto, 
-  UpdateResourceStatusDto 
 } from '../dto';
 import { ResourceService } from '../services';
 import { Public } from '../../../auth/decorators';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('resources')
 @ApiTags('Resource')
@@ -32,7 +34,8 @@ export class ResourceController {
   constructor(private readonly resourceService: ResourceService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo recurso' })
   @ApiResponse({
@@ -48,7 +51,8 @@ export class ResourceController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener recurso con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -81,7 +85,8 @@ export class ResourceController {
   }
   
   @Get('by-serial')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener equipo por número de serie' })
   @ApiQuery({ name: 'serial', required: true, type: String, description: 'Número de serie del equipo' })
@@ -98,7 +103,8 @@ export class ResourceController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Obtener un recurso por ID' })
   @ApiResponse({
@@ -114,7 +120,8 @@ export class ResourceController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un recurso por ID' })
   @ApiResponse({ 
@@ -130,24 +137,5 @@ export class ResourceController {
     @Body() updateResourceDto: UpdateResourceDto
   ) {
     return this.resourceService.update(id, updateResourceDto);
-  }
-
-  @Patch(':id/status')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar estado de un recurso' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El estado del recurso ha sido actualizado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar el estado del recurso.',
-  })
-  updateStatus(
-    @Param('id') id: string,
-    @Body() statusDto: UpdateResourceStatusDto
-  ) {
-    return this.resourceService.updateStatus(id, statusDto);
   }
 }

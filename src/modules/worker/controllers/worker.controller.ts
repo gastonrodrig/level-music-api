@@ -11,11 +11,12 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { WorkerService } from '../services/worker.service';
 import { CreateWorkerDto, UpdateWorkerDto } from '../dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { Public } from '../../../auth/decorators';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('workers')
 @ApiTags('Worker')
@@ -23,7 +24,8 @@ export class WorkerController {
   constructor(private readonly workerService: WorkerService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo trabajador' })
   @ApiResponse({
@@ -39,40 +41,42 @@ export class WorkerController {
   }
 
   @Get('paginated')
-    @Public()
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Obtener trabajadores con paginación, búsqueda y orden' })
-    @ApiResponse({
-      status: HttpStatus.OK,
-      description: 'Lista de trabajadores obtenida paginada correctamente.',
-    })
-    @ApiResponse({
-      status: HttpStatus.BAD_REQUEST,
-      description: 'Error al obtener los trabajadores paginados.',
-    })
-    @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
-    @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
-    @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
-    @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
-    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
-    findAllPaginated(
-      @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-      @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
-      @Query('search') search?: string,
-      @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
-      @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
-    ) {
-      return this.workerService.findAllPaginated(
-        limit,
-        offset,
-        search?.trim(),
-        sortField,
-        sortOrder,
-      );
-    }
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener trabajadores con paginación, búsqueda y orden' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de trabajadores obtenida paginada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los trabajadores paginados.',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findAllPaginated(
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.workerService.findAllPaginated(
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
+  }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener un trabajador por ID' })
   @ApiResponse({
@@ -88,7 +92,8 @@ export class WorkerController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un trabajador por ID' })
   @ApiResponse({
