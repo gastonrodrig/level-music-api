@@ -7,6 +7,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { Model } from 'mongoose';
 import { User } from '../schema';
 import { CreateClientAdminDto, CreateClientLandingDto, UpdateClientAdminDto } from '../dto';
@@ -22,6 +24,8 @@ export class UserService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<User>,
+    @InjectQueue('mail')
+    private mailQueue: Queue,
     private authService: AuthService,
     private mailService: MailService,
   ) {}
@@ -121,11 +125,17 @@ export class UserService {
       const newUser = new this.userModel(userToCreate);
       await newUser.save();
 
-      // Enviar correo con credenciales
-      await this.mailService.sendTemporalCredentials({
+      // Encolar el envío de correo con credenciales para envío en background
+      await this.mailQueue.add('sendTemporalCredentials', {
         to: createClientAdminDto.email,
         email: createClientAdminDto.email,
         password,
+      }, {
+        attempts: 3, // Reintentar hasta 3 veces en caso de error
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
       });
 
       return newUser;
