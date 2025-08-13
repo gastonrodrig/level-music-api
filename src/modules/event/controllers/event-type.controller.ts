@@ -13,7 +13,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Public } from 'src/auth/decorators';
 import { EventTypeService } from '../services';
 import { CreateEventTypeDto, UpdateEventTypeDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';

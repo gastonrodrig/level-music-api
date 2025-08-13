@@ -1,13 +1,7 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { MailService } from './service';
-
-export interface MailJobData {
-  to: string;
-  email: string;
-  password: string;
-}
+import { MailService } from '../service';
 
 @Processor('mail')
 export class MailProcessor extends WorkerHost {
@@ -17,7 +11,7 @@ export class MailProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<MailJobData>): Promise<void> {
+  async process(job: Job<any>): Promise<void> {
     this.logger.log(`Processing mail job ${job.id} for ${job.data.to}`);
 
     try {
@@ -33,7 +27,7 @@ export class MailProcessor extends WorkerHost {
         `Failed to send temporal credentials mail to ${job.data.to}: ${error.message}`,
         error.stack,
       );
-      throw error; // Re-throw to mark job as failed
+      throw error;
     }
   }
 }

@@ -12,7 +12,6 @@ import { StorehouseMovementModule } from './modules/storehouse/storehouse.module
 import { ProviderModule } from './modules/provider/provider.module';
 import { MailModule } from './modules/mail/mail.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),

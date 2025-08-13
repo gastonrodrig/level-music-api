@@ -55,6 +55,7 @@ jobs:
           image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/level-music-app:${{ github.sha }}
           env_vars: |
             MONGO_URI=${{ secrets.MONGO_URI }}
+            REDIS_URL=${{ secrets.REDIS_URL }}
             FIREBASE_CREDENTIALS_PATH=${{ secrets.FIREBASE_SA_B64 }}
             FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
