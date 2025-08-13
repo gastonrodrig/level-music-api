@@ -1,8 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsArray, IsEnum, IsOptional, ValidateNested } from 'class-validator';
 import { IsString } from "class-validator";
 import { CategoryType } from "../enum";
 import { Estado } from '../../../core/constants/app.constants';
+import { CustomFieldDto } from "./create-event-type-custom-field.dto";
+import { Type } from "class-transformer";
 
 export class CreateEventTypeDto {
   @ApiProperty({ example: 'Descripcion del tipo de evento', required: false })
@@ -24,4 +26,14 @@ export class CreateEventTypeDto {
   @IsEnum(Estado)
   @IsOptional()
   status?: Estado;
+
+  @ApiProperty({
+    type: [CustomFieldDto],
+    required: false,
+    description: "Lista de atributos personalizados para el tipo de evento",
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CustomFieldDto)
+  attributes?: CustomFieldDto[];
 }

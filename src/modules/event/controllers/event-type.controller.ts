@@ -10,11 +10,13 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
 import { EventTypeService } from '../services';
 import { CreateEventTypeDto, UpdateEventTypeDto } from '../dto';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('event-type')
 @ApiTags('Event-Type')
@@ -22,7 +24,8 @@ export class EventTypeController {
   constructor(private readonly eventTypeService: EventTypeService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo tipo de evento' })
   @ApiResponse({
@@ -38,7 +41,8 @@ export class EventTypeController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Obtener tipos de evento con paginación, búsqueda y orden',
@@ -98,7 +102,8 @@ export class EventTypeController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Obtener un tipo de evento por ID' })
   @ApiResponse({
@@ -114,7 +119,8 @@ export class EventTypeController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un tipo de servicio por ID' })
   @ApiResponse({
