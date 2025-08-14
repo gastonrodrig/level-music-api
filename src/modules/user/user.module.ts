@@ -14,7 +14,7 @@ import { Worker, WorkerSchema } from '../worker/schema';
 @Module({
   imports: [
     BullModule.registerQueue({
-      name: 'mail',
+      name: 'temporal-credentials',
     }),
     MongooseModule.forFeature([
       { name: Worker.name, schema: WorkerSchema },

@@ -1,1 +1,1 @@
-export * from './mail.processor';
+export * from './temporal-credentials.processor';

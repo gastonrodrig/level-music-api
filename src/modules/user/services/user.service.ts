@@ -305,4 +305,40 @@ export class UserService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
+
+  async sendPasswordResetEmail(email: string): Promise<void> {
+  try {
+    const user = await this.userModel.findOne({ email });
+if (!user) {
+        throw new HttpException(
+          {
+            code: errorCodes.CLIENT_NOT_FOUND,
+            message: 'No hay un cliente asociado a ese correo.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+    if (user.role !== Roles.CLIENTE) {
+      throw new HttpException(
+          {
+            code: errorCodes.USER_IS_NOT_CLIENT,
+            message: 'Este correo no pertenece a un cliente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+    }
+
+    // Usar Firebase Admin SDK para generar el enlace
+    const resetLink = await this.authService.generatePasswordResetLink(email);
+
+
+    // Enviar el enlace por correo
+    await this.mailService.sendPasswordResetLink({
+      to: email,
+      link: resetLink,
+    });
+  } catch (error) {
+    throw new InternalServerErrorException(`Error enviando enlace de reseteo: ${error.message}`);
+  }
+}
 }

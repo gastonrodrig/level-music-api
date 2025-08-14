@@ -7,7 +7,7 @@ import { MailProcessor } from "./processor";
 @Module({
   imports: [
     BullModule.registerQueue({
-      name: 'mail',
+      name: 'temporal-credentials',
     }),
   ],
   providers: [MailService, MailProcessor],

@@ -40,4 +40,16 @@ export class AuthService {
       };
     }
   }
+  
+  async generatePasswordResetLink(email: string): Promise<string> {
+    try {
+      const resetLink = await admin.auth().generatePasswordResetLink(email, {
+        url: `${process.env.APP_URL}/auth/reset-password`,
+        handleCodeInApp: true,
+      });
+      return resetLink;
+    } catch (error) {
+      throw new Error(error.message || 'No se pudo generar el enlace de reseteo');
+    }
+  }
 }

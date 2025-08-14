@@ -83,5 +83,31 @@ levelmusiccorp@gmail.com
       throw new Error(`Failed to send email: ${error.message}`);
     }
   }
+
+  async sendPasswordResetLink(dto: { to: string; link: string }) {
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: dto.to,
+      subject: 'Recuperación de contraseña - Level Music Corp',
+      text: `Hola,
+
+Hemos recibido una solicitud para restablecer tu contraseña.
+Por favor, haz clic en el siguiente enlace para crear una nueva contraseña:
+
+${dto.link}
+
+Si no solicitaste este cambio, puedes ignorar este correo.
+
+Saludos,
+Equipo Level Music Corp`,
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      return result;
+    } catch (error) {
+      throw new Error(`Failed to send password reset email: ${error.message}`);
+    }
+  }
 }
 
