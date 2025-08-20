@@ -1,12 +1,12 @@
 import { Prop, Schema } from "@nestjs/mongoose";
-import { CustomFieldType } from "../enum";
+import { ServiceTypeCustomFieldType } from "../enum";
 
 @Schema({ _id: false }) 
-export class CustomField {
+export class ServiceTypeCustomField {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, enum: CustomFieldType })
+  @Prop({ required: true, enum: ServiceTypeCustomFieldType })
   type: string;
 
   @Prop({ default: false })

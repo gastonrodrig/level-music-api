@@ -8,7 +8,9 @@ import {
   EventSchema, 
   EventTypeSchema, 
   EventTaskSchema, 
-  ActivityTemplateSchema, 
+  ActivityTemplateSchema,
+  FeaturedEvent,
+  FeaturedEventSchema, 
 } from './schema';
 import { 
   ActivityTemplateService, 
@@ -36,6 +38,7 @@ import {
   User,
   UserSchema
 } from 'src/modules/user/schema';
+import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 
 @Module({
   imports: [
@@ -52,6 +55,8 @@ import {
         { name: ActivityTemplate.name, schema: ActivityTemplateSchema },
         { name: WorkerType.name, schema: WorkerTypeSchema },
         { name: User.name, schema: UserSchema },
+        { name: FeaturedEvent.name, schema: FeaturedEventSchema },
+        { name: FeaturedEventsMedia.name, schema: FeaturedEventsMediaSchema },
       ]);
     })(),
   ],
