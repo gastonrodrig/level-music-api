@@ -13,9 +13,10 @@ import { Worker, WorkerSchema } from '../worker/schema';
 
 @Module({
   imports: [
-    BullModule.registerQueue({
-      name: 'temporal-credentials',
-    }),
+    BullModule.registerQueue(
+      { name: 'temporal-credentials' },
+      { name: 'forgot-password' },
+    ),
     MongooseModule.forFeature([
       { name: Worker.name, schema: WorkerSchema },
     ]),

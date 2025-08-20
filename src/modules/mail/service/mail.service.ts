@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import * as nodemailer from 'nodemailer';
-import { CreateTemporalCredentialMailDto, CreateMailDto } from '../dto';
+import { CreateTemporalCredentialMailDto, CreateMailDto, CreatePasswordResetLinkMailDto } from '../dto';
 
 @Injectable()
 export class MailService {
@@ -84,7 +84,7 @@ levelmusiccorp@gmail.com
     }
   }
 
-  async sendPasswordResetLink(dto: { to: string; link: string }) {
+  async sendPasswordResetLink(dto: CreatePasswordResetLinkMailDto) {
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: dto.to,

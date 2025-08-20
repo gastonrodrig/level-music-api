@@ -14,7 +14,12 @@ import {
   Patch,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { CreateClientAdminDto, CreateClientLandingDto, UpdateClientAdminDto } from '../dto';
+import {
+  CreateClientAdminDto,
+  CreateClientLandingDto,
+  RequestPasswordResetDto,
+  UpdateClientAdminDto,
+} from '../dto';
 import {
   ApiTags,
   ApiOperation,
@@ -166,5 +171,21 @@ export class UserController {
   })
   resetPasswordChangeFlag(@Param('uid') id: string) {
     return this.userService.resetPasswordChangeFlag(id);
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Solicitar enlace de reseteo de contraseña' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Si el correo pertenece a un cliente válido, se enviará el enlace.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al solicitar el enlace de reseteo de contraseña.',
+  })
+  async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
+    return this.userService.sendPasswordResetEmail(dto.email);
   }
 }

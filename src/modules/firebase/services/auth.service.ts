@@ -42,14 +42,12 @@ export class AuthService {
   }
   
   async generatePasswordResetLink(email: string): Promise<string> {
-    try {
-      const resetLink = await admin.auth().generatePasswordResetLink(email, {
-        url: `${process.env.APP_URL}/auth/reset-password`,
-        handleCodeInApp: true,
-      });
-      return resetLink;
-    } catch (error) {
-      throw new Error(error.message || 'No se pudo generar el enlace de reseteo');
-    }
+    const firebaseLink = await admin.auth().generatePasswordResetLink(email);
+    
+    const oobCode = new URL(firebaseLink).searchParams.get('oobCode');
+    if (!oobCode) throw new Error('No se pudo extraer oobCode');
+
+    const baseUrl = process.env.APP_URL;
+    return `${baseUrl}/auth/reset-password?oobCode=${oobCode}&mode=resetPassword`;
   }
 }

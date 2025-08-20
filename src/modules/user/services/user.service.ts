@@ -24,8 +24,10 @@ export class UserService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<User>,
-    @InjectQueue('mail')
-    private mailQueue: Queue,
+    @InjectQueue('temporal-credentials')
+    private temporalCredentialsQueue: Queue,
+    @InjectQueue('forgot-password')
+    private forgotPasswordQueue: Queue,
     private authService: AuthService,
     private mailService: MailService,
   ) {}
@@ -35,7 +37,12 @@ export class UserService {
       // Validar email y documento únicos
       const [existingEmail, existingDoc] = await Promise.all([
         this.userModel.findOne({ email: createClientLandingDto.email }),
-        this.userModel.findOne({ document_number: createClientLandingDto.document_number }),
+        this.userModel.findOne({
+          $and: [
+            { document_number: createClientLandingDto.document_number },
+            { document_number: { $nin: [null, ''] } }
+          ]
+        }),
       ]);
 
       if (existingEmail) {
@@ -125,17 +132,16 @@ export class UserService {
       const newUser = new this.userModel(userToCreate);
       await newUser.save();
 
-      // Encolar el envío de correo con credenciales para envío en background
-      await this.mailQueue.add('sendTemporalCredentials', {
+      // Encola el envío de correo con credenciales para envío en background
+      await this.temporalCredentialsQueue.add('sendTemporalCredentials', {
         to: createClientAdminDto.email,
         email: createClientAdminDto.email,
         password,
       }, {
-        attempts: 3, // Reintentar hasta 3 veces en caso de error
-        backoff: {
-          type: 'exponential',
-          delay: 2000,
-        },
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: 1000,
+        removeOnFail: 100,
       });
 
       return newUser;
@@ -307,9 +313,10 @@ export class UserService {
   }
 
   async sendPasswordResetEmail(email: string): Promise<void> {
-  try {
-    const user = await this.userModel.findOne({ email });
-if (!user) {
+    try {
+      // Validar que el cliente exista
+      const user = await this.userModel.findOne({ email });
+      if (!user) {
         throw new HttpException(
           {
             code: errorCodes.CLIENT_NOT_FOUND,
@@ -318,27 +325,42 @@ if (!user) {
           HttpStatus.BAD_REQUEST,
         );
       }
-    if (user.role !== Roles.CLIENTE) {
-      throw new HttpException(
+
+      // Validar que el usuario sea un cliente
+      if (user.role !== Roles.CLIENTE) {
+        throw new HttpException(
           {
             code: errorCodes.USER_IS_NOT_CLIENT,
             message: 'Este correo no pertenece a un cliente.',
           },
           HttpStatus.BAD_REQUEST,
         );
+      }
+
+      // Usar Firebase Admin SDK para generar el enlace
+      const resetLink = await this.authService.generatePasswordResetLink(email);
+
+      await this.forgotPasswordQueue.add('sendPasswordResetLink', {
+        to: email,
+        link: resetLink,
+      }, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: 1000,
+        removeOnFail: 100,
+      });
+    } catch (error) {
+      if (error.message?.includes('Unable to create the email action link')) {
+        throw new HttpException(
+          {
+            code: errorCodes.INVALID_PROVIDER,
+            message: 'Este correo está registrado con un proveedor externo. No es posible restablecer la contraseña.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error enviando enlace de reseteo: ${error.message}`);
     }
-
-    // Usar Firebase Admin SDK para generar el enlace
-    const resetLink = await this.authService.generatePasswordResetLink(email);
-
-
-    // Enviar el enlace por correo
-    await this.mailService.sendPasswordResetLink({
-      to: email,
-      link: resetLink,
-    });
-  } catch (error) {
-    throw new InternalServerErrorException(`Error enviando enlace de reseteo: ${error.message}`);
   }
-}
 }
