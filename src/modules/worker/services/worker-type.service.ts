@@ -44,7 +44,7 @@ export class WorkerTypeService {
       );
     }
   }
-
+  /* Funcion para 5 */
   async findAllPaginated(
     limit = 5,
     offset = 0,
@@ -146,6 +146,19 @@ export class WorkerTypeService {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error updating worker type: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Obtiene todos los tipos de trabajadores sin paginación ni filtros.
+   */
+  async findAll(): Promise<WorkerType[]> {
+    try {
+      return await this.workerTypeModel.find().exec();
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error obteniendo todos los tipos de trabajador: ${error.message}`,
       );
     }
   }
