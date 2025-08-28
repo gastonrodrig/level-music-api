@@ -188,4 +188,25 @@ export class UserController {
   async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
     return this.userService.sendPasswordResetEmail(dto.email);
   }
+
+
+  @Patch('extra-data/:id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar información extra de un usuario por ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'La información extra del usuario ha sido actualizada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar la información extra del usuario.',
+  })
+  async updateExtraData(
+  @Param('id') id: string,
+  @Body('extraData') extraData: boolean
+) {
+  return this.userService.updateUserExtraData(id, extraData);
+}
 }

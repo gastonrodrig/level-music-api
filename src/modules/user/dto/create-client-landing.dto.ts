@@ -62,4 +62,11 @@ export class CreateClientLandingDto {
   @IsString()
   @IsOptional()
   profile_picture?: string;
+
+
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
+  extraData?: boolean;
+
+  
 }
