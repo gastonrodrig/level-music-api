@@ -12,16 +12,27 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
+
 import { WorkerTypeService } from '../services/worker-type.service';
 import { CreateWorkerTypeDto, UpdateWorkerTypeDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-
+import { Public } from '../../../auth/decorators';
 @Controller('worker-type')
 @ApiTags('Worker Type')
 export class WorkerTypeController {
   constructor(private readonly workerTypeService: WorkerTypeService) {}
-
+ @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los tipos de trabajadores (sin paginación)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista completa de tipos de trabajadores obtenida correctamente.',
+  })
+  async findAll() {
+    return this.workerTypeService.findAll();
+  }
   @Post()
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -109,4 +120,6 @@ export class WorkerTypeController {
   ) {
     return this.workerTypeService.update(id, updateWorkerTypeDto);
   }
+
+ 
 }
