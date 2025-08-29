@@ -195,7 +195,45 @@ export class MaintenanceService {
         );
       }
 
-      maintenance.status = updateMaintenanceStatusDto.status;
+      
+
+      // Si pasa a estado reagendado, se requiere un motivo de reagendacion y se reprograma
+      if (updateMaintenanceStatusDto.status === MaintenanceStatusType.REAGENDADO) {
+        maintenance.reagendation_reason = updateMaintenanceStatusDto.reagendation_reason;
+        maintenance.return_to_available = updateMaintenanceStatusDto.return_to_available;
+        
+        // Para mantenimientos correctivos, verificar el valor del booleano
+        if (maintenance.type === MaintenanceType.CORRECTIVO) {
+          const newStatus = updateMaintenanceStatusDto.return_to_available 
+            ? ResourceStatusType.DISPONIBLE 
+            : ResourceStatusType.DAÑADO;
+            
+          await this.resourceModel.findByIdAndUpdate(
+            maintenance.resource,
+            { status: newStatus }
+          );
+
+          // Si la reagendacion es real (recurso queda dañado), se requiere fecha de reagendamiento
+          if (!updateMaintenanceStatusDto.return_to_available && updateMaintenanceStatusDto.rescheduled_date) {
+            const rescheduledDate = new Date(updateMaintenanceStatusDto.rescheduled_date);
+            // Actualizar la fecha del mantenimiento
+            maintenance.date = rescheduledDate;
+          }
+        } else {
+          // Para mantenimientos preventivos, siempre regresa a disponible
+          await this.resourceModel.findByIdAndUpdate(
+            maintenance.resource,
+            { status: ResourceStatusType.DISPONIBLE }
+          );
+        }
+
+        // Establecer el estado como REAGENDADO
+        maintenance.status = MaintenanceStatusType.REAGENDADO;
+      } else {
+        // Para otros estados que no sean REAGENDADO
+        maintenance.status = updateMaintenanceStatusDto.status;
+      }
+
       await maintenance.save();
 
       // Si pasa a estado finalizado, se actualiza a la ultima fecha que se hizo mantenimiento
