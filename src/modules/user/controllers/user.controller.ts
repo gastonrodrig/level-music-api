@@ -205,8 +205,8 @@ export class UserController {
   })
   async updateExtraData(
   @Param('id') id: string,
-  @Body('extraData') extraData: boolean
+  @Body() updateDto: Partial<UpdateClientAdminDto> & { extra_data: boolean }
 ) {
-  return this.userService.updateUserExtraData(id, extraData);
+  return this.userService.updateUserExtraData(id, updateDto);
 }
 }
