@@ -228,6 +228,19 @@ export class UserService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
+  async updateUserExtraData(user_id: string, extraData: boolean): Promise<User> {
+  try {
+    const user = await this.userModel.findOneAndUpdate(
+      { _id: user_id },
+      { extraData },
+      { new: true }
+    );
+        if (!user) throw new BadRequestException('Usuario no encontrado');
+        return user;
+      } catch (error) {
+        throw new InternalServerErrorException(`Error: ${error.message}`);
+      }
+    }
 
   async findByEmail(email: string): Promise<User> {
     try {

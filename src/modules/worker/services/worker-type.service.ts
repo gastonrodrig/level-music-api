@@ -86,6 +86,16 @@ export class WorkerTypeService {
     }
   }
 
+  async findAll(): Promise<WorkerType[]> {
+    try {
+      return await this.workerTypeModel.find().exec();
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error obteniendo todos los tipos de trabajador: ${error.message}`,
+      );
+    }
+  }
+
   async findOne(worker_type_id: any): Promise<WorkerType> {
     try {
       const workerType = await this.workerTypeModel.findOne({
