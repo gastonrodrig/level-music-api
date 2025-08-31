@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Resource, Maintenance } from '../schema';
 import { MaintenanceType, MaintenanceStatusType, ResourceStatusType } from '../enum';
+import { getCurrentDateNormalized } from 'src/core/utils';
 
 @Injectable()
 export class PreventiveMaintenanceSchedulerService {
@@ -20,19 +21,20 @@ export class PreventiveMaintenanceSchedulerService {
   async handlePreventiveMaintenance() {
     this.logger.log('🔧 Iniciando revisión automática de mantenimientos preventivos...');
 
-    const today = new Date();
+    const today = new Date(getCurrentDateNormalized());
 
     const resources = await this.resourceModel.find({
       status: ResourceStatusType.DISPONIBLE,
     });
 
     for (const resource of resources) {
-      // Obtenemos la base de cálculo: último mantenimiento o fecha de creación si es el primero
-      const baseDate = resource.last_maintenance_date ?? resource.created_at;
+      // Obtenemos la base de cálculo: último mantenimiento
+      const baseDate = resource.last_maintenance_date;
 
       // Calculamos la fecha esperada para el siguiente mantenimiento
       const expectedNextDate = new Date(baseDate);
-      expectedNextDate.setDate(expectedNextDate.getDate() + resource.maintenance_interval_days);
+
+      expectedNextDate.setDate(expectedNextDate.getDate() + resource.maintenance_interval_days - 7);
 
       // Si aún no le toca, lo saltamos
       if (expectedNextDate > today) {
@@ -42,8 +44,8 @@ export class PreventiveMaintenanceSchedulerService {
 
       // Validamos que no exista ya un mantenimiento pendiente
       const existingMaintenance = await this.maintenanceModel.findOne({
-        resource_id: resource._id,
-        status: { $nin: [MaintenanceStatusType.EN_PROGRESO, MaintenanceStatusType.PROGRAMADO] },
+        resource: resource._id,
+        status: { $in: [MaintenanceStatusType.EN_PROGRESO, MaintenanceStatusType.PROGRAMADO] },
       });
 
       if (existingMaintenance) {
@@ -67,8 +69,10 @@ export class PreventiveMaintenanceSchedulerService {
 
       // Actualizamos el próximo mantenimiento (para optimizar futuras consultas)
       const nextDate = new Date(expectedNextDate);
+
       nextDate.setDate(nextDate.getDate() + resource.maintenance_interval_days);
       resource.next_maintenance_date = nextDate;
+
       await resource.save();
     }
 

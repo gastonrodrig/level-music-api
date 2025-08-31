@@ -13,14 +13,11 @@ export class UpdateMaintenanceStatusDto {
   @IsOptional()
   reagendation_reason?: string;
 
-  @ApiProperty({ 
-    example: true, 
-    description: 'Si true, el recurso regresa a disponible. Si false, permanece dañado.',
-    required: false 
-  })
-  @IsBoolean()
+  @ApiProperty({ example: 'Motivo de cancelacion', required: false })
+  @IsString()
   @IsOptional()
-  return_to_available?: boolean;
+  cancelation_reason?: string;
+
 
   @ApiProperty({ example: '2023-10-01T00:00:00Z' })
   @IsString() 
