@@ -1,7 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { FeaturedEventCustomField } from "./featured-event-custom-field.schema";
+import { 
+  FeaturedEventCustomField, 
+  FeaturedEventCustomFieldSchema,
+  Event
+} from "./";
 import { Types } from "mongoose";
-import { Event } from "./";
 
 @Schema({ collection: 'featured-events' })
 export class FeaturedEvent {
@@ -17,7 +20,7 @@ export class FeaturedEvent {
   @Prop({ length: 255 })
   cover_image: string;
 
-  @Prop({ type: [FeaturedEventCustomField], required: false })
+  @Prop({ type: [FeaturedEventCustomFieldSchema] })
   services: FeaturedEventCustomField[];
 
   @Prop({ default: Date.now })

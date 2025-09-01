@@ -54,36 +54,11 @@ export class EventTypeController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al obtener los tipos de eventos paginada.',
   })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items por página',
-  })
-  @ApiQuery({
-    name: 'offset',
-    required: false,
-    type: Number,
-    description: 'Offset',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    type: String,
-    description: 'Texto para filtrar',
-  })
-  @ApiQuery({
-    name: 'sortField',
-    required: false,
-    type: String,
-    description: 'Campo para ordenar',
-  })
-  @ApiQuery({
-    name: 'sortOrder',
-    required: false,
-    enum: ['asc', 'desc'],
-    description: 'Dirección de orden',
-  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
   findAllPaginated(
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,

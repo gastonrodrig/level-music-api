@@ -15,7 +15,7 @@ import { SF_WORKER } from 'src/core/utils';
 import { User } from 'src/modules/user/schema';
 import { AuthService } from 'src/modules/firebase/services';
 import { errorCodes } from 'src/core/common';
-import { generateRandomPassword } from 'src/core/utils/password-utils';
+import { generateRandomPassword } from 'src/core/utils';
 import { Estado } from 'src/core/constants/app.constants';
 import { MailService } from 'src/modules/mail/service';
 

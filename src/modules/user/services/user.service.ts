@@ -13,7 +13,7 @@ import { Model } from 'mongoose';
 import { User } from '../schema';
 import { CreateClientAdminDto, CreateClientLandingDto, UpdateClientAdminDto } from '../dto';
 import { SF_USER } from 'src/core/utils';
-import { generateRandomPassword } from 'src/core/utils/password-utils';
+import { generateRandomPassword } from 'src/core/utils';
 import { AuthService } from 'src/modules/firebase/services';
 import { MailService } from 'src/modules/mail/service';
 import { Estado, Roles } from 'src/core/constants/app.constants';
