@@ -98,6 +98,7 @@ export class WorkerService {
           status: Estado.ACTIVO,
           created_by_admin: true,
           needs_password_change: true,
+          is_extra_data_completed: true
         };
 
         const newUser = new this.userModel(userToCreate);

@@ -36,7 +36,8 @@ export class FeaturedEventController {
   constructor(private readonly featuredEventService: FeaturedEventService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @UseInterceptors(
     FileFieldsInterceptor([
       { name: 'images', maxCount: 6 }, 

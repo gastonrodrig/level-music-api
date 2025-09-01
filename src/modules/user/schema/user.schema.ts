@@ -46,7 +46,7 @@ export class User {
   profile_picture: string;
   
   @Prop({ type: Boolean, default: false })
-  extra_data: boolean;
+  is_extra_data_completed: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
