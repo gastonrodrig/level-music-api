@@ -228,18 +228,22 @@ export class UserService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
-  async updateUserExtraData(user_id: string, extraData: boolean): Promise<User> {
-  try {
-    const user = await this.userModel.findOneAndUpdate(
-      { _id: user_id },
-      { extraData },
-      { new: true }
-    );
-        if (!user) throw new BadRequestException('Usuario no encontrado');
-        return user;
-      } catch (error) {
-        throw new InternalServerErrorException(`Error: ${error.message}`);
-      }
+  async updateUserExtraData(auth_id: string, updateDto: Partial<UpdateClientAdminDto> & { extra_data: boolean }): Promise<User> {
+    try {
+      let userIdToUpdate = auth_id;
+      const user = await this.userModel.findOne({ auth_id: auth_id });
+      if (!user) throw new BadRequestException('Usuario no encontrado');
+      userIdToUpdate = user.auth_id;
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        { auth_id: userIdToUpdate },
+        updateDto,
+        { new: true }
+      );
+    if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
+    return updatedUser;
+  } catch (error) {
+    throw new InternalServerErrorException(`Error: ${error.message}`);
+  }
     }
 
   async findByEmail(email: string): Promise<User> {

@@ -66,7 +66,7 @@ export class CreateClientLandingDto {
 
   @ApiProperty({ example: true, required: false })
   @IsBoolean()
-  extraData?: boolean;
+  extra_data?: boolean;
 
   
 }
