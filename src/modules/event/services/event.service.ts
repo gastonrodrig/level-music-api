@@ -129,4 +129,19 @@ export class EventService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
+
+  async findByCode(event_code: string): Promise<Event> {
+    try {
+      const event = await this.eventModel.findOne({ event_code });
+      if (!event) {
+        throw new NotFoundException(`Evento con código ${event_code} no encontrado`);
+      }
+      return event;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(
+        `Error al buscar evento por código: ${error.message}`,
+      );
+    }
+  }
 }
