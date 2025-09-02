@@ -138,7 +138,24 @@ export class FeaturedEventService {
         this.featuredEventModel.countDocuments(filter).exec(),
       ]);
 
-      return { total, items };
+      // Obtener todas las imágenes (portada + galería) para cada evento
+      const eventIds = items.map((event) => event._id);
+      const galleryImages = await this.featuredEventsMediaModel
+        .find({ featured_event: { $in: eventIds } })
+        .exec();
+
+      const eventsWithImages = items.map((event) => {
+        const gallery = galleryImages
+          .filter((image) => image.featured_event.toString() === event._id.toString())
+          .map((image) => image.url);
+
+        return {
+          ...event.toObject(),
+          images: [event.cover_image, ...gallery], 
+        };
+      });
+
+      return { total, items: eventsWithImages };
     } catch (error) {
       throw new InternalServerErrorException(
         `Error finding featured events with pagination: ${error.message}`,
