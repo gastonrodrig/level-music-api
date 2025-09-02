@@ -10,11 +10,13 @@ import {
     Query,
     ParseIntPipe,
     Put,
+    UseGuards,
  } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
 import { CreateEventDto, UpdateEventDto } from '../dto';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @Controller('events')
 @ApiTags('Events')
@@ -94,5 +96,22 @@ export class EventController {
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el evento.' })
   update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
     return this.eventService.update(id, updateEventDto);
+  }
+
+  @Get('code/:event_code')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener un evento por su código' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Evento encontrado correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Evento no encontrado',
+  })
+  findByCode(@Param('event_code') event_code: string) {
+    return this.eventService.findByCode(event_code);
   }
 }
