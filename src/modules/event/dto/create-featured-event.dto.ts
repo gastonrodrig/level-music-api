@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString , IsOptional} from 'class-validator';
 
 export class CreateFeaturedEventDto {
   @ApiProperty({ example: '64f1c7e...', description: 'ID del evento base' })
@@ -25,4 +25,12 @@ export class CreateFeaturedEventDto {
   })
   @IsNotEmpty()
   services: any;
+
+  @ApiProperty({
+    type: 'array',
+    required: false,
+    items: { type: 'string', format: 'binary' },
+  })
+  @IsOptional()
+  images?: any;
 }
