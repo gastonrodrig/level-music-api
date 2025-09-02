@@ -6,16 +6,19 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+import { 
+  CreateClientAdminDto, 
+  CreateClientLandingDto, 
+  UpdateClientAdminDto 
+} from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Model } from 'mongoose';
 import { User } from '../schema';
-import { CreateClientAdminDto, CreateClientLandingDto, UpdateClientAdminDto } from '../dto';
 import { SF_USER } from 'src/core/utils';
-import { generateRandomPassword } from 'src/core/utils/password-utils';
+import { generateRandomPassword } from 'src/core/utils';
 import { AuthService } from 'src/modules/firebase/services';
-import { MailService } from 'src/modules/mail/service';
 import { Estado, Roles } from 'src/core/constants/app.constants';
 import { errorCodes } from 'src/core/common';
 
@@ -28,22 +31,13 @@ export class UserService {
     private temporalCredentialsQueue: Queue,
     @InjectQueue('forgot-password')
     private forgotPasswordQueue: Queue,
-    private authService: AuthService,
-    private mailService: MailService,
+    private authService: AuthService
   ) {}
 
   async createClientLanding(createClientLandingDto: CreateClientLandingDto): Promise<User> {
     try {
-      // Validar email y documento únicos
-      const [existingEmail, existingDoc] = await Promise.all([
-        this.userModel.findOne({ email: createClientLandingDto.email }),
-        this.userModel.findOne({
-          $and: [
-            { document_number: createClientLandingDto.document_number },
-            { document_number: { $nin: [null, ''] } }
-          ]
-        }),
-      ]);
+      // Validar email 
+      const existingEmail = await this.userModel.findOne({ email: createClientLandingDto.email });
 
       if (existingEmail) {
         throw new HttpException(
@@ -55,18 +49,24 @@ export class UserService {
         );
       }
 
-      if (existingDoc) {
-        throw new HttpException(
-          {
-            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
-            message: 'El número de documento ya fue registrado previamente.',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
+      // Prepara la data
+      const newUser = {
+        ...createClientLandingDto,
+        first_name: null,
+        last_name: null,
+        phone: null,
+        document_type: null,
+        document_number: null,
+        role: Roles.CLIENTE,
+        status: Estado.ACTIVO,
+        needs_password_change: false,
+        created_by_admin: false,
+        is_extra_data_completed: false,
       }
 
       // Crea el usuario en la base de datos
-      const user = await this.userModel.create(createClientLandingDto);
+      const user = await this.userModel.create(newUser);
+
       return await user.save();
     } catch (error) {
       if (error instanceof HttpException) throw error;
@@ -127,6 +127,7 @@ export class UserService {
         status: Estado.ACTIVO,
         created_by_admin: true,
         needs_password_change: true,
+        is_extra_data_completed: true
       };
 
       const newUser = new this.userModel(userToCreate);
@@ -228,19 +229,6 @@ export class UserService {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
-  async updateUserExtraData(user_id: string, extraData: boolean): Promise<User> {
-  try {
-    const user = await this.userModel.findOneAndUpdate(
-      { _id: user_id },
-      { extraData },
-      { new: true }
-    );
-        if (!user) throw new BadRequestException('Usuario no encontrado');
-        return user;
-      } catch (error) {
-        throw new InternalServerErrorException(`Error: ${error.message}`);
-      }
-    }
 
   async findByEmail(email: string): Promise<User> {
     try {
@@ -374,6 +362,38 @@ export class UserService {
       }
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(`Error enviando enlace de reseteo: ${error.message}`);
+    }
+  }
+
+  async updateUserExtraData(user_id: string, updateExtraDataDto: UpdateClientAdminDto): Promise<User> {
+    try {
+      // Validar documento único
+      const existingDoc = await this.userModel.findOne({ document_number: updateExtraDataDto.document_number });
+
+      if (existingDoc) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Actualizar información extra del usuario y marcar como completado
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        { _id: user_id },
+        {
+          ...updateExtraDataDto,
+          is_extra_data_completed: true,
+        },
+        { new: true }
+      );
+      if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
+      
+      return updatedUser;
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
 }

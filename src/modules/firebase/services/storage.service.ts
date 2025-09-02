@@ -1,10 +1,11 @@
 import * as admin from 'firebase-admin';
 import { Injectable } from '@nestjs/common';
+import { UploadResult } from 'src/core/interfaces';
 
 @Injectable()
 export class StorageService {
 
-  async uploadFile(location: string, file: Express.Multer.File, folderName: string): Promise<string> {
+  async uploadFile(location: string, file: Express.Multer.File, folderName: string): Promise<UploadResult> {
     const { originalname, buffer, mimetype } = file;
     const bucket = admin.storage().bucket();
 
@@ -15,7 +16,13 @@ export class StorageService {
     await fileBlob.save(buffer, { contentType: mimetype });
     await fileBlob.makePublic();
 
-    return `https://storage.gOoogleapis.com/${bucket.name}/${fileBlob.name}`;
+    const [metadata] = await fileBlob.getMetadata();
+    return {
+      url: `https://storage.googleapis.com/${bucket.name}/${fileBlob.name}`,
+      name: uniqueFilename,
+      size: Number(metadata.size),
+      storagePath: filePath
+    };
   }
 
   async uploadMultipleFiles(location: string, files: Express.Multer.File[] = [], folderName: string): Promise<object[]> {
@@ -38,7 +45,7 @@ export class StorageService {
 
       const [metadata] = await fileBlob.getMetadata();
       uploadedUrls.push({
-        url: `https://storage.googleapis.com./${bucket.name}/${fileBlob.name}`,
+        url: `https://storage.googleapis.com/${bucket.name}/${fileBlob.name}`,
         name: uniqueFilename,
         size: metadata.size,
         storagePath: filePath

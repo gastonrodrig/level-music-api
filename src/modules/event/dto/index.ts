@@ -6,3 +6,5 @@ export * from './create-activity-template.dto';
 export * from './update-activity-template.dto';
 export * from './create-event-task.dto';
 export * from './update-event-task.dto';
+export * from './create-featured-event.dto';
+export * from './update-featured-event.dto';

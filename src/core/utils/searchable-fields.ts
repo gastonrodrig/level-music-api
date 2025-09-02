@@ -12,3 +12,4 @@ export const SF_MAINTENANCE = ['date'];
 export const SF_WORKER = ['name'];
 export const SF_ACTIVITY_TEMPLATE = ['title','description','phase'];
 export const SF_EVENT_TASK = ['title','description','phase'];
+export const SF_FEATURED_EVENT = ['title','description'];
