@@ -190,7 +190,7 @@ export class UserController {
     return this.userService.sendPasswordResetEmail(dto.email);
   }
 
-  @Patch('extra-data/:id')
+  @Patch('extra-data/:uid')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
@@ -204,9 +204,9 @@ export class UserController {
     description: 'Error al actualizar la información extra del usuario.',
   })
   async updateExtraData(
-    @Param('id') id: string,
-    @Body() dto: UpdateExtraDataDto
+    @Param('uid') auth_id: string,
+    @Body() UpdateExtraDataDto: UpdateExtraDataDto
   ) {
-    return this.userService.updateUserExtraData(id, dto);
+    return this.userService.updateUserExtraData(auth_id, UpdateExtraDataDto);
   }
 }

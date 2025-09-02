@@ -365,7 +365,7 @@ export class UserService {
     }
   }
 
-  async updateUserExtraData(user_id: string, updateExtraDataDto: UpdateClientAdminDto): Promise<User> {
+  async updateUserExtraData(auth_id: string, updateExtraDataDto: UpdateClientAdminDto): Promise<User> {
     try {
       // Validar documento único
       const existingDoc = await this.userModel.findOne({ document_number: updateExtraDataDto.document_number });
@@ -382,7 +382,7 @@ export class UserService {
 
       // Actualizar información extra del usuario y marcar como completado
       const updatedUser = await this.userModel.findOneAndUpdate(
-        { _id: user_id },
+        { auth_id: auth_id },
         {
           ...updateExtraDataDto,
           is_extra_data_completed: true,
