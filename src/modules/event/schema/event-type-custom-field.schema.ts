@@ -1,7 +1,7 @@
 import { Prop, Schema } from "@nestjs/mongoose";
 
 @Schema({ _id: false }) 
-export class CustomField {
+export class EventTypeCustomFieldDto {
   @Prop({ required: true })
   name: string;
 

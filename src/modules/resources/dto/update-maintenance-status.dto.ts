@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { MaintenanceStatusType } from '../enum';
 
 export class UpdateMaintenanceStatusDto {
@@ -7,4 +7,20 @@ export class UpdateMaintenanceStatusDto {
   @IsEnum(MaintenanceStatusType)
   @IsNotEmpty()
   status: MaintenanceStatusType;
+
+  @ApiProperty({ example: 'Motivo de reagendacion', required: false })
+  @IsString()
+  @IsOptional()
+  reagendation_reason?: string;
+
+  @ApiProperty({ example: 'Motivo de cancelacion', required: false })
+  @IsString()
+  @IsOptional()
+  cancelation_reason?: string;
+
+
+  @ApiProperty({ example: '2023-10-01T00:00:00Z' })
+  @IsString() 
+  @IsOptional()
+  rescheduled_date?: string;
 }

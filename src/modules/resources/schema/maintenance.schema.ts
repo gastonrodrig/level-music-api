@@ -26,6 +26,12 @@ export class Maintenance extends Document {
   @Prop({ enum: MaintenanceStatusType, default: MaintenanceStatusType.PROGRAMADO }) 
   status: string;
 
+  @Prop({ length: 255 , default: null })
+  reagendation_reason?: string;
+
+  @Prop({ length: 255 , default: null })
+  cancelation_reason?: string;
+
   @Prop({ default: Date.now })
   date: Date;
 }

@@ -3,7 +3,7 @@ import { IsArray, IsEnum, IsOptional, ValidateNested } from 'class-validator';
 import { IsString } from "class-validator";
 import { CategoryType } from "../enum";
 import { Estado } from '../../../core/constants/app.constants';
-import { CustomFieldDto } from "./create-event-type-custom-field.dto";
+import { EventTypeCustomFieldDto } from "./create-event-type-custom-field.dto";
 import { Type } from "class-transformer";
 
 export class CreateEventTypeDto {
@@ -28,12 +28,12 @@ export class CreateEventTypeDto {
   status?: Estado;
 
   @ApiProperty({
-    type: [CustomFieldDto],
+    type: [EventTypeCustomFieldDto],
     required: false,
     description: "Lista de atributos personalizados para el tipo de evento",
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CustomFieldDto)
-  attributes?: CustomFieldDto[];
+  @Type(() => EventTypeCustomFieldDto)
+  attributes?: EventTypeCustomFieldDto[];
 }

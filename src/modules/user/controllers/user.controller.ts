@@ -19,6 +19,7 @@ import {
   CreateClientLandingDto,
   RequestPasswordResetDto,
   UpdateClientAdminDto,
+  UpdateExtraDataDto
 } from '../dto';
 import {
   ApiTags,
@@ -36,7 +37,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   // no se usa
-  @Post()
+  @Post('client-landing')
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo usuario' })
@@ -187,5 +188,25 @@ export class UserController {
   })
   async requestPasswordReset(@Body() dto: RequestPasswordResetDto) {
     return this.userService.sendPasswordResetEmail(dto.email);
+  }
+
+  @Patch('extra-data/:uid')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar información extra de un usuario por ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'La información extra del usuario ha sido actualizada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar la información extra del usuario.',
+  })
+  async updateExtraData(
+    @Param('uid') auth_id: string,
+    @Body() UpdateExtraDataDto: UpdateExtraDataDto
+  ) {
+    return this.userService.updateUserExtraData(auth_id, UpdateExtraDataDto);
   }
 }

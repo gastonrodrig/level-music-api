@@ -30,8 +30,18 @@ export class EventService {
       const user = await this.userModel.findById(createEventDto.user_id);
       if (!user) throw new BadRequestException('User not found');
 
+      const ymd = new Date(createEventDto.date).toISOString().slice(0, 10).replace(/-/g, '');
+      let event_code = '';
+      for (let i = 0; i < 8; i++) {
+        const rnd = Math.random().toString(36).slice(2, 8).toUpperCase(); // 6 chars
+        const code = `EVT-${ymd}-${rnd}`;
+        if (!(await this.eventModel.exists({ event_code: code }))) { event_code = code; break; }
+      }
+      if (!event_code) throw new InternalServerErrorException('No se pudo generar un event_code único');
+
       const event = new this.eventModel({
         ...createEventDto,
+        event_code,
         event_type: eventType._id,
         user: user._id,
       });
@@ -117,6 +127,21 @@ export class EventService {
       return await eventType.save();
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
+    }
+  }
+
+  async findByCode(event_code: string): Promise<Event> {
+    try {
+      const event = await this.eventModel.findOne({ event_code });
+      if (!event) {
+        throw new NotFoundException(`Evento con código ${event_code} no encontrado`);
+      }
+      return event;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(
+        `Error al buscar evento por código: ${error.message}`,
+      );
     }
   }
 }

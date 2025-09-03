@@ -6,6 +6,9 @@ import { EventType } from './event-type.schema';
 
 @Schema({ collection: 'events' })
 export class Event {
+  @Prop({ unique: true, sparse: true, trim: true })
+  event_code: string;
+
   @Prop({ length: 255 })
   name: string;
 
@@ -25,7 +28,7 @@ export class Event {
   exact_address: string;
 
   @Prop({ required: true })
-  location_reference?: string;
+  location_reference: string;
 
   @Prop({ required: true, enum: PlaceType })
   place_type: PlaceType;
