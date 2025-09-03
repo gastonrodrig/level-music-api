@@ -111,7 +111,7 @@ export class FeaturedEventController {
       sortOrder,
     );
   }
-
+///
   @Patch(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -157,6 +157,7 @@ export class FeaturedEventController {
     return this.featuredEventService.update(id, dto, files?.images ?? []);
   }
 
+  ////
   @Delete(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -164,5 +165,14 @@ export class FeaturedEventController {
   @ApiResponse({ status: HttpStatus.OK, description: 'Evento destacado eliminado' })
   async remove(@Param('id') id: string) {
     return this.featuredEventService.delete(id);
+  }
+
+  @Get('all')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @ApiOperation({ summary: 'Obtener todos los eventos destacados sin paginación (incluye imágenes como en paginado)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Lista completa de eventos destacados con imágenes compuestas igual que el paginado.' })
+  async findAll() {
+    return this.featuredEventService.findAll();
   }
 }
