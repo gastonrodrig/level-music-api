@@ -30,23 +30,10 @@ import { FeaturedEventService } from '../services';
 import { Public } from 'src/auth/decorators';
 import { CreateFeaturedEventDto, UpdateFeaturedEventDto } from '../dto';
 
-
-
 @ApiTags('Featured-Events')
 @Controller('featured-events')
 export class FeaturedEventController {
   constructor(private readonly featuredEventService: FeaturedEventService) {}
-
-  @Get('all')
-  // @Public()
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener todos los eventos destacados sin paginación (incluye imágenes como en paginado)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Lista completa de eventos destacados con imágenes compuestas igual que el paginado.' })
-  async findAll() {
-    return this.featuredEventService.findAll();
-  }
 
   @Post()
   @UseGuards(FirebaseAuthGuard)
@@ -89,6 +76,15 @@ export class FeaturedEventController {
     return this.featuredEventService.create(dto, files?.images ?? []);
   }
 
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los eventos destacados sin paginación (incluye imágenes como en paginado)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Lista completa de eventos destacados con imágenes compuestas igual que el paginado.' })
+  async findAll() {
+    return this.featuredEventService.findAll();
+  }
+
   @Get('paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -124,7 +120,7 @@ export class FeaturedEventController {
       sortOrder,
     );
   }
-///
+
   @Patch(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -170,7 +166,6 @@ export class FeaturedEventController {
     return this.featuredEventService.update(id, dto, files?.images ?? []);
   }
 
-  ////
   @Delete(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -179,6 +174,4 @@ export class FeaturedEventController {
   async remove(@Param('id') id: string) {
     return this.featuredEventService.delete(id);
   }
-
-
 }
