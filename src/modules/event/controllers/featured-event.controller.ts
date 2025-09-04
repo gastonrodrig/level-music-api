@@ -30,10 +30,23 @@ import { FeaturedEventService } from '../services';
 import { Public } from 'src/auth/decorators';
 import { CreateFeaturedEventDto, UpdateFeaturedEventDto } from '../dto';
 
+
+
 @ApiTags('Featured-Events')
 @Controller('featured-events')
 export class FeaturedEventController {
   constructor(private readonly featuredEventService: FeaturedEventService) {}
+
+  @Get('all')
+  // @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los eventos destacados sin paginación (incluye imágenes como en paginado)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Lista completa de eventos destacados con imágenes compuestas igual que el paginado.' })
+  async findAll() {
+    return this.featuredEventService.findAll();
+  }
 
   @Post()
   @UseGuards(FirebaseAuthGuard)
@@ -167,12 +180,5 @@ export class FeaturedEventController {
     return this.featuredEventService.delete(id);
   }
 
-  @Get('all')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @ApiOperation({ summary: 'Obtener todos los eventos destacados sin paginación (incluye imágenes como en paginado)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Lista completa de eventos destacados con imágenes compuestas igual que el paginado.' })
-  async findAll() {
-    return this.featuredEventService.findAll();
-  }
+
 }
