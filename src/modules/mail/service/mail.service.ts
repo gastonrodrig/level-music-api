@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import * as nodemailer from 'nodemailer';
-import { CreateTemporalCredentialMailDto, CreateMailDto, CreatePasswordResetLinkMailDto } from '../dto';
+import { CreateTemporalCredentialMailDto, CreateMailDto, CreatePasswordResetLinkMailDto, CreateContactMailDto } from '../dto';
 
 @Injectable()
 export class MailService {
@@ -109,5 +109,30 @@ Equipo Level Music Corp`,
       throw new Error(`Failed to send password reset email: ${error.message}`);
     }
   }
+  async sendContactMail(dto: CreateContactMailDto) {
+  const mailOptions = {
+    from: dto.from,  // remitente → cliente
+    to: dto.to,      // destinatario → empresa
+    subject: `Nuevo mensaje de contacto - ${dto.name}`,
+    text: `Has recibido un nuevo mensaje desde el formulario de contacto:
+
+Nombre: ${dto.name}
+Correo: ${dto.from}
+
+Mensaje:
+"${dto.message}"
+
+⚡ Level Music Corp`,
+  };
+
+  try {
+    const result = await this.transporter.sendMail(mailOptions);
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to send contact email: ${error.message}`);
+  }
+}
+
+
 }
 
