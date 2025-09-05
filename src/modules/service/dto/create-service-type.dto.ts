@@ -3,6 +3,7 @@ import { IsString, IsEnum, IsNotEmpty, ValidateNested, IsArray } from "class-val
 import { Type } from "class-transformer";
 import { Estado } from "src/core/constants/app.constants";
 import { ServiceTypeCustomFieldDto } from "./create-service-type-custom-field.dto";
+import { CategoryType } from "../enum";
 
 export class CreateServiceTypeDto {
   @ApiProperty({ example: "Fotografía" })
@@ -14,6 +15,11 @@ export class CreateServiceTypeDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @ApiProperty({ example: "Fotografía" })
+  @IsEnum(CategoryType)
+  @IsNotEmpty()
+  category: CategoryType;
 
   @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
   @IsEnum(Estado)
