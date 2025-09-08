@@ -9,12 +9,11 @@ import { Service, ServiceDetail } from '../schema';
 import { Model } from 'mongoose';
 import { Provider } from '../../provider/schema';
 import { ServiceType } from '../schema';
-import { CreateServiceDto, UpdateServiceDto, CreateServiceDetailDto } from '../dto';
+import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { SF_SERVICE } from 'src/core/utils';
 import { ServiceDetailMedia } from '../../uploads/schema/collection';
-import { stat } from 'fs';
 import { Estado } from 'src/core/constants/app.constants';
-import { parseServices, SF_FEATURED_EVENT, toObjectId } from 'src/core/utils';
+import { parseDetailService, toObjectId } from 'src/core/utils';
 import { StorageService } from '../../firebase/services';
 import { UploadResult } from 'src/core/interfaces';
 
@@ -38,7 +37,6 @@ export class ServiceService {
   // Guiarse de aqui, solo cuando la tabla tiene ref's
   async create(
     createServiceDto: CreateServiceDto,
-    createServiceDetailDto: CreateServiceDetailDto,
     media: Express.Multer.File[] = [],
   ): Promise<{ service: Service; detail: ServiceDetail; multimedia: ServiceDetailMedia[] }> {
     try {
@@ -51,10 +49,8 @@ export class ServiceService {
       const newService = await this.serviceModel.create({
         ...createServiceDto,
         status: Estado.ACTIVO,
-        provider: provider._id,
-        service_type: serviceType._id,
-        created_at: new Date(),
-        updated_at: new Date(),
+        provider: toObjectId(provider._id),
+        service_type: toObjectId(serviceType._id),
         provider_name: provider.name,
         service_type_name: serviceType.name,
       });
@@ -63,12 +59,15 @@ export class ServiceService {
        'service-detail',
         media,
         'multimedia',
-      )as UploadResult[];
+      ) as UploadResult[];
+
       const detail = await this.serviceDetailModel.create({
-        ...createServiceDetailDto,
+        details: parseDetailService(createServiceDto.details) ,
         service_id: newService._id,
+        ref_price: createServiceDto.ref_price,
         multimedia: [],
       });
+
       const multimedia = upload.map((file) => ({
         url: file.url,
         name: file.name,
@@ -77,7 +76,8 @@ export class ServiceService {
         detail_id: detail._id,
         created_at: new Date(),
       }));
-       await this.serviceMediaModel.insertMany(multimedia);
+
+      await this.serviceMediaModel.insertMany(multimedia);
 
       detail.multimedia = multimedia;
       await detail.save();

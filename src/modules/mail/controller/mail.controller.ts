@@ -2,7 +2,11 @@ import { Controller, Body, Post } from '@nestjs/common';
 import { MailService } from '../service';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
-import { CreateTemporalCredentialMailDto, CreateMailDto, CreateContactMailDto } from '../dto';
+import { 
+  CreateTemporalCredentialMailDto, 
+  CreateMailDto, 
+  CreateContactMailDto 
+} from '../dto';
 
 @ApiTags('Mail - Gmail Api')
 @Controller('mail')
@@ -29,7 +33,9 @@ export class MailController {
 
   @Post('contact')
   @Public()
-  async sendContactMail(@Body() createContactMailDto: CreateContactMailDto) {
+  async sendContactMail(
+    @Body() createContactMailDto: CreateContactMailDto
+  ) {
     const result = await this.mailService.sendContactMail(createContactMailDto);
     return { message: `Correo de contacto enviado satisfactoriamente`, result };
   }

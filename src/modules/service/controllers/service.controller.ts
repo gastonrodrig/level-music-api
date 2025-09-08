@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { ServiceService } from '../services';
-import { CreateServiceDto, UpdateServiceDto, CreateServiceDetailDto } from '../dto';
+import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express/multer/interceptors/file-fields.interceptor';
 
 @ApiTags('Services')
@@ -35,27 +35,35 @@ export class ServiceController {
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
-  FileFieldsInterceptor([
-    { name: 'media', maxCount: 10 }, // 'media' será el campo para los archivos
-  ]),
-)
-@ApiConsumes('multipart/form-data')
-@ApiOperation({ summary: 'Crear un nuevo servicio con detalle y multimedia' })
-@ApiBody({
-  schema: {
-    type: 'object',
-    properties: {
-      service: { type: 'string', description: 'JSON string del servicio' },
-      service_detail: { type: 'string', description: 'JSON string del detalle' },
-      media: {
-        type: 'array',
-        items: { type: 'string', format: 'binary' },
-        description: 'Archivos multimedia',
+    FileFieldsInterceptor([
+      { name: 'media', maxCount: 10 },
+    ]),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Crear un nuevo servicio con detalle y multimedia' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        provider_id: { type: 'string', example: '64f1c7e...' },
+        service_type_id: { type: 'string', example: '64f1c7e...' },
+        details: {
+          type: 'string',
+          description: 'JSON string de un objeto con los detalles del servicio',
+          example: JSON.stringify({
+            area_m2: '200',
+            color: 'Rojo'
+          }),
+        },
+        ref_price: { type: 'number', example: 1500 },
+        images: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
       },
+      required: ['provider_id', 'service_type_id', 'details', 'ref_price', 'images'],
     },
-    required: ['service', 'service_detail'],
-  },
-})
+  })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'El servicio ha sido creado correctamente.',
@@ -64,15 +72,12 @@ export class ServiceController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear el servicio.',
   })
- async create(
-  @UploadedFiles() files: { media?: Express.Multer.File[] },
-  @Body() body: any,
-) {
-  // Parsea los campos si llegan como string
-  const service = typeof body.service === 'string' ? JSON.parse(body.service) : body.service;
-  const service_detail = typeof body.service_detail === 'string' ? JSON.parse(body.service_detail) : body.service_detail;
-  return this.serviceService.create(service, service_detail, files.media ?? []);
-}
+  async create(
+    @UploadedFiles() files: { images: Express.Multer.File[] },
+    @Body() dto: CreateServiceDto,
+  ) {
+    return this.serviceService.create(dto, files.images ?? []);
+  }
 
   @Get('paginated')
   @Public()

@@ -30,15 +30,15 @@ export class FeaturedEventService {
   ) {}
 
   async create(
-    dto: CreateFeaturedEventDto,
+    createFeaturedEventDto: CreateFeaturedEventDto,
     images: Express.Multer.File[] = [],
   ): Promise<FeaturedEvent> {
     try {
       // 1) Validar evento y duplicado
-      const event = await this.eventModel.findById(dto.event_id);
+      const event = await this.eventModel.findById(createFeaturedEventDto.event_id);
       if (!event) throw new BadRequestException('Event not found');
 
-      const exists = await this.featuredEventModel.exists({ event: dto.event_id });
+      const exists = await this.featuredEventModel.exists({ event: createFeaturedEventDto.event_id });
       if (exists) {
         throw new HttpException(
           {
@@ -61,10 +61,9 @@ export class FeaturedEventService {
 
       // 3) Crear destacado
       const featuredEvent = await this.featuredEventModel.create({
-        event: toObjectId(dto.event_id),
-        title: dto.title,
-        featured_description: dto.featured_description,
-        services: parseServices(dto.services),
+        ...createFeaturedEventDto,
+        event: toObjectId(createFeaturedEventDto.event_id),
+        services: parseServices(createFeaturedEventDto.services),
         cover_image: coverUp.url,
       });
 

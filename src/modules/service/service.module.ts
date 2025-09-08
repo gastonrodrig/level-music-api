@@ -10,13 +10,11 @@ import {
 } from './schema';
 import { 
   ServiceService,
-  ServiceTypeService,
-  ServiceDetailService
+  ServiceTypeService
 } from './services';
 import {
   ServiceController,
-  ServiceTypeController,
-  ServiceDetailController
+  ServiceTypeController
 } from './controllers';
 import { 
   ServiceDetailMedia, 
@@ -58,13 +56,11 @@ import { Provider, ProviderSchema } from '../provider/schema';
   ],
   providers: [
     ServiceService,
-    ServiceTypeService,
-    ServiceDetailService
+    ServiceTypeService
   ],
   controllers: [
     ServiceController,
-    ServiceTypeController,
-    ServiceDetailController
+    ServiceTypeController
   ],
 })
 export class ServiceModule {}

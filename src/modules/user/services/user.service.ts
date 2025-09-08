@@ -463,6 +463,19 @@ export class UserService {
 
   async uploadClientPhoto(auth_id: string, photoUrl: Express.Multer.File): Promise<User> {
     try {
+      const user = await this.userModel.findOne({ auth_id });
+      if (!user) throw new BadRequestException('Usuario no encontrado');
+
+      if (user.profile_picture) {
+        const currentFileName = user.profile_picture.split('/').pop();
+        const newFileName = photoUrl.originalname;
+        if (currentFileName === newFileName) {
+          // Si la imagen es la misma, no sube ni actualiza nada
+          return user;
+        }
+      }
+
+      // Subir nueva imagen
       const uploadResult = await this.storageService.uploadFile(
         'users',
         photoUrl,

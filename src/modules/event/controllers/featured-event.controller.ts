@@ -69,6 +69,14 @@ export class FeaturedEventController {
       required: ['event_id', 'title', 'services', 'images'],
     },
   })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'El evento destacado ha sido creado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear el evento destacado.',
+  })
   async create(
     @UploadedFiles() files: { images: Express.Multer.File[] },
     @Body() dto: CreateFeaturedEventDto,
@@ -157,6 +165,14 @@ export class FeaturedEventController {
         },
       },
     },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'El evento destacado ha sido actualizado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar el evento destacado.',
   })
   async update(
     @Param('id') id: string,

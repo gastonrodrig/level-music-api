@@ -11,15 +11,6 @@ export class CreateContactMailDto {
   from: string;
 
   @ApiProperty({
-    example: 'levelmusiccorp@gmail.com',
-    description: 'Correo de la empresa que recibirá el mensaje',
-    default: 'levelmusiccorp@gmail.com',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  to: string;
-
-  @ApiProperty({
     example: 'Juan Pérez',
     description: 'Nombre de la persona que contacta',
   })

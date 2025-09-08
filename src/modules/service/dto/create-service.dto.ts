@@ -1,13 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsMongoId, IsNotEmpty, IsOptional } from "class-validator";
-import { Estado } from "src/core/constants/app.constants";
+import { IsMongoId, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
 
 export class CreateServiceDto {
-  @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
-  @IsEnum(Estado)
-  @IsNotEmpty()
-  status: Estado;
-
   @ApiProperty()
   @IsMongoId()
   @IsOptional()
@@ -17,4 +11,18 @@ export class CreateServiceDto {
   @IsMongoId()
   @IsOptional()
   service_type_id: string;
+
+  @ApiProperty({
+    description:
+      'Detalles del servicio; puede llegar como JSON string o como array de objetos',
+    example:
+      '{ "example": "Escenario Principal", "example": "Con sonido y pantallas LED" }',
+  })
+  @IsNotEmpty()
+  details: any;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsNotEmpty()
+  ref_price: number;
 }
