@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 
 @Schema({ collection: 'service-detail-media' })
 export class ServiceDetailMedia {
-  _id: any
+ 
 
   @Prop({ length: 255 })
   url: string;

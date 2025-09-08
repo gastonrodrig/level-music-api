@@ -49,7 +49,7 @@ export class ServiceDetailService {
         for (const old of detail.multimedia as ServiceDetailMedia[]) {
           console.log(`Intentando eliminar archivo: ${old.storagePath}`);
           await this.storageService.deleteFile(old.storagePath);
-          await this.serviceDetailMediaModel.deleteOne({ _id: old._id }).exec();
+          
         }
       }
       detail.multimedia = [];
