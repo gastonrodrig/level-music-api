@@ -56,12 +56,12 @@ export class ServiceController {
           }),
         },
         ref_price: { type: 'number', example: 1500 },
-        images: {
+        media: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
         },
       },
-      required: ['provider_id', 'service_type_id', 'details', 'ref_price', 'images'],
+      required: ['provider_id', 'service_type_id', 'details', 'ref_price', 'media'],
     },
   })
   @ApiResponse({
@@ -73,10 +73,10 @@ export class ServiceController {
     description: 'Error al crear el servicio.',
   })
   async create(
-    @UploadedFiles() files: { images: Express.Multer.File[] },
+    @UploadedFiles() files: { media: Express.Multer.File[] },
     @Body() dto: CreateServiceDto,
   ) {
-    return this.serviceService.create(dto, files.images ?? []);
+    return this.serviceService.create(dto, files.media ?? []);
   }
 
   @Get('paginated')

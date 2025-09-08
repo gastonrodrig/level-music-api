@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsMongoId, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
+import { Type } from 'class-transformer';
 
 export class CreateServiceDto {
   @ApiProperty()
@@ -24,5 +25,6 @@ export class CreateServiceDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()
+  @Type(() => Number)
   ref_price: number;
 }
