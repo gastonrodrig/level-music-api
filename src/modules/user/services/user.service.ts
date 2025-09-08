@@ -1,4 +1,4 @@
-import {
+import { 
   BadRequestException,
   HttpException,
   HttpStatus,
@@ -9,7 +9,8 @@ import {
 import { 
   CreateClientAdminDto, 
   CreateClientLandingDto, 
-  UpdateClientAdminDto 
+  UpdateClientAdminDto, 
+  UpdateClientProfileDto
 } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -18,7 +19,7 @@ import { Model } from 'mongoose';
 import { User } from '../schema';
 import { SF_USER } from 'src/core/utils';
 import { generateRandomPassword } from 'src/core/utils';
-import { AuthService } from 'src/modules/firebase/services';
+import { AuthService, StorageService } from 'src/modules/firebase/services';
 import { Estado, Roles } from 'src/core/constants/app.constants';
 import { errorCodes } from 'src/core/common';
 
@@ -31,7 +32,8 @@ export class UserService {
     private temporalCredentialsQueue: Queue,
     @InjectQueue('forgot-password')
     private forgotPasswordQueue: Queue,
-    private authService: AuthService
+    private authService: AuthService,
+    private storageService: StorageService,
   ) {}
 
   async createClientLanding(createClientLandingDto: CreateClientLandingDto): Promise<User> {
@@ -299,6 +301,67 @@ export class UserService {
     }
   }
 
+  async updateClientProfile(auth_id: string, updateClientProfileDto: UpdateClientProfileDto): Promise<User> {
+    try {
+      // Validar email y documento únicos
+      const [existingEmail, existingDocumentNumber] = await Promise.all([
+        this.userModel.findOne({
+          email: updateClientProfileDto.email,
+          auth_id: { $ne: auth_id },  
+        }),
+        this.userModel.findOne({
+          document_number: updateClientProfileDto.document_number,
+          auth_id: { $ne: auth_id },
+        }),
+      ]);
+
+      if (existingEmail) {
+        throw new HttpException(
+          {
+            code: errorCodes.EMAIL_ALREADY_EXISTS,
+            message: 'El correo ya fue registrado previamnente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      if (existingDocumentNumber) {
+        throw new HttpException(
+          {
+            code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
+            message: 'El número de documento ya fue registrado previamente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Actualizar usuario
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        { auth_id },
+        updateClientProfileDto,
+        { new: true },
+      );
+
+      // Si no se encontró el usuario, lanzar excepción
+      if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
+
+      // Actualizar email en Firebase
+      const firebaseResponse = await this.authService.updateUserEmail(
+        updatedUser.auth_id,
+        { email: updateClientProfileDto.email },
+      );
+
+      if (!firebaseResponse.success || !firebaseResponse.uid) {
+        throw new InternalServerErrorException(firebaseResponse.message);
+      }
+
+      return updatedUser;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+    }
+  }
+
   async resetPasswordChangeFlag(uid: string): Promise<User> {
     try {
       const user = await this.userModel.findOne({ auth_id: uid });
@@ -393,7 +456,55 @@ export class UserService {
       
       return updatedUser;
     } catch (error) {
+      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
+
+  async uploadClientPhoto(auth_id: string, photoUrl: Express.Multer.File): Promise<User> {
+    try {
+      const uploadResult = await this.storageService.uploadFile(
+        'users',
+        photoUrl,
+        'profile-photos'
+      );
+      const updatedUser = await this.userModel.findOneAndUpdate(
+        { auth_id },
+        { profile_picture: uploadResult.url },
+        { new: true }
+      );
+      if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
+      return updatedUser;
+    } catch (error) {
+      throw new InternalServerErrorException(`Error: ${error.message}`);
+    }
+  }
+
+  async deleteClientPhoto(auth_id: string): Promise<User> {
+    try {
+      const user = await this.userModel.findOne({ auth_id });
+      if (!user) throw new BadRequestException('Usuario no encontrado');
+      if (!user.profile_picture) {
+         throw new HttpException(
+          {
+            code: errorCodes.PROFILE_PICTURE_NOT_FOUND,
+            message: 'El usuario no tiene foto de perfil.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Eliminar de Firebase Storage
+      await this.storageService.deleteFile(user.profile_picture.replace(`https://storage.googleapis.com/${process.env.FIREBASE_STORAGE_BUCKET}/`, ''));
+
+      // Eliminar referencia en la base de datos
+      user.profile_picture = null;
+      await user.save();
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error eliminando foto: ${error.message}`);
+    }
+  }
+
 }
