@@ -302,7 +302,7 @@ export class UserController {
     return this.userService.uploadClientPhoto(uid, imageFile);
   }
 
-  @Patch('photo/:uid')
+  @Patch('remove-photo/:uid')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
