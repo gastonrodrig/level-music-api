@@ -467,12 +467,7 @@ export class UserService {
       if (!user) throw new BadRequestException('Usuario no encontrado');
 
       if (user.profile_picture) {
-        const currentFileName = user.profile_picture.split('/').pop();
-        const newFileName = photoUrl.originalname;
-        if (currentFileName === newFileName) {
-          // Si la imagen es la misma, no sube ni actualiza nada
-          return user;
-        }
+        await this.storageService.deleteFile(user.profile_picture);
       }
 
       // Subir nueva imagen

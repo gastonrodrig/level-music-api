@@ -54,8 +54,16 @@ export class StorageService {
     return uploadedUrls;
   }
 
-  async deleteFile(storagePath: string): Promise<void> {
+  async deleteFile(pathOrUrl: string): Promise<void> {
     const bucket = admin.storage().bucket();
+
+    let storagePath = pathOrUrl;
+    const bucketDomain = `https://storage.googleapis.com/${bucket.name}/`;
+
+    if (pathOrUrl.startsWith(bucketDomain)) {
+      storagePath = pathOrUrl.replace(bucketDomain, "");
+    }
+
     const file = bucket.file(storagePath);
 
     const [exists] = await file.exists();
