@@ -304,28 +304,12 @@ export class UserService {
   async updateClientProfile(auth_id: string, updateClientProfileDto: UpdateClientProfileDto): Promise<User> {
     try {
       // Validar email y documento únicos
-      const [existingEmail, existingDocumentNumber] = await Promise.all([
-        this.userModel.findOne({
-          email: updateClientProfileDto.email,
-          auth_id: { $ne: auth_id },  
-        }),
-        this.userModel.findOne({
-          document_number: updateClientProfileDto.document_number,
-          auth_id: { $ne: auth_id },
-        }),
-      ]);
+      const existingDoc = await this.userModel.findOne({
+        document_number: updateClientProfileDto.document_number,
+        auth_id: { $ne: auth_id },
+      });
 
-      if (existingEmail) {
-        throw new HttpException(
-          {
-            code: errorCodes.EMAIL_ALREADY_EXISTS,
-            message: 'El correo ya fue registrado previamnente.',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      if (existingDocumentNumber) {
+      if (existingDoc) {
         throw new HttpException(
           {
             code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
@@ -344,16 +328,6 @@ export class UserService {
 
       // Si no se encontró el usuario, lanzar excepción
       if (!updatedUser) throw new BadRequestException('Usuario no encontrado');
-
-      // Actualizar email en Firebase
-      const firebaseResponse = await this.authService.updateUserEmail(
-        updatedUser.auth_id,
-        { email: updateClientProfileDto.email },
-      );
-
-      if (!firebaseResponse.success || !firebaseResponse.uid) {
-        throw new InternalServerErrorException(firebaseResponse.message);
-      }
 
       return updatedUser;
     } catch (error) {

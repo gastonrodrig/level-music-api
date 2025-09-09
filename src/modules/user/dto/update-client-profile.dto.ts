@@ -1,13 +1,8 @@
-import { IsEmail, IsString, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsEnum, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { DocType } from '../../../core/constants/app.constants';
 
 export class UpdateClientProfileDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsOptional()
-  email?: string;
-
   @ApiProperty({ example: 'John' })
   @IsString()
   @IsOptional()
