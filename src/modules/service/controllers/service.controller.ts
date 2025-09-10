@@ -127,23 +127,59 @@ export class ServiceController {
   async findOne(@Param('id') id: string) {
     return this.serviceService.findOne(id);
   }
-
-  @Put(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar un servicio por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El servicio ha sido actualizado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar el servicio.',
-  })
-  async update(
-    @Param('id') id: string,
-    @Body() updateServiceDto: UpdateServiceDto,
-  ) {
-    return this.serviceService.update(id, updateServiceDto);
+@Put(':id')
+@Public()
+@HttpCode(HttpStatus.OK)
+@UseInterceptors(
+  FileFieldsInterceptor([
+    { name: 'media', maxCount: 10 },
+  ]),
+)
+@ApiConsumes('multipart/form-data')
+@ApiOperation({ summary: 'Actualizar un servicio por ID con detalle y multimedia' })
+@ApiBody({
+  schema: {
+    type: 'object',
+    properties: {
+      status: { type: 'string', example: 'Activo' },
+      details: {
+        type: 'string',
+        description: 'JSON string de un objeto con los detalles del servicio',
+        example: JSON.stringify({
+          area_m2: '250',
+          color: 'Azul'
+        }),
+      },
+      ref_price: { type: 'number', example: 200 },
+      media: {
+        type: 'array',
+        items: { type: 'string', format: 'binary' },
+      },
+    },
+    required: ['status', 'details', 'ref_price'],
+  },
+})
+@ApiResponse({
+  status: HttpStatus.OK,
+  description: 'El servicio ha sido actualizado correctamente.',
+})
+@ApiResponse({
+  status: HttpStatus.BAD_REQUEST,
+  description: 'Error al actualizar el servicio.',
+})
+async update(
+  @Param('id') id: string,
+  @UploadedFiles() files: { media: Express.Multer.File[] },
+  @Body() updateServiceDto: UpdateServiceDto,
+) {
+  // Si details viene como string, conviértelo a objeto
+  if (typeof updateServiceDto.details === 'string') {
+    try {
+      updateServiceDto.details = JSON.parse(updateServiceDto.details);
+    } catch {
+      // Si falla el parseo, lo deja como string
+    }
   }
+  return this.serviceService.update(id, updateServiceDto, files.media ?? []);
+}
 }
