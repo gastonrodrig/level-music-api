@@ -132,6 +132,34 @@ export class ServiceService {
       );
     }
   }
+  async getAll():Promise<Array<{service: Service;
+    detail: ServiceDetail;
+    multimedia: ServiceDetailMedia[];
+  }>>{try {
+    // 1. Obtiene todos los servicios
+    const services = await this.serviceModel.find().exec();
+
+    // 2. Para cada servicio, busca el detalle y la multimedia
+    const result = await Promise.all(
+      services.map(async (service) => {
+        const detail = await this.serviceDetailModel.findOne({ service_id: service._id }).lean();
+        const multimedia = detail
+          ? await this.serviceMediaModel.find({ detail_id: detail._id }).lean()
+          : [];
+        return {
+          service,
+          detail,
+          multimedia,
+        };
+      })
+    );
+
+    return result;
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error fetching all services with details: ${error.message}`,
+    );
+  }}
 
   async findOne(id: string): Promise<Service> {
     try {
@@ -150,19 +178,78 @@ export class ServiceService {
   async update(
     service_id: string,
     updateServiceDto: UpdateServiceDto,
-  ): Promise<Service> {
+    media: Express.Multer.File[] = [],
+  ): Promise<{ service: Service; detail: ServiceDetail; multimedia: ServiceDetailMedia[] }> {
     try {
+      const allowedFieldsService = ['status','provider','service_type','updated_at'];
+      const updateData: Partial<Service> = {};
+
+      for (const field of allowedFieldsService) {
+        if (field in updateServiceDto) {
+          updateData[field] = updateServiceDto[field];
+        }
+      }
+      updateData.updated_at = new Date();
+
       const updatedService = await this.serviceModel.findByIdAndUpdate(
         service_id,
-        updateServiceDto,
+        updateData,
         { new: true },
       );
 
-      if (!updatedService) {
-        throw new NotFoundException(`Service with ID ${service_id} not found`);
-      }
+      const allowedFieldsServiceDetail = ['details','ref_price','multimedia'];
+      const updateDetailData: Partial<ServiceDetail> = {};
 
-      return updatedService;
+      for (const field of allowedFieldsServiceDetail) {
+        if (field in updateServiceDto) {
+          updateDetailData[field] = updateServiceDto[field];
+        }
+      }
+      const updatedDetail = await this.serviceDetailModel.findOneAndUpdate(
+        { service_id: toObjectId(service_id) },
+        updateDetailData,
+        { new: true },
+      );
+      if (!updatedDetail) {
+        throw new NotFoundException(`Service detail with ID ${service_id} not found`);
+      }
+      console.log(updatedDetail)
+if (updatedDetail) {
+  // 1. Eliminar multimedia anterior
+  const oldMedia = await this.serviceMediaModel.find({ detail_id: updatedDetail._id });
+  console.log('Multimedia antigua a eliminar:', oldMedia);
+  for (const file of oldMedia) {
+    await this.storageService.deleteFile(file.storagePath); // Elimina del bucket
+  }
+  await this.serviceMediaModel.deleteMany({ detail_id: updatedDetail._id }); // Elimina de la BD
+
+  // 2. Subir nueva multimedia
+  const upload = await this.storageService.uploadMultipleFiles(
+    'service-detail',
+    media,
+    'multimedia',
+  ) as UploadResult[];
+
+  const newMultimedia = upload.map((file) => ({
+    url: file.url,
+    name: file.name,
+    size: file.size,
+    storagePath: file.storagePath,
+    detail_id: updatedDetail._id,
+    created_at: new Date(),
+  }));
+
+  await this.serviceMediaModel.insertMany(newMultimedia);
+
+  // 3. Actualizar el detalle con la nueva multimedia
+  updatedDetail.multimedia = newMultimedia;
+  await updatedDetail.save();
+}
+      return {
+        service: updatedService,
+        detail: updatedDetail,
+        multimedia: [],
+      };
     } catch (error) {
       throw new InternalServerErrorException(
         `Error updating service: ${error.message}`,
