@@ -132,6 +132,34 @@ export class ServiceService {
       );
     }
   }
+  async getAll():Promise<Array<{service: Service;
+    detail: ServiceDetail;
+    multimedia: ServiceDetailMedia[];
+  }>>{try {
+    // 1. Obtiene todos los servicios
+    const services = await this.serviceModel.find().exec();
+
+    // 2. Para cada servicio, busca el detalle y la multimedia
+    const result = await Promise.all(
+      services.map(async (service) => {
+        const detail = await this.serviceDetailModel.findOne({ service_id: service._id }).lean();
+        const multimedia = detail
+          ? await this.serviceMediaModel.find({ detail_id: detail._id }).lean()
+          : [];
+        return {
+          service,
+          detail,
+          multimedia,
+        };
+      })
+    );
+
+    return result;
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error fetching all services with details: ${error.message}`,
+    );
+  }}
 
   async findOne(id: string): Promise<Service> {
     try {
@@ -185,9 +213,11 @@ export class ServiceService {
       if (!updatedDetail) {
         throw new NotFoundException(`Service detail with ID ${service_id} not found`);
       }
-if (media.length > 0 && updatedDetail) {
+      console.log(updatedDetail)
+if (updatedDetail) {
   // 1. Eliminar multimedia anterior
   const oldMedia = await this.serviceMediaModel.find({ detail_id: updatedDetail._id });
+  console.log('Multimedia antigua a eliminar:', oldMedia);
   for (const file of oldMedia) {
     await this.storageService.deleteFile(file.storagePath); // Elimina del bucket
   }
@@ -205,7 +235,7 @@ if (media.length > 0 && updatedDetail) {
     name: file.name,
     size: file.size,
     storagePath: file.storagePath,
-    detail_id: updatedDetail.service_id,
+    detail_id: updatedDetail._id,
     created_at: new Date(),
   }));
 

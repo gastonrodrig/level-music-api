@@ -31,6 +31,19 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express/multer/intercept
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los servicios con detalle y multimedia' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista completa de servicios con detalle y multimedia.',
+  })
+  async findAllWithDetails() {
+    return this.serviceService.getAll();
+  }
+
+
   @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
