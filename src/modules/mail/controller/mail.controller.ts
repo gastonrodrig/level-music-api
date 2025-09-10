@@ -5,7 +5,8 @@ import { Public } from 'src/auth/decorators';
 import { 
   CreateTemporalCredentialMailDto, 
   CreateMailDto, 
-  CreateContactMailDto 
+  CreateContactMailDto, 
+  CreatePasswordResetLinkMailDto
 } from '../dto';
 
 @ApiTags('Mail - Gmail Api')
