@@ -9,4 +9,3 @@ export * from './update-event-task.dto';
 export * from './create-featured-event.dto';
 export * from './update-featured-event.dto';
 export * from './create-assignations.dto';
-export * from './update-assignations.dto';

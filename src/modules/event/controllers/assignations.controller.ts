@@ -9,12 +9,11 @@ import {
     DefaultValuePipe,
     Query,
     ParseIntPipe,
-    Put,
  } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { AssignationsService } from '../services';
-import { CreateAssignationDto, UpdateAssignationDto } from '../dto';
+import { CreateAssignationDto } from '../dto';
 
 @Controller('assignations')
 @ApiTags('Assignations')
@@ -85,15 +84,5 @@ export class AssignationsController {
   })
   findOne(@Param('id') id: string) {
     return this.assignationsService.findOne(id);
-  }
-
-  @Put(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar una asignación por ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'La asignación ha sido actualizada correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar la asignación.' })
-  update(@Param('id') id: string, @Body() updateAssignationDto: UpdateAssignationDto) {
-    return this.assignationsService.update(id, updateAssignationDto);
   }
 }

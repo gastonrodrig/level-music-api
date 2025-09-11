@@ -1,4 +1,3 @@
-export * from './activity-template.service';
 export * from './assignations.service';
 export * from './event-task.service';
 export * from './event-type.service';

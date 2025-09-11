@@ -9,7 +9,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Assignation } from '../schema';
-import { CreateAssignationDto, UpdateAssignationDto } from '../dto';
+import { CreateAssignationDto } from '../dto';
 import { SF_ASSIGNATION } from 'src/core/utils';
 import { errorCodes } from 'src/core/common';
 
@@ -54,7 +54,6 @@ export class AssignationsService {
         available_to: createAssignationDto.available_to,
         day_of_week: createAssignationDto.day_of_week,
         resource_type: createAssignationDto.resource_type,
-        
       });
 
       return await assignation.save();
@@ -125,44 +124,6 @@ export class AssignationsService {
       if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
         `Error finding assignation: ${error.message}`,
-      );
-    }
-  }
-
-  async update(id: string, updateAssignationDto: UpdateAssignationDto): Promise<Assignation> {
-    try {
-      // Validar horas si se actualizan
-      if (updateAssignationDto.available_from && updateAssignationDto.available_to) {
-        if (updateAssignationDto.available_from >= updateAssignationDto.available_to) {
-          throw new BadRequestException(
-            'La hora de inicio debe ser menor que la hora de fin',
-          );
-        }
-      }
-
-      const updateData = {
-        ...(updateAssignationDto.day_of_week && { day_of_week: updateAssignationDto.day_of_week }),
-        ...(updateAssignationDto.resource_type && { resource_type: updateAssignationDto.resource_type }),
-        ...(updateAssignationDto.available_from && { available_from: updateAssignationDto.available_from }),
-        ...(updateAssignationDto.available_to && { available_to: updateAssignationDto.available_to }),
-      };
-
-      const updatedAssignation = await this.assignationModel
-        .findByIdAndUpdate(id, updateData, { new: true })
-        .populate('event', 'name status')
-        .populate('worker', 'name email')
-        .populate('resource', 'name serial_number')
-        .exec();
-
-      if (!updatedAssignation) {
-        throw new NotFoundException('Asignación no encontrada');
-      }
-
-      return updatedAssignation;
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException(
-        `Error updating assignation: ${error.message}`,
       );
     }
   }

@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { DayOfWeek, ResourceType } from "../enum";
 import { Resource } from "src/modules/resources/schema";
+import { Worker } from "src/modules/worker/schema";
 
 @Schema({ collection: 'event-assignations' })
 export class Assignation {
