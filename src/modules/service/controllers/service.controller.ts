@@ -10,27 +10,28 @@ import {
   HttpStatus,
   DefaultValuePipe,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiQuery,
   ApiResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { ServiceService } from '../services';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @ApiTags('Services')
 @Controller('services')
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
-  /**
-   * Crear un nuevo servicio con múltiples detalles
-   */
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo servicio con múltiples detalles' })
   @ApiResponse({
@@ -45,11 +46,9 @@ export class ServiceController {
     return this.serviceService.create(dto);
   }
 
-  /**
-   * Obtener todos los servicios con sus detalles
-   */
   @Get('all')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los servicios con sus detalles' })
   @ApiResponse({
@@ -60,11 +59,9 @@ export class ServiceController {
     return this.serviceService.findAll();
   }
 
-  /**
-   * Obtener servicios con paginación, búsqueda y orden
-   */
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener servicios con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -97,7 +94,8 @@ export class ServiceController {
   }
 
   @Patch(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un servicio y sus detalles' })
   @ApiResponse({

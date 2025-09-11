@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { FeaturedEvent } from 'src/modules/event/schema';
 
 @Schema({ collection: 'featured-events-media' })
 export class FeaturedEventsMedia {
