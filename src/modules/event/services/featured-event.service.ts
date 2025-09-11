@@ -110,6 +110,47 @@ export class FeaturedEventService {
     }
   }
 
+  async findAll(): Promise<FeaturedEvent[]> {
+    try {
+      const items = await this.featuredEventModel.find().exec();
+
+      const eventIds = items.map((event) => event._id);
+      const media = await this.featuredEventsMediaModel
+        .find({ featured_event: { $in: eventIds } })
+        .exec();
+
+      const itemsWithImages = items.map((event) => {
+        const coverMedia = media.find(
+          (m) =>
+            m.featured_event.toString() === event._id.toString() &&
+            m.is_cover
+        );
+        const coverUrl = event.cover_image || coverMedia?.url || null;
+
+        const gallery = media
+          .filter(
+            (m) =>
+              m.featured_event.toString() === event._id.toString() &&
+              !m.is_cover
+          )
+          .map((m) => m.url);
+
+        const images = coverUrl ? [coverUrl, ...gallery] : gallery;
+
+        return {
+          ...event.toObject(),
+          images,
+        };
+      });
+
+      return itemsWithImages;
+    } catch (err: any) {
+      throw new InternalServerErrorException(
+        `Error finding all featured events: ${err.message}`,
+      );
+    }
+  }
+
   async findAllPaginated(
     limit = 5,
     offset = 0,
@@ -162,47 +203,6 @@ export class FeaturedEventService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error finding featured events with pagination: ${error.message}`,
-      );
-    }
-  }
-
-  async findAll(): Promise<FeaturedEvent[]> {
-    try {
-      const items = await this.featuredEventModel.find().exec();
-
-      const eventIds = items.map((event) => event._id);
-      const media = await this.featuredEventsMediaModel
-        .find({ featured_event: { $in: eventIds } })
-        .exec();
-
-      const itemsWithImages = items.map((event) => {
-        const coverMedia = media.find(
-          (m) =>
-            m.featured_event.toString() === event._id.toString() &&
-            m.is_cover
-        );
-        const coverUrl = event.cover_image || coverMedia?.url || null;
-
-        const gallery = media
-          .filter(
-            (m) =>
-              m.featured_event.toString() === event._id.toString() &&
-              !m.is_cover
-          )
-          .map((m) => m.url);
-
-        const images = coverUrl ? [coverUrl, ...gallery] : gallery;
-
-        return {
-          ...event.toObject(),
-          images,
-        };
-      });
-
-      return itemsWithImages;
-    } catch (err: any) {
-      throw new InternalServerErrorException(
-        `Error finding all featured events: ${err.message}`,
       );
     }
   }
