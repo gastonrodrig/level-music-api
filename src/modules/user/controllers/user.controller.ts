@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   Post,
-  Put,
   Query,
   HttpCode,
   HttpStatus,
@@ -12,6 +11,9 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Patch,
+  UploadedFile,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import {
@@ -19,6 +21,7 @@ import {
   CreateClientLandingDto,
   RequestPasswordResetDto,
   UpdateClientAdminDto,
+  UpdateClientProfileDto,
   UpdateExtraDataDto
 } from '../dto';
 import {
@@ -27,10 +30,13 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { ClientType } from '../enum';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('user')
 @ApiTags('User')
@@ -75,7 +81,9 @@ export class UserController {
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener clientes con paginación, búsqueda y orden' })
+  @ApiOperation({
+    summary: 'Obtener clientes con paginación, búsqueda y orden',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de clientes obtenida paginada correctamente.',
@@ -108,7 +116,7 @@ export class UserController {
     );
   }
 
-  @Put(':id')
+  @Patch('client-admin/:id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
@@ -121,8 +129,30 @@ export class UserController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al actualizar el usuario.',
   })
-  update(@Param('id') id: string, @Body() updateClientAdminDto: UpdateClientAdminDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateClientAdminDto: UpdateClientAdminDto,
+  ) {
     return this.userService.updateClientAdmin(id, updateClientAdminDto);
+  }
+
+  @Patch('client-profile/:uid')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar un perfil de usuario por uid' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'El perfil de usuario ha sido actualizado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar el perfil de usuario.',
+  })
+  updateProfile(
+    @Param('uid') uid: string,
+    @Body() updateClientProfileDto: UpdateClientProfileDto,
+  ) {
+    return this.userService.updateClientProfile(uid, updateClientProfileDto);
   }
 
   @Get('find/:email')
@@ -167,7 +197,8 @@ export class UserController {
   @ApiOperation({ summary: 'Solicitar enlace de reseteo de contraseña' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Si el correo pertenece a un cliente válido, se enviará el enlace.',
+    description:
+      'Si el correo pertenece a un cliente válido, se enviará el enlace.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -181,10 +212,13 @@ export class UserController {
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar información extra de un usuario por ID' })
+  @ApiOperation({
+    summary: 'Actualizar información extra de un usuario por uid',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'La información extra del usuario ha sido actualizada correctamente.',
+    description:
+      'La información extra del usuario ha sido actualizada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -192,8 +226,60 @@ export class UserController {
   })
   async updateExtraData(
     @Param('uid') auth_id: string,
-    @Body() UpdateExtraDataDto: UpdateExtraDataDto
+    @Body() UpdateExtraDataDto: UpdateExtraDataDto,
   ) {
     return this.userService.updateUserExtraData(auth_id, UpdateExtraDataDto);
+  }
+
+  @Patch('upload-photo/:uid')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @UseInterceptors(FileInterceptor('imageFile'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Subir foto de perfil de usuario' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Foto de perfil subida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al subir la foto de perfil.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        imageFile: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @HttpCode(HttpStatus.OK)
+  async uploadClientPhoto(
+    @Param('uid') uid: string,
+    @UploadedFile() imageFile: Express.Multer.File,
+  ) {
+    return this.userService.uploadClientPhoto(uid, imageFile);
+  }
+
+  @Patch('remove-photo/:uid')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Eliminar foto de perfil de usuario',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'La foto de perfil ha sido eliminada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al eliminar la foto de perfil.',
+  })
+  async deleteClientPhoto(@Param('uid') uid: string) {
+    return this.userService.deleteClientPhoto(uid);
   }
 }

@@ -22,10 +22,10 @@ import { Public } from '../../../auth/decorators';
 @ApiTags('Worker Type')
 export class WorkerTypeController {
   constructor(private readonly workerTypeService: WorkerTypeService) {}
-
-  @Get('all')
-  @Public()
-  @HttpCode(HttpStatus.OK)
+ @Get('all')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+    @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los tipos de trabajadores (sin paginación)' })
   @ApiResponse({
     status: HttpStatus.OK,

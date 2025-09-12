@@ -150,4 +150,19 @@ export class ServiceTypeService {
       );
     }
   }
+
+  async findAll(): Promise<ServiceType[]> {
+    try {
+      const serviceTypes = await this.serviceTypeModel
+        .find({ status: 'Activo' }) // Solo service types activos
+        .sort({ name: 1 }) // Ordenar alfabéticamente por nombre
+        .exec();
+
+      return serviceTypes;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding all service types: ${error.message}`,
+      );
+    }
+  }
 }

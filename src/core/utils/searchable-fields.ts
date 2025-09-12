@@ -13,3 +13,4 @@ export const SF_WORKER = ['name'];
 export const SF_ACTIVITY_TEMPLATE = ['title','description','phase'];
 export const SF_EVENT_TASK = ['title','description','phase'];
 export const SF_FEATURED_EVENT = ['title','description'];
+export const SF_ASSIGNATION = ['available_from', 'available_to', 'Day_of_week', 'resource_type'];

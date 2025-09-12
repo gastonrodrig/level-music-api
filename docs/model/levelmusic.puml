@@ -18,7 +18,7 @@ entity users #E6BB93 {
   * needs_password_change : BOOLEAN,
   --
   created_at         : DATETIME
-  updated_at         : DATETIME
+  updated_at         : DATETIMEÍß
 }
 
 entity event_types #E6BB93 {

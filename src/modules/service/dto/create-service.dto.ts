@@ -1,20 +1,43 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsMongoId, IsNotEmpty, IsOptional } from "class-validator";
-import { Estado } from "src/core/constants/app.constants";
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsArray,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CreateServiceDetailInput {
+  @ApiProperty({
+    description: 'Atributos dinámicos (objeto flexible con campos específicos)',
+    example: { duration: 2, price_per_hour: 100 },
+  })
+  @IsNotEmpty()
+  details: any;
+
+  @ApiProperty({ example: 500 })
+  @IsNumber()
+  @Type(() => Number)
+  ref_price: number;
+}
 
 export class CreateServiceDto {
-  @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
-  @IsEnum(Estado)
-  @IsNotEmpty()
-  status: Estado;
-
-  @ApiProperty()
+  @ApiProperty({ example: '64f1c7e...' })
   @IsMongoId()
-  @IsOptional()
   provider_id: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: '64f1c7e...' })
   @IsMongoId()
-  @IsOptional()
   service_type_id: string;
+
+  @ApiProperty({
+    type: [CreateServiceDetailInput],
+    description: 'Lista de detalles para el servicio',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateServiceDetailInput)
+  serviceDetails: CreateServiceDetailInput[];
 }

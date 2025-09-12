@@ -22,6 +22,7 @@ import {
   ApiBearerAuth
 } from '@nestjs/swagger';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @ApiTags('Service Types')
 @Controller('service-types')
@@ -43,6 +44,22 @@ export class ServiceTypeController {
   })
   async create(@Body() createServiceTypeDto: CreateServiceTypeDto) {
     return this.serviceTypeService.create(createServiceTypeDto);
+  }
+
+  @Get('all')
+  @Public()
+  @ApiBearerAuth('firebase-auth')
+  @ApiOperation({ summary: 'Obtener todos los tipos de servicio activos' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de todos los tipos de servicio activos obtenida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los tipos de servicio.',
+  })
+  async findAll() {
+    return this.serviceTypeService.findAll();
   }
 
   @Get('paginated')

@@ -5,7 +5,11 @@ import { UploadResult } from 'src/core/interfaces';
 @Injectable()
 export class StorageService {
 
-  async uploadFile(location: string, file: Express.Multer.File, folderName: string): Promise<UploadResult> {
+  async uploadFile(
+    location: string, 
+    file: Express.Multer.File, 
+    folderName: string
+  ): Promise<UploadResult> {
     const { originalname, buffer, mimetype } = file;
     const bucket = admin.storage().bucket();
 
@@ -25,7 +29,11 @@ export class StorageService {
     };
   }
 
-  async uploadMultipleFiles(location: string, files: Express.Multer.File[] = [], folderName: string): Promise<object[]> {
+  async uploadMultipleFiles(
+    location: string, 
+    files: Express.Multer.File[] = [], 
+    folderName: string
+  ): Promise<object[]> {
     if (!Array.isArray(files)) {
       throw new Error('Files should be an array');
     }
@@ -54,8 +62,16 @@ export class StorageService {
     return uploadedUrls;
   }
 
-  async deleteFile(storagePath: string): Promise<void> {
+  async deleteFile(pathOrUrl: string): Promise<void> {
     const bucket = admin.storage().bucket();
+
+    let storagePath = pathOrUrl;
+    const bucketDomain = `https://storage.googleapis.com/${bucket.name}/`;
+
+    if (pathOrUrl.startsWith(bucketDomain)) {
+      storagePath = pathOrUrl.replace(bucketDomain, "");
+    }
+
     const file = bucket.file(storagePath);
 
     const [exists] = await file.exists();
@@ -66,5 +82,9 @@ export class StorageService {
 
     await file.delete();
     console.log(`File deleted: ${storagePath}`);
+  }
+
+  async deleteFiles(pathsOrUrls: string[]): Promise<void> {
+    await Promise.all(pathsOrUrls.map((p) => this.deleteFile(p)));
   }
 }

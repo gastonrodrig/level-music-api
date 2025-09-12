@@ -8,7 +8,7 @@ import { CreateEventTaskDto, UpdateEventTaskDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT_TASK } from 'src/core/utils';
-import { EventTask, Event, ActivityTemplate } from '../schema';
+import { EventTask, Event } from '../schema';
 import { WorkerType } from 'src/modules/worker/schema';
 
 @Injectable()
@@ -18,8 +18,6 @@ export class EventTaskService {
     private eventTaskModel: Model<EventTask>,
     @InjectModel(Event.name)
     private eventModel: Model<Event>,
-    @InjectModel(ActivityTemplate.name)
-    private activityTemplateModel: Model<ActivityTemplate>,
     @InjectModel(WorkerType.name)
     private workerTypeModel: Model<WorkerType>,
   ) {}
@@ -29,16 +27,12 @@ export class EventTaskService {
       const event = await this.eventModel.findById(createEventTaskDto.event_id);
       if (!event) throw new BadRequestException('Event not found');
 
-      const template = await this.activityTemplateModel.findById(createEventTaskDto.template_id);
-      if (!template) throw new BadRequestException('Template not found');
-
       const workerType = await this.workerTypeModel.findById(createEventTaskDto.worker_type_id);
       if (!workerType) throw new BadRequestException('Worker type not found');
 
       const eventTask = new this.eventTaskModel({
         ...createEventTaskDto,
         event: event._id,
-        template: template._id,
         worker_type: workerType._id,
       });
 

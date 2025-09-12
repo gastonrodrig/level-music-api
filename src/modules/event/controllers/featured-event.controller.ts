@@ -69,11 +69,28 @@ export class FeaturedEventController {
       required: ['event_id', 'title', 'services', 'images'],
     },
   })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'El evento destacado ha sido creado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear el evento destacado.',
+  })
   async create(
     @UploadedFiles() files: { images: Express.Multer.File[] },
     @Body() dto: CreateFeaturedEventDto,
   ) {
     return this.featuredEventService.create(dto, files?.images ?? []);
+  }
+
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los eventos destacados sin paginación (incluye imágenes como en paginado)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Lista completa de eventos destacados con imágenes compuestas igual que el paginado.' })
+  async findAll() {
+    return this.featuredEventService.findAll();
   }
 
   @Get('paginated')
@@ -148,6 +165,14 @@ export class FeaturedEventController {
         },
       },
     },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'El evento destacado ha sido actualizado correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar el evento destacado.',
   })
   async update(
     @Param('id') id: string,
