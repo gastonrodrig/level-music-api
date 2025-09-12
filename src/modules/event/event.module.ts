@@ -11,20 +11,24 @@ import {
   ActivityTemplateSchema,
   FeaturedEvent,
   FeaturedEventSchema, 
+  ReprogramingsSchema,
+  Reprogramings
 } from './schema';
 import { 
   ActivityTemplateService, 
   EventService, 
   EventTypeService, 
   EventTaskService, 
-  FeaturedEventService
+  FeaturedEventService,
+  ReprogramingsService
 } from './services';
 import { 
   EventController, 
   EventTypeController, 
   EventTaskController, 
   ActivityTemplateController, 
-  FeaturedEventController
+  FeaturedEventController,
+  ReprogramingsController
 } from './controllers';
 import { 
   addActivityTemplateHooks, 
@@ -60,7 +64,8 @@ import { FirebaseModule } from '../firebase/firebase.module';
         { name: User.name, schema: UserSchema },
         { name: FeaturedEvent.name, schema: FeaturedEventSchema },
         { name: FeaturedEventsMedia.name, schema: FeaturedEventsMediaSchema },
-      ]);
+        { name: Reprogramings.name, schema: ReprogramingsSchema },
+        ]);
     })(),
     FirebaseModule
   ],
@@ -69,14 +74,16 @@ import { FirebaseModule } from '../firebase/firebase.module';
     EventTypeService, 
     EventTaskService, 
     ActivityTemplateService,
-    FeaturedEventService
+    FeaturedEventService,
+    ReprogramingsService
   ],
   controllers: [
     EventController, 
     EventTypeController, 
     EventTaskController, 
     ActivityTemplateController,
-    FeaturedEventController
+    FeaturedEventController,
+    ReprogramingsController
   ], 
 })
 export class EventModule {}
