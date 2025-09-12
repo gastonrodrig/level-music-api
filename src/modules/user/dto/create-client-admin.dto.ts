@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { DocType } from 'src/core/constants/app.constants';
+import { ClientType } from '../enum';
 
 export class CreateClientAdminDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -18,10 +19,25 @@ export class CreateClientAdminDto {
   @IsOptional()
   last_name: string;
 
+  @ApiProperty({ example: 'URP' })
+  @IsString()
+  @IsOptional()
+  company_name: string;
+
+  @ApiProperty({ example: 'Alan' })
+  @IsString()
+  @IsOptional()
+  contact_person: string;
+
   @ApiProperty({ example: '1234567890' })
   @IsString()
   @IsOptional()
   phone: string;
+
+  @ApiProperty({ enum: ClientType, example: ClientType.PERSONA, required: false })
+  @IsEnum(ClientType)
+  @IsOptional()
+  client_type?: string;
 
   @ApiProperty({ enum: DocType, example: DocType.DNI, required: false })
   @IsEnum(DocType)

@@ -30,6 +30,7 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { ClientType } from '../enum';
 
 @Controller('user')
 @ApiTags('User')
@@ -88,12 +89,14 @@ export class UserController {
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
   @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  @ApiQuery({ name: 'clientType', required: false, enum: ClientType, description: 'Tipo de cliente (PERSONA o EMPRESA)' })
   findAllCustomersPaginated(
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('search') search?: string,
     @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
     @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+    @Query('clientType') clientType?: ClientType, 
   ) {
     return this.userService.findAllCustomersPaginated(
       limit,
@@ -101,6 +104,7 @@ export class UserController {
       search?.trim(),
       sortField,
       sortOrder,
+      clientType,
     );
   }
 

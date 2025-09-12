@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Estado, Roles, DocType } from '../../../core/constants/app.constants';
+import { ClientType } from '../enum';
 
 @Schema({ collection: 'users' })
 export class User {
@@ -15,8 +16,17 @@ export class User {
   @Prop({ length: 255, nullable: true }) 
   last_name: string;
 
+  @Prop({ length: 255, nullable: true }) 
+  company_name: string;
+
+  @Prop({ length: 255, nullable: true }) 
+  contact_person: string;
+
   @Prop({ nullable: true }) 
   phone: string;
+
+  @Prop({ enum: ClientType, default: ClientType.PERSONA, nullable: true })
+  client_type: ClientType;
 
   @Prop({ enum: DocType, default: DocType.DNI, nullable: true })
   document_type: DocType;

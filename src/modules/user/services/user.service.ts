@@ -21,6 +21,7 @@ import { generateRandomPassword } from 'src/core/utils';
 import { AuthService } from 'src/modules/firebase/services';
 import { Estado, Roles } from 'src/core/constants/app.constants';
 import { errorCodes } from 'src/core/common';
+import { ClientType } from '../enum';
 
 @Injectable()
 export class UserService {
@@ -54,7 +55,10 @@ export class UserService {
         ...createClientLandingDto,
         first_name: null,
         last_name: null,
+        company_name: null,
+        contact_person: null,
         phone: null,
+        client_type: ClientType.PERSONA,
         document_type: null,
         document_number: null,
         role: Roles.CLIENTE,
@@ -160,10 +164,16 @@ export class UserService {
     search = '',
     sortField: string,
     sortOrder: 'asc' | 'desc' = 'asc',
+    clientType: ClientType, 
   ): Promise<{ total: number; items: User[] }> {
     try {
       // Filtro base (solo clientes)
-      const baseFilter = { role: 'Cliente' };
+      const baseFilter: any = { role: 'Cliente' };
+
+      // Si envías el parámetro clientType, lo añadimos al filtro
+      if (clientType) {
+        baseFilter.client_type = clientType;
+      }
 
       // Filtro de búsqueda (si hay search)
       const searchFilter = search
@@ -183,37 +193,27 @@ export class UserService {
         document_number: { $nin: [null, ''] },
       };
 
-      // Unimos todos los filtros usando $and
-      const filters: any[] = [baseFilter, completeFieldsFilter];
-
-      if (search) {
-        filters.push(searchFilter);
-      }
-
-      const finalFilter = { $and: filters };
-
-      // Sort
-      const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      // Unimos todos los filtros
+      const filter = {
+        ...baseFilter,
+        ...searchFilter,
+        ...completeFieldsFilter,
       };
 
-      // Query paginada
-      const [items, total] = await Promise.all([
-        this.userModel
-          .find(finalFilter)
-          .collation({ locale: 'es', strength: 1 })
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.userModel.countDocuments(finalFilter).exec(),
-      ]);
+      // Total de registros
+      const total = await this.userModel.countDocuments(filter);
+
+      // Registros paginados
+      const items = await this.userModel
+        .find(filter)
+        .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(offset)
+        .limit(limit)
+        .exec();
 
       return { total, items };
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding customers with pagination: ${error.message}`,
-      );
+      throw new Error(`Error al listar clientes: ${error.message}`);
     }
   }
 
