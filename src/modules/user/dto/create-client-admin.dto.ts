@@ -24,7 +24,7 @@ export class CreateClientAdminDto {
   @IsOptional()
   company_name: string;
 
-  @ApiProperty({ example: 'Alan' })
+  @ApiProperty({ example: 'Name' })
   @IsString()
   @IsOptional()
   contact_person: string;
@@ -34,10 +34,10 @@ export class CreateClientAdminDto {
   @IsOptional()
   phone: string;
 
-  @ApiProperty({ enum: ClientType, example: ClientType.PERSONA, required: false })
+  @ApiProperty({ enum: ClientType, example: ClientType.PERSONA })
   @IsEnum(ClientType)
-  @IsOptional()
-  client_type?: string;
+  @IsNotEmpty()
+  client_type: string;
 
   @ApiProperty({ enum: DocType, example: DocType.DNI, required: false })
   @IsEnum(DocType)

@@ -108,23 +108,6 @@ export class UserController {
     );
   }
 
-  @Get(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener un usuario por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Usuario encontrado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener el usuario.',
-  })
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
-  }
-
   @Put(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')

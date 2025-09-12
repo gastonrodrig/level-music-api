@@ -217,19 +217,6 @@ export class UserService {
     }
   }
 
-  async findOne(user_id: string): Promise<User> {
-    try {
-      const user = await this.userModel.findOne({ _id: user_id });
-      if (!user) {
-        throw new BadRequestException('Usuario no encontrado');
-      }
-      return user;
-    } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException(`Error: ${error.message}`);
-    }
-  }
-
   async findByEmail(email: string): Promise<User> {
     try {
       return await this.userModel.findOne({ email });
