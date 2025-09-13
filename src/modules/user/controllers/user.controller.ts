@@ -13,7 +13,6 @@ import {
   Patch,
   UploadedFile,
   UseInterceptors,
-  UploadedFiles,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import {
@@ -43,7 +42,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // no se usa
   @Post('client-landing')
   @Public()
   @HttpCode(HttpStatus.CREATED)

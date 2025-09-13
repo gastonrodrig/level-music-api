@@ -186,20 +186,11 @@ export class UserService {
           }
         : {};
 
-      // Filtro de campos obligatorios completos
-      const completeFieldsFilter = {
-        first_name: { $nin: [null, ''] },
-        last_name: { $nin: [null, ''] },
-        phone: { $nin: [null, ''] },
-        document_type: { $nin: [null, ''] },
-        document_number: { $nin: [null, ''] },
-      };
 
-      // Unimos todos los filtros
+      // Unimos solo los filtros base y de búsqueda
       const filter = {
         ...baseFilter,
         ...searchFilter,
-        ...completeFieldsFilter,
       };
 
       // Total de registros

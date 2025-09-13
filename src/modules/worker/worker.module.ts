@@ -21,12 +21,15 @@ import {
 import { User, UserSchema } from '../user/schema';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
-import { AuthService } from '../firebase/services';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { MailModule } from '../mail/mail.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
+    BullModule.registerQueue(
+      { name: 'temporal-credentials' },
+    ),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
     ]),
@@ -48,8 +51,7 @@ import { MailModule } from '../mail/mail.module';
         inject: [getConnectionToken()],
       },
     ]),
-    FirebaseModule,
-    MailModule
+    FirebaseModule
   ],
   providers: [WorkerTypeService, WorkerService],
   controllers: [WorkerTypeController, WorkerController],
