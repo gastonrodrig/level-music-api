@@ -11,6 +11,7 @@ import { Model } from 'mongoose';
 import { CreateServiceTypeDto, UpdateServiceTypeDto } from '../dto';
 import { SF_SERVICE_TYPE } from 'src/core/utils';
 import { errorCodes } from 'src/core/common';
+import { Estado } from 'src/core/constants/app.constants';
 
 @Injectable()
 export class ServiceTypeService {
@@ -44,6 +45,21 @@ export class ServiceTypeService {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error creating service type: ${error.message}`,
+      );
+    }
+  }
+
+  async findAll(): Promise<ServiceType[]> {
+    try {
+      const serviceTypes = await this.serviceTypeModel
+        .find({ status: Estado.ACTIVO }) 
+        .sort({ name: 1 }) 
+        .exec();
+
+      return serviceTypes;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding all service types: ${error.message}`,
       );
     }
   }
@@ -147,21 +163,6 @@ export class ServiceTypeService {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error updating service type: ${error.message}`,
-      );
-    }
-  }
-
-  async findAll(): Promise<ServiceType[]> {
-    try {
-      const serviceTypes = await this.serviceTypeModel
-        .find({ status: 'Activo' }) // Solo service types activos
-        .sort({ name: 1 }) // Ordenar alfabéticamente por nombre
-        .exec();
-
-      return serviceTypes;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding all service types: ${error.message}`,
       );
     }
   }

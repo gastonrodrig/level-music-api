@@ -12,6 +12,7 @@ import { Model } from 'mongoose';
 import { SF_EVENT_TYPE } from 'src/core/utils';
 import { EventType } from '../schema';
 import { errorCodes } from 'src/core/common';
+import { Estado } from 'src/core/constants/app.constants';
 
 @Injectable()
 export class EventTypeService {
@@ -45,6 +46,23 @@ export class EventTypeService {
     }
   }
 
+  async findAll(): Promise<EventType[]> {
+    try {
+      const eventTypes = await this.eventTypeModel
+        .find({ status: Estado.ACTIVO })
+        .exec();
+
+      // Separar el tipo "Otros" y ponerlo al final
+      const otros = eventTypes.filter(e => e.type === 'Otros');
+      const sinOtros = eventTypes.filter(e => e.type !== 'Otros');
+      return [...sinOtros, ...otros];
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding all event types: ${error.message}`,
+      );
+    }
+  }
+
   async findAllPaginated(
     limit = 5,
     offset = 0,
@@ -53,13 +71,20 @@ export class EventTypeService {
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; items: EventType[] }> {
     try {
-      const filter = search
+      // Construir filtro base
+      let filter: any = search
         ? {
             $or: SF_EVENT_TYPE.map((field) => ({
               [field]: { $regex: search, $options: 'i' },
             })),
           }
         : {};
+
+      // Excluir el tipo "Otros"
+      filter = {
+        ...filter,
+        type: { $ne: 'Otros' },
+      };
 
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
