@@ -53,10 +53,11 @@ export class ServiceTypeService {
     try {
       const serviceTypes = await this.serviceTypeModel
         .find({ status: Estado.ACTIVO }) 
-        .sort({ name: 1 }) 
         .exec();
 
-      return serviceTypes;
+      const otros = serviceTypes.filter(s => s.name === 'Otros');
+      const sinOtros = serviceTypes.filter(s => s.name !== 'Otros');
+      return [...sinOtros, ...otros];
     } catch (error) {
       throw new InternalServerErrorException(
         `Error finding all service types: ${error.message}`,

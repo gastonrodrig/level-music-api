@@ -81,13 +81,14 @@ export class EventService {
       // 3. Crear evento con client_info siempre embebido
       const event = await this.eventModel.create({
         ...dto,
-        event_code,
-        client_info: dto.client_info, // siempre se guarda
-        user_id: authUser?._id ?? null, // solo si está autenticado
-        event_type_id: dto.event_type_id ?? null,
-        event_type_name: eventType?.type ?? dto.event_type_name ?? null,
+        name: null,
+        description: null, 
+        event_code, 
+        client_info: dto.client_info, 
+        user_id: dto.user_id, 
         state: StatusType.PENDIENTE_APROBACION,
         estimated_price: 0,
+        final_price: 0,
       });
 
       return event;

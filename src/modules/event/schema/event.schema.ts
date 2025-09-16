@@ -50,9 +50,6 @@ export class Event {
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
 
-  @Prop({ required: true, enum: StatusType })
-  state: StatusType; // Ej: 'pendiente_aprobación', 'confirmado', 'rechazado'
-
   @Prop({ type: [ServiceRequestedSchema], default: [] })
   services_requested: ServiceRequested[];
 
@@ -63,6 +60,7 @@ export class Event {
   final_price?: number;
 
   @Prop({
+    _id: false,
     type: {
       client_type: { type: String, enum: ClientType },
       first_name: String,

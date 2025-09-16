@@ -95,15 +95,6 @@ export class CreateEventDto {
   @IsOptional()
   event_type_name?: string | null;
 
-  @ApiProperty({
-    example: StatusType.PENDIENTE_APROBACION,
-    enum: StatusType,
-    required: true,
-  })
-  @IsEnum(StatusType)
-  @IsNotEmpty()
-  state: StatusType;
-
   @ApiProperty({ type: [ServiceRequestedDto], required: false })
   @IsArray()
   @ValidateNested({ each: true })
