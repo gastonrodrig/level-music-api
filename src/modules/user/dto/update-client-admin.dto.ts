@@ -1,38 +1,9 @@
-import { IsEmail, IsString, IsEnum, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { DocType, Estado } from '../../../core/constants/app.constants';
+import { ApiProperty, PartialType } from "@nestjs/swagger";
+import { CreateClientAdminDto } from './create-client-admin.dto';
+import { Estado } from "src/core/constants/app.constants";
+import { IsEnum, IsOptional } from "class-validator";
 
-export class UpdateClientAdminDto {
-  @ApiProperty({ example: 'user@example.com' })
-  @IsEmail()
-  @IsOptional()
-  email?: string;
-
-  @ApiProperty({ example: 'John' })
-  @IsString()
-  @IsOptional()
-  first_name?: string;
-
-  @ApiProperty({ example: 'Doe' })
-  @IsString()
-  @IsOptional()
-  last_name?: string;
-
-  @ApiProperty({ example: '1234567890' })
-  @IsString()
-  @IsOptional()
-  phone?: string;
-
-  @ApiProperty({ enum: DocType, example: DocType.DNI, required: false })
-  @IsEnum(DocType)
-  @IsOptional()
-  document_type?: string;
-
-  @ApiProperty({ example: '12345678', required: false })
-  @IsString()
-  @IsOptional()
-  document_number?: string;
-
+export class UpdateClientAdminDto extends PartialType(CreateClientAdminDto) {
   @ApiProperty({ enum: Estado, example: Estado.ACTIVO })
   @IsEnum(Estado)
   @IsOptional()

@@ -17,10 +17,6 @@ import {
   ServiceTypeController
 } from './controllers';
 import { 
-  ServiceDetailMedia, 
-  ServiceDetailMediaSchema 
-} from '../uploads';
-import { 
   addServiceHooks, 
   addServiceTypeHooks 
 } from './hooks';
@@ -35,7 +31,6 @@ import { Provider, ProviderSchema } from '../provider/schema';
       return MongooseModule.forFeature([
         { name: Service.name, schema: ServiceSchema },
         { name: ServiceDetail.name, schema: ServiceDetailSchema },
-        { name: ServiceDetailMedia.name, schema: ServiceDetailMediaSchema },
         { name: Provider.name, schema: ProviderSchema }
       ]);
     })(),
@@ -51,7 +46,6 @@ import { Provider, ProviderSchema } from '../provider/schema';
         inject: [getConnectionToken()],
       }
     ]),
-
     FirebaseModule
   ],
   providers: [

@@ -1,3 +1,4 @@
+export * from './client-info.dto';
 export * from './create-event.dto';
 export * from './update-event.dto';
 export * from './create-event-type.dto';
@@ -9,3 +10,4 @@ export * from './update-event-task.dto';
 export * from './create-featured-event.dto';
 export * from './update-featured-event.dto';
 export * from './create-reprogramings.dto';
+export * from './create-assignations.dto';

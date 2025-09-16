@@ -1,6 +1,6 @@
 export enum StatusType {
-  PENDIENTE ='Pendiente',
-  ENVIADO ='Enviado',
+  PENDIENTE_APROBACION = 'Pendiente de aprobación',
+  ENVIADO = 'Enviado',
   CONFIRMADO = 'Confirmado',
   TERMINADO = 'Terminado',
   CANCELADO = 'Cancelado',

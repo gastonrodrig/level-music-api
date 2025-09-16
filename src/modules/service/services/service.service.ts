@@ -10,12 +10,9 @@ import { Model } from 'mongoose';
 import { Provider } from '../../provider/schema';
 import { ServiceType } from '../schema';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
-import { SF_SERVICE } from 'src/core/utils';
-import { ServiceDetailMedia } from '../../uploads/schema/collection';
 import { Estado } from 'src/core/constants/app.constants';
-import { parseDetailService, toObjectId } from 'src/core/utils';
+import { parseDetailService, SF_SERVICE, toObjectId } from 'src/core/utils';
 import { StorageService } from '../../firebase/services';
-import { UploadResult } from 'src/core/interfaces';
 
 @Injectable()
 export class ServiceService {
@@ -26,70 +23,83 @@ export class ServiceService {
     private providerModel: Model<Provider>,
     @InjectModel(ServiceType.name)
     private serviceTypeModel: Model<ServiceType>,
-    @InjectModel(ServiceDetailMedia.name)
-    private serviceMediaModel: Model<ServiceDetailMedia>,
     @InjectModel(ServiceDetail.name)
     private serviceDetailModel: Model<ServiceDetail>,
-    private readonly storageService: StorageService,
-    
   ) {}
 
-  // Guiarse de aqui, solo cuando la tabla tiene ref's
   async create(
-    createServiceDto: CreateServiceDto,
-    media: Express.Multer.File[] = [],
-  ): Promise<{ service: Service; detail: ServiceDetail; multimedia: ServiceDetailMedia[] }> {
+    dto: CreateServiceDto,
+  ): Promise<{
+    service: Service;
+    serviceDetails: Array<ServiceDetail>;
+  }> {
     try {
-      const provider = await this.providerModel.findById(createServiceDto.provider_id);
+      // 1) Validar provider y tipo de servicio
+      const provider = await this.providerModel.findById(dto.provider_id);
       if (!provider) throw new BadRequestException('Provider not found');
-      
-      const serviceType = await this.serviceTypeModel.findById(createServiceDto.service_type_id);
+
+      const serviceType = await this.serviceTypeModel.findById(dto.service_type_id);
       if (!serviceType) throw new BadRequestException('Service type not found');
-      
-      const newService = await this.serviceModel.create({
-        ...createServiceDto,
-        status: Estado.ACTIVO,
+
+      if (!Array.isArray(dto.serviceDetails) || dto.serviceDetails.length === 0) {
+        throw new BadRequestException('serviceDetails debe contener al menos un detalle');
+      }
+
+      // 2) Crear el servicio principal
+      const service = await this.serviceModel.create({
         provider: toObjectId(provider._id),
         service_type: toObjectId(serviceType._id),
         provider_name: provider.name,
         service_type_name: serviceType.name,
-      });
-      
-      const upload = await this.storageService.uploadMultipleFiles(
-       'service-detail',
-        media,
-        'multimedia',
-      ) as UploadResult[];
-
-      const detail = await this.serviceDetailModel.create({
-        details: parseDetailService(createServiceDto.details) ,
-        service_id: newService._id,
-        ref_price: createServiceDto.ref_price,
-        multimedia: [],
+        status: Estado.ACTIVO,
       });
 
-      const multimedia = upload.map((file) => ({
-        url: file.url,
-        name: file.name,
-        size: file.size,
-        storagePath: file.storagePath,
-        detail_id: detail._id,
-        created_at: new Date(),
-      }));
+      const serviceDetails: Array<ServiceDetail> = [];
 
-      await this.serviceMediaModel.insertMany(multimedia);
+      // 3) Crear cada detalle
+      for (const d of dto.serviceDetails) {
+        const detail = await this.serviceDetailModel.create({
+          service_id: service._id,
+          status: Estado.ACTIVO,
+          ref_price: d.ref_price,
+          details: parseDetailService(d.details),
+        });
 
-      detail.multimedia = multimedia;
-      await detail.save();
+        serviceDetails.push(detail.toObject());
+      }
 
-      return{
-        service: await newService.save(),
-        detail,
-        multimedia,
-      };
+      return { service, serviceDetails };
     } catch (error) {
       throw new InternalServerErrorException(
         `Error creating service: ${error.message}`,
+      );
+    }
+  }
+
+  async findAll(): Promise<
+    Array<{
+      service: Service;
+      serviceDetails: Array<ServiceDetail>;
+    }>
+  > {
+    try {
+      const services = await this.serviceModel.find().lean();
+
+      return Promise.all(
+        services.map(async (service) => {
+          const details = await this.serviceDetailModel
+            .find({ service_id: service._id })
+            .lean();
+
+          return {
+            service,
+            serviceDetails: details,
+          };
+        }),
+      );
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error fetching all services with details: ${error.message}`,
       );
     }
   }
@@ -98,10 +108,17 @@ export class ServiceService {
     limit = 5,
     offset = 0,
     search = '',
-    sortField: string,
+    sortField = 'created_at',
     sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Service[] }> {
+  ): Promise<{
+    total: number;
+    items: Array<{
+      service: Service;
+      serviceDetails: Array<ServiceDetail>;
+    }>;
+  }> {
     try {
+      // 1) Filtro de búsqueda dinámico
       const filter = search
         ? {
             $or: SF_SERVICE.map((field) => ({
@@ -110,59 +127,98 @@ export class ServiceService {
           }
         : {};
 
+      // 2) Orden dinámico
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
       };
 
-      const [items, total] = await Promise.all([
+      // 3) Consultas en paralelo
+      const [services, total] = await Promise.all([
         this.serviceModel
           .find(filter)
-          .collation({ locale: 'es', strength: 1 })
+          .collation({ locale: 'es', strength: 1 }) // Para búsqueda insensible a mayúsculas
           .sort(sortObj)
           .skip(offset)
           .limit(limit)
-          .exec(),
+          .lean(),
         this.serviceModel.countDocuments(filter).exec(),
       ]);
+
+      // 4) Obtener detalles relacionados para cada servicio
+      const items = await Promise.all(
+        services.map(async (service) => {
+          const details = await this.serviceDetailModel
+            .find({ service_id: service._id })
+            .lean();
+
+          return {
+            service,
+            serviceDetails: details,
+          };
+        }),
+      );
 
       return { total, items };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error finding services with pagination: ${error.message}`,
+        `Error fetching paginated services with details: ${error.message}`,
       );
     }
   }
 
-  async findOne(id: string): Promise<Service> {
+  async updateFullService(
+    serviceId: string,
+    dto: UpdateServiceDto,
+  ): Promise<{
+    service: Service;
+    serviceDetails: Array<ServiceDetail>;
+  }> {
     try {
-      const service = await this.serviceModel.findById(id).exec();
+      const service = await this.serviceModel.findById(serviceId);
       if (!service) {
-        throw new NotFoundException(`Service with ID ${id} not found`);
-      }
-      return service;
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding service: ${error.message}`,
-      );
-    }
-  }
-
-  async update(
-    service_id: string,
-    updateServiceDto: UpdateServiceDto,
-  ): Promise<Service> {
-    try {
-      const updatedService = await this.serviceModel.findByIdAndUpdate(
-        service_id,
-        updateServiceDto,
-        { new: true },
-      );
-
-      if (!updatedService) {
-        throw new NotFoundException(`Service with ID ${service_id} not found`);
+        throw new NotFoundException(`Service with ID ${serviceId} not found`);
       }
 
-      return updatedService;
+      // ================================
+      // Procesar y actualizar cada detalle
+      // ================================
+      for (const detailDto of dto.serviceDetails) {
+        const detail = await this.serviceDetailModel.findById(detailDto._id);
+        if (!detail) {
+          throw new NotFoundException(
+            `Service Detail with ID ${detailDto._id} not found`,
+          );
+        }
+
+        // 3.1 Actualizar estado (Activo/Inactivo)
+        if (detailDto.status) {
+          detail.status = detailDto.status;
+        }
+
+        // 3.2 Actualizar atributos dinámicos
+        if (detailDto.details) {
+          detail.details = detailDto.details;
+        }
+
+        // 3.3 Actualizar precio
+        if (typeof detailDto.ref_price !== 'undefined') {
+          detail.ref_price = detailDto.ref_price;
+        }
+
+        await detail.save();
+      }
+
+      // ================================
+      // 4. Retornar servicio actualizado con sus detalles
+      // ================================
+      const updatedDetails = await this.serviceDetailModel
+        .find({ service_id: service._id })
+        .lean();
+
+      return {
+        service,
+        serviceDetails: updatedDetails,
+      };
     } catch (error) {
       throw new InternalServerErrorException(
         `Error updating service: ${error.message}`,

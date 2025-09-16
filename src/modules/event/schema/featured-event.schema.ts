@@ -12,6 +12,9 @@ export class FeaturedEvent {
   event: Types.ObjectId;
 
   @Prop({ length: 255 })
+  event_code: string;
+
+  @Prop({ length: 255 })
   title: string;
 
   @Prop({ length: 255 })

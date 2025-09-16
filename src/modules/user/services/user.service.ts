@@ -22,6 +22,7 @@ import { generateRandomPassword } from 'src/core/utils';
 import { AuthService, StorageService } from 'src/modules/firebase/services';
 import { Estado, Roles } from 'src/core/constants/app.constants';
 import { errorCodes } from 'src/core/common';
+import { ClientType } from '../enum';
 
 @Injectable()
 export class UserService {
@@ -56,7 +57,10 @@ export class UserService {
         ...createClientLandingDto,
         first_name: null,
         last_name: null,
+        company_name: null,
+        contact_person: null,
         phone: null,
+        client_type: ClientType.PERSONA,
         document_type: null,
         document_number: null,
         role: Roles.CLIENTE,
@@ -162,10 +166,16 @@ export class UserService {
     search = '',
     sortField: string,
     sortOrder: 'asc' | 'desc' = 'asc',
+    clientType: ClientType, 
   ): Promise<{ total: number; items: User[] }> {
     try {
       // Filtro base (solo clientes)
-      const baseFilter = { role: 'Cliente' };
+      const baseFilter: any = { role: 'Cliente' };
+
+      // Si envías el parámetro clientType, lo añadimos al filtro
+      if (clientType) {
+        baseFilter.client_type = clientType;
+      }
 
       // Filtro de búsqueda (si hay search)
       const searchFilter = search
@@ -176,59 +186,27 @@ export class UserService {
           }
         : {};
 
-      // Filtro de campos obligatorios completos
-      const completeFieldsFilter = {
-        first_name: { $nin: [null, ''] },
-        last_name: { $nin: [null, ''] },
-        phone: { $nin: [null, ''] },
-        document_type: { $nin: [null, ''] },
-        document_number: { $nin: [null, ''] },
+
+      // Unimos solo los filtros base y de búsqueda
+      const filter = {
+        ...baseFilter,
+        ...searchFilter,
       };
 
-      // Unimos todos los filtros usando $and
-      const filters: any[] = [baseFilter, completeFieldsFilter];
+      // Total de registros
+      const total = await this.userModel.countDocuments(filter);
 
-      if (search) {
-        filters.push(searchFilter);
-      }
-
-      const finalFilter = { $and: filters };
-
-      // Sort
-      const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
-      };
-
-      // Query paginada
-      const [items, total] = await Promise.all([
-        this.userModel
-          .find(finalFilter)
-          .collation({ locale: 'es', strength: 1 })
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.userModel.countDocuments(finalFilter).exec(),
-      ]);
+      // Registros paginados
+      const items = await this.userModel
+        .find(filter)
+        .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 })
+        .skip(offset)
+        .limit(limit)
+        .exec();
 
       return { total, items };
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding customers with pagination: ${error.message}`,
-      );
-    }
-  }
-
-  async findOne(user_id: string): Promise<User> {
-    try {
-      const user = await this.userModel.findOne({ _id: user_id });
-      if (!user) {
-        throw new BadRequestException('Usuario no encontrado');
-      }
-      return user;
-    } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException(`Error: ${error.message}`);
+      throw new Error(`Error al listar clientes: ${error.message}`);
     }
   }
 
@@ -237,6 +215,19 @@ export class UserService {
       return await this.userModel.findOne({ email });
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
+    }
+  }
+
+  async validateEmailNotRegistered(email: string): Promise<void> {
+    const existingEmail = await this.userModel.findOne({ email });
+    if (existingEmail) {
+      throw new HttpException(
+        {
+          code: errorCodes.EMAIL_ALREADY_EXISTS,
+          message: 'El correo ya fue registrado previamnente.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -488,5 +479,4 @@ export class UserService {
       throw new InternalServerErrorException(`Error eliminando foto: ${error.message}`);
     }
   }
-
 }
