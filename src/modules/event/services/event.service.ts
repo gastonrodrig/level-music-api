@@ -11,7 +11,6 @@ import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
 import { CreateQuotationDto } from '../dto/create-quotation.dto';
-import { Estado, Roles } from 'src/core/constants/app.constants';
 import { StatusType } from '../enum';
 
 @Injectable()
@@ -84,8 +83,9 @@ export class EventService {
         name: null,
         description: null, 
         event_code, 
+        event_type: eventType._id,
         client_info: dto.client_info, 
-        user_id: dto.user_id, 
+        user: toObjectId(dto.user_id), 
         state: StatusType.PENDIENTE_APROBACION,
         estimated_price: 0,
         final_price: 0,

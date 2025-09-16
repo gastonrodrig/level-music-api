@@ -13,7 +13,13 @@ import {
     UseGuards,
     Req,
  } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { 
+  ApiBearerAuth, 
+  ApiOperation, 
+  ApiQuery, 
+  ApiResponse, 
+  ApiTags 
+} from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
 import { CreateEventDto, UpdateEventDto } from '../dto';
@@ -26,7 +32,8 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo evento' })
   @ApiResponse({
@@ -58,7 +65,8 @@ export class EventController {
   }
 
   @Get('paginated')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener eventos con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -91,7 +99,8 @@ export class EventController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Obtener un evento por ID' })
   @ApiResponse({
@@ -107,7 +116,8 @@ export class EventController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un evento por ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'El evento ha sido actualizado correctamente.' })

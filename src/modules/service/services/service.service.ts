@@ -12,7 +12,6 @@ import { ServiceType } from '../schema';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { Estado } from 'src/core/constants/app.constants';
 import { parseDetailService, SF_SERVICE, toObjectId } from 'src/core/utils';
-import { StorageService } from '../../firebase/services';
 
 @Injectable()
 export class ServiceService {
@@ -112,10 +111,7 @@ export class ServiceService {
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{
     total: number;
-    items: Array<{
-      service: Service;
-      serviceDetails: Array<ServiceDetail>;
-    }>;
+    items: Array<Service & { serviceDetails: Array<ServiceDetail> }>;
   }> {
     try {
       // 1) Filtro de búsqueda dinámico
@@ -136,7 +132,7 @@ export class ServiceService {
       const [services, total] = await Promise.all([
         this.serviceModel
           .find(filter)
-          .collation({ locale: 'es', strength: 1 }) // Para búsqueda insensible a mayúsculas
+          .collation({ locale: 'es', strength: 1 }) 
           .sort(sortObj)
           .skip(offset)
           .limit(limit)
@@ -152,7 +148,7 @@ export class ServiceService {
             .lean();
 
           return {
-            service,
+            ...service,
             serviceDetails: details,
           };
         }),
