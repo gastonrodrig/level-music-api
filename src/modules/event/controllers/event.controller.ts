@@ -114,4 +114,21 @@ export class EventController {
   findByCode(@Param('event_code') event_code: string) {
     return this.eventService.findByCode(event_code);
   }
+  
+  @Get('user/:user_id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener los eventos por usuario' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Eventos encontrados correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Eventos no encontrados',
+  })
+  findByUser(@Param('user_id') user_id: string) {
+    return this.eventService.findByUser(user_id);
+  }
 }

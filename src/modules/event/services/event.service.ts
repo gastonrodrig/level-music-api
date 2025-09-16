@@ -144,4 +144,18 @@ export class EventService {
       );
     }
   }
+  async findByUser(user_id: string): Promise<Event[]> {
+    try {
+      const events = await this.eventModel.find({ user: user_id });
+      if (!events || events.length === 0) {
+        throw new NotFoundException(`No se encontraron eventos para el usuario con id ${user_id}`);
+      }
+      return events;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException(
+        `Error al buscar eventos por usuario: ${error.message}`,
+      );
+    }
+  }
 }
