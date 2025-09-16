@@ -218,6 +218,19 @@ export class UserService {
     }
   }
 
+  async validateEmailNotRegistered(email: string): Promise<void> {
+    const existingEmail = await this.userModel.findOne({ email });
+    if (existingEmail) {
+      throw new HttpException(
+        {
+          code: errorCodes.EMAIL_ALREADY_EXISTS,
+          message: 'El correo ya fue registrado previamnente.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   async updateClientAdmin(user_id: string, updateUserDto: UpdateClientAdminDto): Promise<User> {
     try {
       // Validar email y documento únicos
@@ -466,5 +479,4 @@ export class UserService {
       throw new InternalServerErrorException(`Error eliminando foto: ${error.message}`);
     }
   }
-
 }

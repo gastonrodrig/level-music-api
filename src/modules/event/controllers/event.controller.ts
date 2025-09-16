@@ -11,12 +11,14 @@ import {
     ParseIntPipe,
     Put,
     UseGuards,
+    Req,
  } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { CreateQuotationDto } from '../dto/create-quotation.dto';
 
 @Controller('events')
 @ApiTags('Events')
@@ -37,6 +39,22 @@ export class EventController {
   })
   create(@Body() createEventDto: CreateEventDto) {
     return this.eventService.create(createEventDto);
+  }
+
+  @Post('quotation')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Solicitar una cotización para un evento' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Cotización creada correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear la cotización',
+  })
+  createQuotation(@Body() dto: CreateQuotationDto, @Req() req) {
+    return this.eventService.createQuotation(dto, req.user ?? null);
   }
 
   @Get('paginated')
