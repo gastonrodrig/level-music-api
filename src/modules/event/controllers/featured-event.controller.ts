@@ -175,10 +175,14 @@ export class FeaturedEventController {
     description: 'Error al actualizar el evento destacado.',
   })
   async update(
+    
     @Param('id') id: string,
+    
     @UploadedFiles() files: { images?: Express.Multer.File[] },
     @Body() dto: UpdateFeaturedEventDto,
   ) {
+    
+  
     return this.featuredEventService.update(id, dto, files?.images ?? []);
   }
 

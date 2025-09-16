@@ -110,6 +110,8 @@ export class FeaturedEventService {
     }
   }
 
+ 
+
   async findAll(): Promise<FeaturedEvent[]> {
     try {
       const items = await this.featuredEventModel.find().exec();
