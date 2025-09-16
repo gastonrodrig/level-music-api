@@ -42,10 +42,10 @@ export class Event {
   place_size: number;
 
   @Prop({ type: Types.ObjectId, ref: User.name, required: false, default: null })
-  user_id?: Types.ObjectId;
+  user?: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: EventType.name, required: false, default: null })
-  event_type_id?: Types.ObjectId | null;
+  event_type?: Types.ObjectId | null;
 
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
