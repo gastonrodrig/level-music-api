@@ -169,6 +169,22 @@ export class UserController {
     return this.userService.findByEmail(email);
   }
 
+  @Get('validate-email/:email')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Validar si un correo ya fue registrado previamente' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'El correo no está registrado.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'El correo ya fue registrado previamente.',
+  })
+  validateEmailNotRegistered(@Param('email') email: string) {
+    return this.userService.validateEmailNotRegistered(email);
+  }
+
   @Patch('reset-password-flag/:uid')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')

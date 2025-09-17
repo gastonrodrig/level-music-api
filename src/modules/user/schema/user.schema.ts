@@ -45,18 +45,21 @@ export class User {
 
   @Prop({ required: true, default: false })
   created_by_admin: boolean;
-  
-  @Prop({ default: Date.now })
-  created_at: Date;
-
-  @Prop({ default: Date.now })
-  updated_at: Date;
 
   @Prop({ length: 255, nullable: true })
   profile_picture: string;
   
   @Prop({ type: Boolean, default: false })
   is_extra_data_completed: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  is_temp_account: boolean;
+
+  @Prop({ default: Date.now })
+  created_at: Date;
+
+  @Prop({ default: Date.now })
+  updated_at: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

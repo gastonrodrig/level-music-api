@@ -48,7 +48,7 @@ export class ServiceTypeController {
 
   @Get('all')
   @Public()
-  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los tipos de servicio activos' })
   @ApiResponse({
     status: HttpStatus.OK,

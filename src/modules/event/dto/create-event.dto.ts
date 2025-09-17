@@ -1,44 +1,76 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsDate, IsOptional, IsNumber, IsMongoId, IsEnum, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsDate,
+  IsOptional,
+  IsNumber,
+  IsMongoId,
+  IsEnum,
+  IsNotEmpty,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+} from 'class-validator';
 import { StatusType, PlaceType } from '../enum';
-import { Types } from 'mongoose';
 import { Type } from 'class-transformer';
+
+class ServiceRequestedDto {
+  @ApiProperty({ example: '64f1c7e1234567890abcde12', required: false })
+  @IsString()
+  @IsOptional()
+  service_type_id: string;
+
+  @ApiProperty({ example: 'DJ Profesional' })
+  @IsString()
+  @IsNotEmpty()
+  service_type_name: string;
+
+  @ApiProperty({ example: 'Con cabina incluida', required: true })
+  @IsString()
+  @IsOptional()
+  details?: string;
+}
 
 export class CreateEventDto {
   @ApiProperty({ example: 'Nombre del evento', required: true })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   name: string;
 
   @ApiProperty({ example: 'Descripcion del evento', required: true })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   description: string;
 
-  @ApiProperty({ example: '2023-12-31T23:59:59.000Z', required: true })
+  @ApiProperty({ example: '2025-12-31T23:59:59.000Z', required: true })
   @IsDate()
   @Type(() => Date)
   date: Date;
 
-  @ApiProperty({ example: '18:00 - 23:00', required: true })
+  @ApiProperty({ example: '18:00', required: true })
   @IsString()
   @IsNotEmpty()
-  time_range: string;
+  start_time: string;
+
+  @ApiProperty({ example: '23:00', required: true })
+  @IsString()
+  @IsNotEmpty()
+  end_time: string;
 
   @ApiProperty({ example: 100, required: false })
   @IsNumber()
   @IsOptional()
-  attendees_count?: number;
+  attendees_count?: number | null;
 
   @ApiProperty({ example: 'Calle Falsa 123', required: false })
   @IsString()
   @IsOptional()
-  exact_address?: string;
+  exact_address?: string | null;
 
   @ApiProperty({ example: 'Cerca del parque central', required: false })
   @IsString()
   @IsOptional()
-  location_reference?: string;
+  location_reference?: string | null;
 
   @ApiProperty({ example: 'Abierto', enum: PlaceType, required: true })
   @IsString()
@@ -48,25 +80,34 @@ export class CreateEventDto {
   @ApiProperty({ example: 500, required: false })
   @IsNumber()
   @IsOptional()
-  place_size?: number;
+  place_size?: number | null;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
+  @ApiProperty({ example: '64f1c7e1234567890abcde12', required: false, nullable: true })
   @IsOptional()
-  user_id: Types.ObjectId;
+  user_id?: string | null;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
+  @ApiProperty({ example: '64f1c7e1234567890abcde34', required: false, nullable: true })
   @IsOptional()
-  event_type_id: string;
+  event_type_id?: string | null;
 
-  @ApiProperty({ example: 'Pendiente', enum: StatusType, required: true })
-  @IsEnum(StatusType)
-  @IsNotEmpty()
-  state: StatusType;
+  @ApiProperty({ example: 'Evento Corporativo', required: false, nullable: true })
+  @IsString()
+  @IsOptional()
+  event_type_name?: string | null;
 
-  @ApiProperty({ example: 1500.50, required: false })
+  @ApiProperty({ type: [ServiceRequestedDto], required: false })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceRequestedDto)
+  services_requested?: ServiceRequestedDto[];
+
+  @ApiProperty({ example: 1500.5, required: false, nullable: true })
   @IsNumber()
   @IsOptional()
-  final_price?: number;
+  estimated_price?: number | null;
+
+  @ApiProperty({ example: 1500.5, required: false, nullable: true })
+  @IsNumber()
+  @IsOptional()
+  final_price?: number | null;
 }

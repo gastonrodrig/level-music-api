@@ -16,6 +16,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@ne
 import { EventTypeService } from '../services';
 import { CreateEventTypeDto, UpdateEventTypeDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @Controller('event-type')
 @ApiTags('Event-Type')
@@ -37,6 +38,22 @@ export class EventTypeController {
   })
   create(@Body() createEventTypeDto: CreateEventTypeDto) {
     return this.eventTypeService.create(createEventTypeDto);
+  }
+
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los tipos de evento activos' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de todos los tipos de evento activos obtenida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los tipos de evento.',
+  })
+  async findAll() {
+    return this.eventTypeService.findAll();
   }
 
   @Get('paginated')
