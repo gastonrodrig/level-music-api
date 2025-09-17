@@ -22,6 +22,7 @@ import {
 import { ServiceService } from '../services';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @ApiTags('Services')
 @Controller('services')
