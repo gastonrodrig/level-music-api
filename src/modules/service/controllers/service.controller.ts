@@ -19,7 +19,6 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Public } from '../../../auth/decorators';
 import { ServiceService } from '../services';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';

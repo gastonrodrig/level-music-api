@@ -5,7 +5,6 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { APP_NAME, API_PREFIX, API_VERSION, APP_DESCRIPTION } from './core/constants/app.constants';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
-import { FirebaseAuthGuard } from './auth/guards';
 
 dotenv.config();
 
@@ -39,8 +38,7 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
-  const reflector = app.get(Reflector);
-  app.useGlobalGuards(new FirebaseAuthGuard(reflector));
+  app.get(Reflector);
 
   app.setGlobalPrefix(API_PREFIX);
 
