@@ -10,5 +10,5 @@ export class ServiceTypeCustomField {
   type: string;
 
   @Prop({ default: false })
-  required: boolean;
+  default: boolean;
 }

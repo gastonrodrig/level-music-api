@@ -15,5 +15,5 @@ export class ServiceTypeCustomFieldDto {
 
   @ApiProperty({ example: true })
   @IsBoolean()
-  required: boolean;
+  default: boolean;
 }
