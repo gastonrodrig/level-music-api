@@ -80,8 +80,6 @@ export class EventService {
       // 3. Crear evento con client_info siempre embebido
       const event = await this.eventModel.create({
         ...dto,
-        name: null,
-        description: null, 
         event_code, 
         event_type: eventType._id,
         client_info: dto.client_info, 
@@ -191,7 +189,7 @@ export class EventService {
   }
   async findByUser(user_id: string): Promise<Event[]> {
     try {
-      const events = await this.eventModel.find({ user: user_id });
+      const events = await this.eventModel.find({ user: toObjectId(user_id) });
       if (!events || events.length === 0) {
         throw new NotFoundException(`No se encontraron eventos para el usuario con id ${user_id}`);
       }
