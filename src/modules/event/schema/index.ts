@@ -6,3 +6,4 @@ export * from './event.schema';
 export * from './event-type-custom-field.schema';
 export * from './featured-event.schema';
 export * from './featured-event-custom-field.schema';
+export * from './incident.schema';
