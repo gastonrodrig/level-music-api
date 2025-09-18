@@ -143,11 +143,11 @@ export class EventController {
     return this.eventService.findByCode(event_code);
   }
   
-  @Get('user/:user_id')
+  @Get('user/:user_id/paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener los eventos por usuario' })
+  @ApiOperation({ summary: 'Obtener los eventos por usuario con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Eventos encontrados correctamente',
@@ -156,7 +156,26 @@ export class EventController {
     status: HttpStatus.NOT_FOUND,
     description: 'Eventos no encontrados',
   })
-  findByUser(@Param('user_id') user_id: string) {
-    return this.eventService.findByUser(user_id);
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findByUserPaginated(
+    @Param('user_id') user_id: string,
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.eventService.findByUserPaginated(
+      user_id,
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
   }
 }
