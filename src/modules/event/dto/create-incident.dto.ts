@@ -1,16 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsDate, IsOptional, IsNumber, IsMongoId, IsEnum, IsNotEmpty } from 'class-validator';
-import { StatusType, PlaceType } from '../enum';
+import {
+  IsString,
+  IsOptional,
+  IsMongoId,
+  IsNotEmpty,
+  IsEnum,
+} from 'class-validator';
 import { Types } from 'mongoose';
-import { Type } from 'class-transformer';
+import { IncidentType, ResourceType } from '../enum';
 
 export class CreateIncidentDto {
+  @ApiProperty({ example: ResourceType.EQUIPO_DE_LUZ, enum: ResourceType })
+  @IsEnum(ResourceType)
+  @IsNotEmpty()
+  resource_type: ResourceType;
+
+  @ApiProperty({ example: IncidentType.EVENTO, enum: IncidentType })
+  @IsEnum(IncidentType)
+  @IsNotEmpty()
+  incident_type: IncidentType;
 
   @ApiProperty({ example: 'Descripcion del evento', required: true })
   @IsString()
   @IsNotEmpty()
   description: string;
-  
+
   @ApiProperty({ example: '18:00 - 23:00', required: true })
   @IsString()
   @IsNotEmpty()
@@ -29,11 +43,10 @@ export class CreateIncidentDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
   @IsOptional()
-  worked_id: Types.ObjectId;
+  worker_id: Types.ObjectId;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
   @IsOptional()
   resource_id: Types.ObjectId;
-
 }

@@ -49,6 +49,9 @@ import { Connection } from "mongoose";
   controllers: [
     ResourceController, 
     MaintenanceController
-  ]
+  ],
+  exports: [
+    MongooseModule
+  ],
 })
 export class ResourceModule {}

@@ -1,13 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { StatusType, PlaceType } from '../enum';
-import { User } from 'src/modules/user/schema';
-import { EventType } from './event-type.schema';
 import { Resource } from 'src/modules/resources/schema';
+import { Worker } from 'src/modules/worker/schema';
+import { ResourceType } from '../enum';
+import { IncidentType } from '../enum';
 
-@Schema({ collection: 'events' })
+@Schema({ collection: 'incidents' })
 export class Incident {
-  @Prop({ unique: true, sparse: true, trim: true })
+  @Prop({ required: true, enum: ResourceType })
+  resource_type: ResourceType;
+
+  @Prop({ required: true, enum: IncidentType })
+  incident_type: IncidentType;
+
+  @Prop({ length: 255 })
   description: string;
 
   @Prop({ length: 255 })
@@ -17,7 +23,7 @@ export class Incident {
   incident_location: string;
 
   @Prop({ type: Types.ObjectId, required: true, ref: Event.name })
-  event_id: Types.ObjectId;
+  event: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, required: true, ref: Worker.name })
   worker: Types.ObjectId;
@@ -27,7 +33,6 @@ export class Incident {
 
   @Prop({ default: Date.now })
   created_at: Date;
-
 }
 
 export const IncidentSchema = SchemaFactory.createForClass(Incident);

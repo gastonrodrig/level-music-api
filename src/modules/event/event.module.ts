@@ -41,6 +41,8 @@ import {
 } from 'src/modules/user/schema';
 import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 import { FirebaseModule } from '../firebase/firebase.module';
+import { ResourceModule } from '../resources/resource.module';
+import { WorkerModule } from '../worker/worker.module';
 
 @Module({
   imports: [
@@ -60,14 +62,16 @@ import { FirebaseModule } from '../firebase/firebase.module';
         { name: Incident.name, schema: IncidentSchema },
       ]);
     })(),
-    FirebaseModule
+    FirebaseModule,
+    ResourceModule,
+    WorkerModule
   ],
   providers: [
     EventService, 
     EventTypeService, 
     EventTaskService, 
     FeaturedEventService,
-    IncidentService
+    IncidentService,
   ],
   controllers: [
     EventController, 

@@ -187,6 +187,7 @@ export class EventService {
       );
     }
   }
+  
   async findByUser(user_id: string): Promise<Event[]> {
     try {
       const events = await this.eventModel.find({ user: toObjectId(user_id) });
