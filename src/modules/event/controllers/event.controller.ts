@@ -49,8 +49,7 @@ export class EventController {
   }
 
   @Post('quotation')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Solicitar una cotización para un evento' })
   @ApiResponse({
