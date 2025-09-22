@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { DayOfWeek, ResourceType } from "../enum";
-import { Resource } from "src/modules/resources/schema";
+import { DayOfWeek, EquipmentType } from "../enum";
+import { Equipment } from "src/modules/equipments/schema";
 import { Worker } from "src/modules/worker/schema";
 
 @Schema({ collection: 'event-assignations' })
@@ -15,8 +15,8 @@ export class Assignation {
   @Prop({ enum: DayOfWeek })
   day_of_week?: DayOfWeek;
 
-  @Prop({ enum: ResourceType })
-  resource_type?: ResourceType;
+  @Prop({ enum: EquipmentType })
+  equipment_type?: EquipmentType;
 
   @Prop({ type: Types.ObjectId, required: true, ref: Event.name })
   event: Types.ObjectId;
@@ -24,8 +24,8 @@ export class Assignation {
   @Prop({ type: Types.ObjectId, required: true, ref: Worker.name })
   worker: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: Resource.name })
-  resource: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, required: true, ref: Equipment.name })
+  equipment: Types.ObjectId;
 
   @Prop({ default: Date.now })
   assigned_at: Date;

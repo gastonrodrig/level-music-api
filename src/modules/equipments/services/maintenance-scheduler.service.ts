@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Resource, Maintenance } from '../schema';
-import { MaintenanceType, MaintenanceStatusType, ResourceStatusType } from '../enum';
+import { Equipment, Maintenance } from '../schema';
+import { MaintenanceType, MaintenanceStatusType, EquipmentStatusType } from '../enum';
 import { getCurrentDateNormalized } from 'src/core/utils';
 
 @Injectable()
@@ -11,8 +11,8 @@ export class PreventiveMaintenanceSchedulerService {
   private readonly logger = new Logger(PreventiveMaintenanceSchedulerService.name);
 
   constructor(
-    @InjectModel(Resource.name)
-    private resourceModel: Model<Resource>,
+    @InjectModel(Equipment.name)
+    private equipmentModel: Model<Equipment>,
     @InjectModel(Maintenance.name)
     private maintenanceModel: Model<Maintenance>,
   ) {}
@@ -23,33 +23,33 @@ export class PreventiveMaintenanceSchedulerService {
 
     const today = new Date(getCurrentDateNormalized());
 
-    const resources = await this.resourceModel.find({
-      status: ResourceStatusType.DISPONIBLE,
+    const equipments = await this.equipmentModel.find({
+      status: EquipmentStatusType.DISPONIBLE,
     });
 
-    for (const resource of resources) {
+    for (const equipment of equipments) {
       // Obtenemos la base de cálculo: último mantenimiento
-      const baseDate = resource.last_maintenance_date;
+      const baseDate = equipment.last_maintenance_date;
 
       // Calculamos la fecha esperada para el siguiente mantenimiento
       const expectedNextDate = new Date(baseDate);
 
-      expectedNextDate.setDate(expectedNextDate.getDate() + resource.maintenance_interval_days - 7);
+      expectedNextDate.setDate(expectedNextDate.getDate() + equipment.maintenance_interval_days - 7);
 
       // Si aún no le toca, lo saltamos
       if (expectedNextDate > today) {
-        this.logger.log(`Recurso ${resource.name} aún no requiere mantenimiento preventivo.`);
+        this.logger.log(`Equipo ${equipment.name} aún no requiere mantenimiento preventivo.`);
         continue;
       }
 
       // Validamos que no exista ya un mantenimiento pendiente
       const existingMaintenance = await this.maintenanceModel.findOne({
-        resource: resource._id,
+        equipment: equipment._id,
         status: { $in: [MaintenanceStatusType.EN_PROGRESO, MaintenanceStatusType.PROGRAMADO] },
       });
 
       if (existingMaintenance) {
-        this.logger.warn(`Ya existe un mantenimiento preventivo pendiente para ${resource.name}.`);
+        this.logger.warn(`Ya existe un mantenimiento preventivo pendiente para ${equipment.name}.`);
         continue;
       }
 
@@ -57,23 +57,23 @@ export class PreventiveMaintenanceSchedulerService {
       await this.maintenanceModel.create({
         type: MaintenanceType.PREVENTIVO,
         status: MaintenanceStatusType.PROGRAMADO,
-        resource: resource._id,
-        resource_serial_number: resource.serial_number,
-        resource_name: resource.name,
-        resource_type: resource.resource_type,
+        equipment: equipment._id,
+        equipment_serial_number: equipment.serial_number,
+        equipment_name: equipment.name,
+        equipment_type: equipment.equipment_type,
         date: expectedNextDate,
         description: 'Mantenimiento preventivo generado automáticamente.',
       });
 
-      this.logger.log(`Mantenimiento preventivo generado para ${resource.name} (fecha: ${expectedNextDate.toISOString()})`);
+      this.logger.log(`Mantenimiento preventivo generado para ${equipment.name} (fecha: ${expectedNextDate.toISOString()})`);
 
       // Actualizamos el próximo mantenimiento (para optimizar futuras consultas)
       const nextDate = new Date(expectedNextDate);
 
-      nextDate.setDate(nextDate.getDate() + resource.maintenance_interval_days);
-      resource.next_maintenance_date = nextDate;
+      nextDate.setDate(nextDate.getDate() + equipment.maintenance_interval_days);
+      equipment.next_maintenance_date = nextDate;
 
-      await resource.save();
+      await equipment.save();
     }
 
     this.logger.log('Finalizó la ejecución del cron de mantenimiento preventivo.');

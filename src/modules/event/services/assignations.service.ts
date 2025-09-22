@@ -36,7 +36,7 @@ export class AssignationsService {
         available_to: createAssignationDto.available_to,
         event: createAssignationDto.event,
         worker: createAssignationDto.worker,
-        resource: createAssignationDto.resource,
+        equipment: createAssignationDto.equipment_id,
       });
 
       if (existingAssignation) {
@@ -53,7 +53,7 @@ export class AssignationsService {
         available_from: createAssignationDto.available_from,
         available_to: createAssignationDto.available_to,
         day_of_week: createAssignationDto.day_of_week,
-        resource_type: createAssignationDto.resource_type,
+        equipment_type: createAssignationDto.equipment_type,
       });
 
       return await assignation.save();

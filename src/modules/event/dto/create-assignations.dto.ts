@@ -7,7 +7,7 @@ import {
   IsEnum,
   IsNotEmpty,
 } from 'class-validator';
-import { DayOfWeek, ResourceType } from '../enum';
+import { DayOfWeek, EquipmentType } from '../enum';
 import { Types } from 'mongoose';
 
 export class CreateAssignationDto {
@@ -21,15 +21,15 @@ export class CreateAssignationDto {
   @IsNotEmpty()
   available_to: string;
 
-  @ApiProperty({ example: 'Social', enum: DayOfWeek, required: false })
+  @ApiProperty({ example: DayOfWeek.LUNES, enum: DayOfWeek, required: false })
   @IsEnum(DayOfWeek)
   @IsOptional()
   day_of_week?: DayOfWeek;
 
-  @ApiProperty({ example: 'Social', enum: ResourceType, required: false })
-  @IsEnum(ResourceType)
+  @ApiProperty({ example: EquipmentType.EQUIPO_DE_LUZ, enum: EquipmentType, required: false })
+  @IsEnum(EquipmentType)
   @IsOptional()
-  resource_type?: ResourceType;
+  equipment_type?: EquipmentType;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
@@ -44,5 +44,5 @@ export class CreateAssignationDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
   @IsOptional()
-  resource: Types.ObjectId;
+  equipment_id: Types.ObjectId;
 }
