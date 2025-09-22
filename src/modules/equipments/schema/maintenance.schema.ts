@@ -11,9 +11,6 @@ export class Maintenance extends Document {
   @Prop({ length: 255 })
   description: string;
 
-  @Prop({ type: Types.ObjectId, ref: Equipment.name, required: true })
-  equipment: Types.ObjectId;
-
   @Prop({ length: 255 })
   equipment_serial_number: string;
 
@@ -34,6 +31,9 @@ export class Maintenance extends Document {
 
   @Prop({ default: Date.now })
   date: Date;
+
+  @Prop({ type: Types.ObjectId, ref: Equipment.name, required: true })
+  equipment: Types.ObjectId;
 }
 
 export const MaintenanceSchema = SchemaFactory.createForClass(Maintenance);
