@@ -37,9 +37,4 @@ export class CreateWorkerDto {
   @IsString()
   @IsNotEmpty()
   last_name: string;
-
-  @ApiProperty({ required: true })
-  @IsString()
-  @IsNotEmpty()
-  role: string;
 }
