@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_INCIDENTS, toObjectId } from 'src/core/utils';
 import { Incident, Event } from 'src/modules/event/schema';
-import { Resource } from 'src/modules/resources/schema';
+import { Equipment } from 'src/modules/equipments/schema';
 import { Worker } from 'src/modules/worker/schema';
 import { CreateIncidentDto } from '../dto';
 
@@ -18,8 +18,8 @@ export class IncidentService {
     private incidentModel: Model<Incident>,
     @InjectModel(Event.name)
     private eventModel: Model<Event>,
-    @InjectModel(Resource.name)
-    private resourceModel: Model<Resource>,
+    @InjectModel(Equipment.name)
+    private equipmentModel: Model<Equipment>,
     @InjectModel(Worker.name)
     private workerModel: Model<Worker>,
   ) {}
@@ -29,8 +29,8 @@ export class IncidentService {
       const event = await this.eventModel.findById(createIncidentDto.event_id);
       if (!event) throw new BadRequestException('Event not found');
 
-      const resource = await this.resourceModel.findById(createIncidentDto.resource_id);
-      if (!resource) throw new BadRequestException('Resource not found');
+      const equipment = await this.equipmentModel.findById(createIncidentDto.equipment_id);
+      if (!equipment) throw new BadRequestException('Equipment not found');
 
       const worker = await this.workerModel.findById(createIncidentDto.worker_id);
       if (!worker) throw new BadRequestException('Worker not found');
@@ -38,7 +38,7 @@ export class IncidentService {
       const incident = new this.incidentModel({
         ...createIncidentDto,
         event: toObjectId(event._id),
-        resource: toObjectId(createIncidentDto.resource_id),
+        equipment: toObjectId(createIncidentDto.equipment_id),
         worker: toObjectId(worker._id),
       });
       return await incident.save();

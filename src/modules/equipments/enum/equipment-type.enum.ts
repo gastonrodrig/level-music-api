@@ -1,4 +1,4 @@
-export enum ResourceType {
+export enum EquipmentType {
   SONIDO = 'Sonido',
   LUZ = 'Luz',
 }

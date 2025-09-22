@@ -41,7 +41,7 @@ import {
 } from 'src/modules/user/schema';
 import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 import { FirebaseModule } from '../firebase/firebase.module';
-import { ResourceModule } from '../resources/resource.module';
+import { EquipmentModule } from '../equipments/equipment.module';
 import { WorkerModule } from '../worker/worker.module';
 
 @Module({
@@ -63,7 +63,7 @@ import { WorkerModule } from '../worker/worker.module';
       ]);
     })(),
     FirebaseModule,
-    ResourceModule,
+    EquipmentModule,
     WorkerModule
   ],
   providers: [

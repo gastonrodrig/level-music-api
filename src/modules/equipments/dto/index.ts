@@ -1,4 +1,4 @@
-export * from './create-resource.dto';
+export * from './create-equipment.dto';
 export * from './create-maintenance.dto';
 export * from './update-maintenance-status.dto';
-export * from './update-resource.dto';
+export * from './update-equipment.dto';

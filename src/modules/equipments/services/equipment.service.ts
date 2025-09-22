@@ -8,39 +8,39 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Maintenance, Resource } from '../schema';
+import { Maintenance, Equipment } from '../schema';
 import {
-  CreateResourceDto,
-  UpdateResourceDto,
+  CreateEquipmentDto,
+  UpdateEquipmentDto,
 } from '../dto';
-import { MaintenanceService } from './';
-import { SF_RESOURCE, getCurrentDate, toObjectId } from 'src/core/utils';
+import { MaintenanceService } from '.';
+import { SF_EQUIPMENT, getCurrentDate, toObjectId } from 'src/core/utils';
 import { MaintenanceStatusType, MaintenanceType } from '../enum';
 import { errorCodes } from 'src/core/common';
 import * as dayjs from 'dayjs';
 
 @Injectable()
-export class ResourceService {
+export class EquipmentService {
   constructor(
-    @InjectModel(Resource.name)
-    private resourceModel: Model<Resource>,
+    @InjectModel(Equipment.name)
+    private equipmentModel: Model<Equipment>,
     @InjectModel(Maintenance.name)
     private maintenanceModel: Model<Maintenance>,
     private maintenanceService: MaintenanceService,
   ) {}
 
-  async create(createResourceDto: CreateResourceDto): Promise<Resource> {
+  async create(createEquipmentDto: CreateEquipmentDto): Promise<Equipment> {
     try {
-      // Validar que el nombre del recurso no exista
-      const existing = await this.resourceModel.findOne({
-        name: createResourceDto.name,
+      // Validar que el nombre del equipo no exista
+      const existing = await this.equipmentModel.findOne({
+        name: createEquipmentDto.name,
       });
 
       if (existing) {
         throw new HttpException(
           {
-            code: errorCodes.RESOURCE_ALREADY_EXISTS,
-            message: `El recurso "${createResourceDto.name}" ya existe.`,
+            code: errorCodes.EQUIPMENT_ALREADY_EXISTS,
+            message: `El equipo "${createEquipmentDto.name}" ya existe.`,
           },
           HttpStatus.BAD_REQUEST,
         );
@@ -53,22 +53,22 @@ export class ResourceService {
         serial += chars.charAt(Math.floor(Math.random() * chars.length));
       }
 
-      const resource = await this.resourceModel.create({
-        ...createResourceDto,
+      const equipment = await this.equipmentModel.create({
+        ...createEquipmentDto,
         serial_number: serial,
       });
-      const savedResource = await resource.save();
+      const savedEquipment = await equipment.save();
 
       // Crear mantenimiento preventivo inicial
       await this.maintenanceService.createInitialPreventiveMaintenance(
-        savedResource,
+        savedEquipment,
       );
 
-      return savedResource;
+      return savedEquipment;
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
-        `Error creating resource: ${error.message}`,
+        `Error creating equipment: ${error.message}`,
       );
     }
   }
@@ -79,11 +79,11 @@ export class ResourceService {
     search = '',
     sortField: string,
     sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Resource[] }> {
+  ): Promise<{ total: number; items: Equipment[] }> {
     try {
       const filter = search
         ? {
-            $or: SF_RESOURCE.map((field) => ({
+            $or: SF_EQUIPMENT.map((field) => ({
               [field]: { $regex: search, $options: 'i' },
             })),
           }
@@ -94,131 +94,131 @@ export class ResourceService {
       };
 
       const [items, total] = await Promise.all([
-        this.resourceModel
+        this.equipmentModel
           .find(filter)
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.resourceModel.countDocuments(filter).exec(),
+        this.equipmentModel.countDocuments(filter).exec(),
       ]);
 
       return { total, items };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error finding resource with pagination: ${error.message}`,
+        `Error finding equipment with pagination: ${error.message}`,
       );
     }
   }
 
-  async findBySerial(serial: string): Promise<Resource> {
+  async findBySerial(serial: string): Promise<Equipment> {
     try {
-      const resource = await this.resourceModel.findOne({
+      const equipment = await this.equipmentModel.findOne({
         serial_number: serial,
       });
-      if (!resource) {
+      if (!equipment) {
         throw new HttpException(
           {
-            code: errorCodes.RESOURCE_NOT_FOUND,
-            message: 'Recurso no encontrado.',
+            code: errorCodes.EQUIPMENT_NOT_FOUND,
+            message: 'Equipo no encontrado.',
           },
           HttpStatus.BAD_REQUEST,
         );
       }
-      return resource;
+      return equipment;
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
-        `Error finding the resource by serial #: ${error.message}`,
+        `Error finding the equipment by serial #: ${error.message}`,
       );
     }
   }
 
-  async findOne(resource_id: string): Promise<Resource> {
+  async findOne(equipment_id: string): Promise<Equipment> {
     try {
-      const resource = await this.resourceModel.findOne({ 
-        _id: resource_id 
+      const equipment = await this.equipmentModel.findOne({
+        _id: equipment_id
       });
-      if (!resource) {
+      if (!equipment) {
         throw new NotFoundException(
-          `Resource with ID '${resource_id}' not found`
+          `Equipment with ID '${equipment_id}' not found`
         );
       }
 
-      return resource;
+      return equipment;
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
-        `Error finding resource: ${error.message}`,
+        `Error finding equipment: ${error.message}`,
       );
     }
   }
 
-  async update(resource_id: string, updateResourceDto: UpdateResourceDto) {
+  async update(equipment_id: string, updateEquipmentDto: UpdateEquipmentDto) {
     try {
-      // Valida que el recurso exista
-      const resource = await this.resourceModel.findById(resource_id);
-      if (!resource) {
+      // Valida que el equipo exista
+      const equipment = await this.equipmentModel.findById(equipment_id);
+      if (!equipment) {
         throw new NotFoundException(
-          `Resource with ID ${resource_id} not found`,
+          `Equipment with ID ${equipment_id} not found`,
         );
       }
 
-      // Validar que el recurso no tenga el mismo nombre en otro registro
-      const existingName = await this.resourceModel.findOne({
-        name: updateResourceDto.name,
-        _id: { $ne: resource_id },
+      // Validar que el equipo no tenga el mismo nombre en otro registro
+      const existingName = await this.equipmentModel.findOne({
+        name: updateEquipmentDto.name,
+        _id: { $ne: equipment_id },
       });
 
       if (existingName) {
         throw new HttpException(
           {
-            code: errorCodes.RESOURCE_ALREADY_EXISTS,
-            message: `El recurso "${updateResourceDto.name}" ya existe.`,
+            code: errorCodes.EQUIPMENT_ALREADY_EXISTS,
+            message: `El equipo "${updateEquipmentDto.name}" ya existe.`,
           },
           HttpStatus.BAD_REQUEST,
         );
       }
 
       // Si viene con valor null, lo dejo como null
-      if (updateResourceDto.last_maintenance_date === null) {
-        resource.last_maintenance_date = null;
-      } else if (updateResourceDto.last_maintenance_date != null) {
+      if (updateEquipmentDto.last_maintenance_date === null) {
+        equipment.last_maintenance_date = null;
+      } else if (updateEquipmentDto.last_maintenance_date != null) {
         // si viene con valor, lo actualizo
-        resource.last_maintenance_date = new Date(
-          updateResourceDto.last_maintenance_date,
+        equipment.last_maintenance_date = new Date(
+          updateEquipmentDto.last_maintenance_date,
         );
       }
 
       // Si cambió el intervalo, recalcula next_maintenance_date
-      const newInterval = updateResourceDto.maintenance_interval_days;
-      const baseDate = resource.last_maintenance_date ?? getCurrentDate();
+      const newInterval = updateEquipmentDto.maintenance_interval_days;
+      const baseDate = equipment.last_maintenance_date ?? getCurrentDate();
       const nextDate = dayjs(baseDate).add(newInterval, 'day').toDate();
 
       // Reprograma el preventivo en estado PROGRAMADO
       await this.maintenanceModel.updateMany(
         {
-          resource: toObjectId(resource_id),
+          equipment: toObjectId(equipment_id),
           type: MaintenanceType.PREVENTIVO,
           status: MaintenanceStatusType.PROGRAMADO,
         },
         { $set: { date: nextDate } },
       );
 
-      // Ajusta el campo en el recurso
-      resource.next_maintenance_date = nextDate;
-      resource.maintenance_interval_days = newInterval;
+      // Ajusta el campo en el equipo
+      equipment.next_maintenance_date = nextDate;
+      equipment.maintenance_interval_days = newInterval;
 
-      resource.name = updateResourceDto.name;
-      resource.description = updateResourceDto.description;
-      resource.resource_type = updateResourceDto.resource_type;
+      equipment.name = updateEquipmentDto.name;
+      equipment.description = updateEquipmentDto.description;
+      equipment.equipment_type = updateEquipmentDto.equipment_type;
 
-      return await resource.save();
+      return await equipment.save();
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
-        `Error updating resource: ${error.message}`,
+        `Error updating equipment: ${error.message}`,
       );
     }
   }

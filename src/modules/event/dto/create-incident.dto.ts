@@ -7,13 +7,13 @@ import {
   IsEnum,
 } from 'class-validator';
 import { Types } from 'mongoose';
-import { IncidentType, ResourceType } from '../enum';
+import { IncidentType, EquipmentType } from '../enum';
 
 export class CreateIncidentDto {
-  @ApiProperty({ example: ResourceType.EQUIPO_DE_LUZ, enum: ResourceType })
-  @IsEnum(ResourceType)
+  @ApiProperty({ example: EquipmentType.EQUIPO_DE_LUZ, enum: EquipmentType })
+  @IsEnum(EquipmentType)
   @IsNotEmpty()
-  resource_type: ResourceType;
+  equipment_type: EquipmentType;
 
   @ApiProperty({ example: IncidentType.EVENTO, enum: IncidentType })
   @IsEnum(IncidentType)
@@ -48,5 +48,5 @@ export class CreateIncidentDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsMongoId()
   @IsOptional()
-  resource_id: Types.ObjectId;
+  equipment_id: Types.ObjectId;
 }
