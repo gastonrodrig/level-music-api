@@ -1,7 +1,7 @@
 import { Types, Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { MaintenanceType, MaintenanceStatusType } from "../enum";
-import { Resource } from "./resource.schema";
+import { Equipment } from "./equipment.schema";
 
 @Schema({ collection: 'maintenances' })
 export class Maintenance extends Document {
@@ -11,17 +11,17 @@ export class Maintenance extends Document {
   @Prop({ length: 255 })
   description: string;
 
-  @Prop({ type: Types.ObjectId, ref: Resource.name, required: true })
-  resource: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: Equipment.name, required: true })
+  equipment: Types.ObjectId;
 
   @Prop({ length: 255 })
-  resource_serial_number: string;
+  equipment_serial_number: string;
 
   @Prop({ length: 255 })
-  resource_name: string;
+  equipment_name: string;
 
   @Prop({ length: 255 })
-  resource_type: string;
+  equipment_type: string;
 
   @Prop({ enum: MaintenanceStatusType, default: MaintenanceStatusType.PROGRAMADO }) 
   status: string;

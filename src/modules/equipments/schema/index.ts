@@ -1,2 +1,2 @@
 export * from './maintenance.schema';
-export * from './resource.schema';
+export * from './equipment.schema';
