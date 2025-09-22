@@ -26,7 +26,7 @@ import { Connection } from "mongoose";
       { name: Maintenance.name, schema: MaintenanceSchema },
     ]),
 
-    // Registramos Resource con hooks (requiere connection)
+    // Registramos Equipment con hooks (requiere connection)
     MongooseModule.forFeatureAsync([
       {
         name: Equipment.name,

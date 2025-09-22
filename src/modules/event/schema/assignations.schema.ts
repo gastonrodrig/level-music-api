@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
-import { DayOfWeek, ResourceType } from "../enum";
+import { ResourceType } from "../enum";
 import { Estado } from "src/core/constants/app.constants";
 
 @Schema({ collection: 'assignations' })
@@ -13,14 +13,11 @@ export class Assignation {
   hourly_rate: number;
 
   // Horarios de asignación
-  @Prop({ maxlength: 255 })
-  available_from: string; // Ej: "14:00"
+  @Prop({ type: Date, required: true })
+  available_from: Date; // Ej: 2025-09-22T22:00:00Z
 
-  @Prop({ maxlength: 255 })
-  available_to: string;   // Ej: "20:00"
-
-  @Prop({ enum: DayOfWeek })
-  day_of_week?: DayOfWeek; 
+  @Prop({ type: Date, required: true })
+  available_to: Date; 
 
   // --- Solo si es servicio ---
   @Prop({ type: Object })
@@ -29,33 +26,36 @@ export class Assignation {
   @Prop({ type: Number })
   service_ref_price?: number;
 
-  @Prop()
+  @Prop({ type: String })
   service_provider_name?: string;
 
-  @Prop()
+  @Prop({ type: String })
   service_type_name?: string;
 
-  // --- Solo si es equipo ---
   @Prop()
+  service_status?: string;
+
+  // --- Solo si es equipo ---
+  @Prop({ type: String })
   equipment_name?: string;
 
-  @Prop()
+  @Prop({ type: String })
   equipment_description?: string;
 
-  @Prop()
+  @Prop({ type: String })
   equipment_type?: string;
 
-  @Prop()
+  @Prop({ type: String })
   equipment_serial_number?: string;
 
-  @Prop()
+  @Prop({ type: String })
   equipment_status?: string;
 
   // --- Solo si es trabajador ---
-  @Prop()
+  @Prop({ type: String })
   worker_role?: string;
 
-  @Prop({ enum: Estado, default: Estado.ACTIVO }) 
+  @Prop({ enum: Estado }) 
   worker_status?: Estado;
 
   // Referencias
@@ -63,7 +63,7 @@ export class Assignation {
   resource_type: ResourceType;
 
   @Prop({ type: Types.ObjectId, required: true })
-  resource_id: Types.ObjectId;
+  resource: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, required: true, ref: Event.name })
   event: Types.ObjectId;

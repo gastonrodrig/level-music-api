@@ -228,7 +228,7 @@ entity maintenances #E6BB93 {
 
 entity storehouse_movements #E6BB93 {
   * _id               : OBJECT ID <<UID>>
-  * resource_id       : OBJECT ID
+  * equipment_id      : OBJECT ID
   * event_id          : OBJECT ID
   * movement_type     : ENUM('Entrada','Salida')
   --

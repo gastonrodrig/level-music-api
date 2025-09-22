@@ -15,7 +15,7 @@ import {
 } from '../dto';
 import { MaintenanceService } from '.';
 import { SF_EQUIPMENT, getCurrentDate, toObjectId } from 'src/core/utils';
-import { MaintenanceStatusType, MaintenanceType } from '../enum';
+import { EquipmentStatusType, MaintenanceStatusType, MaintenanceType } from '../enum';
 import { errorCodes } from 'src/core/common';
 import * as dayjs from 'dayjs';
 
@@ -69,6 +69,20 @@ export class EquipmentService {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error creating equipment: ${error.message}`,
+      );
+    }
+  }
+
+  async findAllAvailable(): Promise<Equipment[]> {
+    try {
+      const equipments = await this.equipmentModel
+        .find({ status: EquipmentStatusType.DISPONIBLE })
+        .exec();
+
+      return equipments;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding all active equipments: ${error.message}`,
       );
     }
   }

@@ -1,129 +1,123 @@
 import {
-  BadRequestException,
-  HttpException,
-  HttpStatus,
   Injectable,
   InternalServerErrorException,
-  NotFoundException,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Assignation } from '../schema';
 import { CreateAssignationDto } from '../dto';
-import { SF_ASSIGNATION } from 'src/core/utils';
+import { Event } from 'src/modules/event/schema/event.schema';
 import { errorCodes } from 'src/core/common';
+import { ResourceType } from '../enum';
+import { Equipment } from 'src/modules/equipments/schema';
+import { Worker } from 'src/modules/worker/schema/worker.schema';
+import { ServiceDetail } from 'src/modules/service/schema/service-detail.schema';
+import { Service } from 'src/modules/service/schema/service.schema';
 
 @Injectable()
 export class AssignationsService {
   constructor(
     @InjectModel(Assignation.name)
-    private assignationModel: Model<Assignation>,
+    private readonly assignationModel: Model<Assignation>,
+    @InjectModel(Event.name)
+    private readonly eventModel: Model<Event>,
+    @InjectModel(Equipment.name)
+    private readonly equipmentModel: Model<Equipment>,
+    @InjectModel(Worker.name)
+    private readonly workerModel: Model<Worker>,
+    @InjectModel(ServiceDetail.name)
+    private readonly serviceDetailModel: Model<ServiceDetail>,
+    @InjectModel(Service.name)
+    private readonly serviceModel: Model<Service>,
   ) {}
 
-  async create(createAssignationDto: CreateAssignationDto): Promise<Assignation> {
+  async create(dto: CreateAssignationDto): Promise<Assignation> {
     try {
-      // Validar que las horas de disponibilidad sean válidas
-      if (createAssignationDto.available_from >= createAssignationDto.available_to) {
-        throw new BadRequestException(
-          'La hora de inicio debe ser menor que la hora de fin',
-        );
-      }
+      // 1. Validar que el evento exista
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) throw new BadRequestException(`El evento no existe.`);
 
-      // Validar que no exista ya una asignación duplicada
-      const existingAssignation = await this.assignationModel.findOne({
-        day_of_week: createAssignationDto.day_of_week,
-        available_from: createAssignationDto.available_from,
-        available_to: createAssignationDto.available_to,
-        event: createAssignationDto.event,
-        worker: createAssignationDto.worker,
-        equipment: createAssignationDto.equipment_id,
+      // 2. Validar conflictos de horario
+      const conflict = await this.assignationModel.findOne({
+        resource_id: dto.resource_id,
+        $or: [
+          {
+            available_from: { $lt: dto.available_to },
+            available_to: { $gt: dto.available_from },
+          },
+        ],
       });
 
-      if (existingAssignation) {
+      if (conflict) {
         throw new HttpException(
           {
-            code: errorCodes.ASSIGNATION_ALREADY_EXISTS,
-            message: 'Ya existe una asignación con estos parámetros.',
+            code: errorCodes.RESOURCE_ALREADY_ASSIGNED,
+            message: 'El recurso ya está asignado en ese rango de horario.',
           },
           HttpStatus.BAD_REQUEST,
         );
       }
 
-      const assignation = await this.assignationModel.create({
-        available_from: createAssignationDto.available_from,
-        available_to: createAssignationDto.available_to,
-        day_of_week: createAssignationDto.day_of_week,
-        equipment_type: createAssignationDto.equipment_type,
-      });
+      // 3. Construir objeto base
+      const assignationToCreate: any = {
+        ...dto,
+        event: event._id,
+        resource: dto.resource_id,
+        assigned_at: new Date(),
+      };
 
-      return await assignation.save();
+      // 4. Agregar info extra según tipo
+      if (dto.resource_type === ResourceType.EQUIPMENT) {
+        const equipment = await this.equipmentModel.findById(dto.resource_id);
+        if (!equipment) {
+          throw new BadRequestException(`El equipo "${dto.resource_id}" no existe.`);
+        }
+
+        assignationToCreate.equipment_name = equipment.name;
+        assignationToCreate.equipment_description = equipment.description;
+        assignationToCreate.equipment_type = equipment.equipment_type;
+        assignationToCreate.equipment_serial_number = equipment.serial_number;
+        assignationToCreate.equipment_status = equipment.status;
+      }
+
+      if (dto.resource_type === ResourceType.WORKER) {
+        const worker = await this.workerModel.findById(dto.resource_id);
+        if (!worker) {
+          throw new BadRequestException(`El trabajador "${dto.resource_id}" no existe.`);
+        }
+
+        assignationToCreate.worker_role = worker.worker_type_name;
+        assignationToCreate.worker_status = worker.status;
+      }
+
+      if (dto.resource_type === ResourceType.SERVICE_DETAIL) {
+        const serviceDetail = await this.serviceDetailModel.findById(dto.resource_id);
+        if (!serviceDetail) {
+          throw new BadRequestException(`El service-detail "${dto.resource_id}" no existe.`);
+        }
+
+        const service = await this.serviceModel.findById(serviceDetail.service_id);
+        if (!service) {
+          throw new BadRequestException(`El service padre del service_detail no existe.`);
+        }
+
+        assignationToCreate.service_detail = serviceDetail.details;
+        assignationToCreate.service_ref_price = serviceDetail.ref_price;
+        assignationToCreate.service_provider_name = service.provider_name;
+        assignationToCreate.service_type_name = service.service_type_name;
+        assignationToCreate.service_status = serviceDetail.status;
+      }
+
+      // 5. Guardar asignación
+      const newAssignation = new this.assignationModel(assignationToCreate);
+      return await newAssignation.save();
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error creating assignation: ${error.message}`,
-      );
-    }
-  }
-
-  async findAllPaginated(
-    limit = 5,
-    offset = 0,
-    search = '',
-    sortField: string,
-    sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Assignation[] }> {
-    try {
-      const filter = search
-        ? {
-            $or: SF_ASSIGNATION.map((field) => ({
-              [field]: { $regex: search, $options: 'i' },
-            })),
-          }
-        : {};
-
-      const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
-      };
-
-      const [items, total] = await Promise.all([
-        this.assignationModel
-          .find(filter)
-          .populate('event', 'name')
-          .populate('worker', 'name')
-          .populate('resource', 'name serial_number')
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.assignationModel.countDocuments(filter).exec(),
-      ]);
-
-      return { total, items };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error finding assignations: ${error.message}`,
-      );
-    }
-  }
-
-  async findOne(id: string): Promise<Assignation> {
-    try {
-      const assignation = await this.assignationModel
-        .findById(id)
-        .populate('event', 'name status')
-        .populate('worker', 'name email phone')
-        .populate('resource', 'name serial_number resource_type status')
-        .exec();
-
-      if (!assignation) {
-        throw new NotFoundException('Asignación no encontrada');
-      }
-
-      return assignation;
-    } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException(
-        `Error finding assignation: ${error.message}`,
       );
     }
   }

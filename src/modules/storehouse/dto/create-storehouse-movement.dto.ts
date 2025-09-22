@@ -7,7 +7,7 @@ export class CreateStorehouseMovementDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsString()
   @IsNotEmpty()
-  resource_id: Types.ObjectId;
+  equipment_id: Types.ObjectId;
 
   @ApiProperty({ type: Types.ObjectId, required: true })
   @IsString()
