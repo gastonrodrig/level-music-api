@@ -150,6 +150,20 @@ export class WorkerService {
     }
   }
 
+  async findAllActive(): Promise<Worker[]> {
+    try {
+      const workers = await this.workerModel
+        .find({ status: Estado.ACTIVO }) 
+        .exec();
+
+      return workers;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding active workers: ${error.message}`,
+      );
+    }
+  }
+
   async findAllPaginated(
     limit = 5,
     offset = 0,

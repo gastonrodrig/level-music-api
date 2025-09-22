@@ -49,6 +49,22 @@ export class EquipmentController {
     return this.equipmentService.create(createEquipmentDto);
   }
 
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los equipos disponibles' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de equipos disponibles obtenida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los equipos disponibles.',
+  })
+  findAll() {
+    return this.equipmentService.findAllAvailable();
+  }
+
   @Get('paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')

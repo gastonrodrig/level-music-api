@@ -9,11 +9,13 @@ import {
   ServiceDetailSchema,
 } from './schema';
 import { 
+  ServiceDetailService,
   ServiceService,
   ServiceTypeService
 } from './services';
 import {
   ServiceController,
+  ServiceDetailController,
   ServiceTypeController
 } from './controllers';
 import { 
@@ -50,11 +52,16 @@ import { Provider, ProviderSchema } from '../provider/schema';
   ],
   providers: [
     ServiceService,
-    ServiceTypeService
+    ServiceTypeService,
+    ServiceDetailService
   ],
   controllers: [
     ServiceController,
-    ServiceTypeController
+    ServiceTypeController,
+    ServiceDetailController
+  ],
+  exports: [
+    MongooseModule
   ],
 })
 export class ServiceModule {}

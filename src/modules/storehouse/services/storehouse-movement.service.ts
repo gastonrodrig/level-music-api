@@ -25,7 +25,7 @@ export class StorehouseMovementService {
         throw new NotFoundException('Event not found');
       }
 
-      const equipment = await this.equipmentModel.findById(createStorehouseMovementDto.resource_id);
+      const equipment = await this.equipmentModel.findById(createStorehouseMovementDto.equipment_id);
       if (!equipment) {
         throw new NotFoundException('Equipment not found');
       }

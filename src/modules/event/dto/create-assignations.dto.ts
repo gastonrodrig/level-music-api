@@ -1,48 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsString,
-  IsDate,
-  IsOptional,
-  IsMongoId,
+  IsDateString,
   IsEnum,
+  IsMongoId,
   IsNotEmpty,
+  IsNumber,
+  MaxLength,
 } from 'class-validator';
-import { DayOfWeek, EquipmentType } from '../enum';
-import { Types } from 'mongoose';
+import { ResourceType } from '../enum';
 
 export class CreateAssignationDto {
-  @ApiProperty({ example: 'Disponible desde', required: true })
-  @IsString()
+  @ApiProperty({ type: String, example: '6501a7c8f0a1b2c3d4e5f678' })
+  @IsMongoId()
   @IsNotEmpty()
-  available_from: string;
+  event_id: string;
 
-  @ApiProperty({ example: 'Disponible hasta', required: true })
-  @IsString()
+  @ApiProperty({ enum: ResourceType, example: ResourceType.SERVICE_DETAIL })
+  @IsEnum(ResourceType)
   @IsNotEmpty()
-  available_to: string;
+  resource_type: ResourceType;
 
-  @ApiProperty({ example: DayOfWeek.LUNES, enum: DayOfWeek, required: false })
-  @IsEnum(DayOfWeek)
-  @IsOptional()
-  day_of_week?: DayOfWeek;
-
-  @ApiProperty({ example: EquipmentType.EQUIPO_DE_LUZ, enum: EquipmentType, required: false })
-  @IsEnum(EquipmentType)
-  @IsOptional()
-  equipment_type?: EquipmentType;
-
-  @ApiProperty({ type: Types.ObjectId, required: true })
+  @ApiProperty({ type: String, example: '68ca75fe4289595b8bb1a331' })
   @IsMongoId()
-  @IsOptional()
-  event: Types.ObjectId;
+  @IsNotEmpty()
+  resource_id: string;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
-  @IsOptional()
-  worker: Types.ObjectId;
+  @ApiProperty({ type: Number, example: 5 })
+  @IsNumber()
+  @IsNotEmpty()
+  hours: number;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
-  @IsOptional()
-  equipment_id: Types.ObjectId;
+  @ApiProperty({ type: Number, example: 100 })
+  @IsNumber()
+  @IsNotEmpty()
+  hourly_rate: number;
+
+  @ApiProperty({ type: Date, example: '2025-09-22T22:00:00Z' })
+  @IsDateString()
+  @MaxLength(255)
+  available_from: Date;
+
+  @ApiProperty({ type: Date, example: '2025-09-22T22:00:00Z' })
+  @IsDateString()
+  @IsNotEmpty()
+  available_to: Date;
 }

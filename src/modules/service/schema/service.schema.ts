@@ -10,18 +10,18 @@ export class Service {
 
   @Prop({ type: Types.ObjectId, ref: ServiceType.name })
   service_type: Types.ObjectId;
-  
-  @Prop({ default: Date.now })
-  created_at: Date;
-
-  @Prop({ default: Date.now })
-  updated_at: Date;
 
   @Prop({ type: String })
   provider_name: string;
 
   @Prop({ type: String })
   service_type_name: string;
+
+  @Prop({ default: Date.now })
+  created_at: Date;
+
+  @Prop({ default: Date.now })
+  updated_at: Date;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Service);
