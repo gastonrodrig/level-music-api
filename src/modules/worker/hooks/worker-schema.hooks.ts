@@ -27,7 +27,6 @@ export function addWorkerHooks(schema: any, connection: Connection) {
           phone: doc.phone,
           document_type: doc.document_type,
           document_number: doc.document_number,
-          role: doc.role,
           status: doc.status,
         },
       }

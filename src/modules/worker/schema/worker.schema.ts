@@ -2,22 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { WorkerType } from './worker-type.schema';
 import { User } from 'src/modules/user/schema';
-import { DocType } from 'src/core/constants/app.constants';
+import { DocType, Estado } from 'src/core/constants/app.constants';
 
 @Schema({ collection: 'workers' })
 export class Worker {
-  @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })
-  worker_type: Types.ObjectId;
-
-  @Prop({ type: Types.ObjectId, required: false, ref: User.name })
-  user: Types.ObjectId;
-
-  @Prop({ default: Date.now })
-  created_at: Date;
-
-  @Prop({ default: Date.now })
-  updated_at: Date;
-
   @Prop({ type: String })
   worker_type_name: string;
 
@@ -39,11 +27,20 @@ export class Worker {
   @Prop({ length: 255, nullable: true })
   document_number: string;
 
-  @Prop({ type: String })
-  status: string;
+  @Prop({ enum: Estado, default: Estado.ACTIVO }) 
+  status: Estado;
 
-  @Prop({ type: String })
-  role: string;
+  @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })
+  worker_type: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, required: false, ref: User.name })
+  user: Types.ObjectId;
+
+  @Prop({ default: Date.now })
+  created_at: Date;
+
+  @Prop({ default: Date.now })
+  updated_at: Date;
 }
 
 export const WorkerSchema = SchemaFactory.createForClass(Worker);

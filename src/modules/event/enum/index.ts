@@ -6,3 +6,4 @@ export * from './phase-type.enum';
 export * from './day-of-week.enum';
 export * from './equipment-type.enum';
 export * from './incident-type.enum';
+export * from './resource-type.enum';
