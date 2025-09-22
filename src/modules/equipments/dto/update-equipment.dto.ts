@@ -1,22 +1,22 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { ResourceType } from '../enum';
+import { EquipmentType } from '../enum';
 
-export class UpdateResourceDto {
-  @ApiProperty({ example: 'Nombre del recurso' })
+export class UpdateEquipmentDto {
+  @ApiProperty({ example: 'Nombre del equipo' })
   @IsString()
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ example: 'Descripcion del recurso' })
+  @ApiProperty({ example: 'Descripcion del equipo' })
   @IsString()
   @IsNotEmpty()
   description: string;
 
-  @ApiProperty({ enum: ResourceType, example: ResourceType.SONIDO })
-  @IsEnum(ResourceType)
+  @ApiProperty({ enum: EquipmentType, example: EquipmentType.SONIDO })
+  @IsEnum(EquipmentType)
   @IsNotEmpty()
-  resource_type: ResourceType;
+  equipment_type: EquipmentType;
 
   @ApiProperty({ example: '2023-09-15T00:00:00Z', description: 'Fecha del último mantenimiento realizado (opcional)' })
   @IsDateString()

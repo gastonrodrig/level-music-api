@@ -1,2 +1,2 @@
 export * from './maintenance.controller';
-export * from './resource.controller';
+export * from './equipment.controller';
