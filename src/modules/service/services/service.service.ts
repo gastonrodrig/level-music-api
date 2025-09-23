@@ -181,6 +181,8 @@ export class ServiceService {
       // Procesar y actualizar cada detalle
       // ================================
       for (const detailDto of dto.serviceDetails) {
+        //si tengo un id, es porque ya existe y lo actualizo
+        if (detailDto._id) {
         const detail = await this.serviceDetailModel.findById(detailDto._id);
         if (!detail) {
           throw new NotFoundException(
@@ -204,7 +206,16 @@ export class ServiceService {
         }
 
         await detail.save();
+      } else {
+        // 3.4 Si no tiene ID, es un nuevo detalle, así que lo creo
+         await this.serviceDetailModel.create({
+          service_id: service._id,
+          status: detailDto.status ?? Estado.ACTIVO,
+          ref_price: detailDto.ref_price,
+          details: detailDto.details,
+        });
       }
+    }
 
       // ================================
       // 4. Retornar servicio actualizado con sus detalles
