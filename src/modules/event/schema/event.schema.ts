@@ -59,6 +59,9 @@ export class Event {
   @Prop({ type: Number, nullable: true })
   final_price?: number;
 
+  @Prop({ enum: StatusType, default: StatusType.PENDIENTE_APROBACION })
+  status: StatusType;
+
   @Prop({
     _id: false,
     type: {

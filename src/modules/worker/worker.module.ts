@@ -53,7 +53,16 @@ import { BullModule } from '@nestjs/bullmq';
     ]),
     FirebaseModule
   ],
-  providers: [WorkerTypeService, WorkerService],
-  controllers: [WorkerTypeController, WorkerController],
+  providers: [
+    WorkerTypeService, 
+    WorkerService
+  ],
+  controllers: [
+    WorkerTypeController, 
+    WorkerController
+  ],
+  exports: [
+    MongooseModule
+  ],
 })
 export class WorkerModule {}

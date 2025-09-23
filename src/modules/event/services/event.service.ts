@@ -84,7 +84,7 @@ export class EventService {
         event_type: eventType._id,
         client_info: dto.client_info, 
         user: toObjectId(dto.user_id), 
-        state: StatusType.PENDIENTE_APROBACION,
+        status: StatusType.PENDIENTE_APROBACION,
         estimated_price: 0,
         final_price: 0,
       });
@@ -187,15 +187,43 @@ export class EventService {
       );
     }
   }
-  async findByUser(user_id: string): Promise<Event[]> {
+
+  async findByUserPaginated(
+    user_id: string,
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string = 'created_at',
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{ total: number; items: Event[] }> {
     try {
-      const events = await this.eventModel.find({ user: toObjectId(user_id) });
-      if (!events || events.length === 0) {
-        throw new NotFoundException(`No se encontraron eventos para el usuario con id ${user_id}`);
-      }
-      return events;
+      const baseFilter: any = { user: toObjectId(user_id) };
+      const searchFilter = search
+        ? {
+            $or: SF_EVENT.map(field => ({
+              [field]: { $regex: search, $options: 'i' }
+            })),
+          }
+        : {};
+      const filter = { ...baseFilter, ...searchFilter };
+
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
+      const [items, total] = await Promise.all([
+        this.eventModel
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
+          .skip(offset)
+          .limit(limit)
+          .exec(),
+        this.eventModel.countDocuments(filter).exec(),
+      ]);
+
+      return { total, items };
     } catch (error) {
-      if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
         `Error al buscar eventos por usuario: ${error.message}`,
       );

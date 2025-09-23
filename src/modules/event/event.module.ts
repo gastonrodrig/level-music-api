@@ -9,18 +9,22 @@ import {
   EventTaskSchema, 
   FeaturedEvent,
   FeaturedEventSchema, 
+  Incident, 
+  IncidentSchema
 } from './schema';
 import { 
   EventService, 
   EventTypeService, 
   EventTaskService, 
-  FeaturedEventService
+  FeaturedEventService,
+  IncidentService 
 } from './services';
 import { 
   EventController, 
   EventTypeController, 
   EventTaskController, 
-  FeaturedEventController
+  FeaturedEventController,
+  IncidentController
 } from './controllers';
 import { 
   addEventHooks, 
@@ -37,6 +41,8 @@ import {
 } from 'src/modules/user/schema';
 import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 import { FirebaseModule } from '../firebase/firebase.module';
+import { ResourceModule } from '../resources/resource.module';
+import { WorkerModule } from '../worker/worker.module';
 
 @Module({
   imports: [
@@ -53,21 +59,26 @@ import { FirebaseModule } from '../firebase/firebase.module';
         { name: User.name, schema: UserSchema },
         { name: FeaturedEvent.name, schema: FeaturedEventSchema },
         { name: FeaturedEventsMedia.name, schema: FeaturedEventsMediaSchema },
+        { name: Incident.name, schema: IncidentSchema },
       ]);
     })(),
-    FirebaseModule
+    FirebaseModule,
+    ResourceModule,
+    WorkerModule
   ],
   providers: [
     EventService, 
     EventTypeService, 
     EventTaskService, 
-    FeaturedEventService
+    FeaturedEventService,
+    IncidentService,
   ],
   controllers: [
     EventController, 
     EventTypeController, 
     EventTaskController, 
-    FeaturedEventController
+    FeaturedEventController,
+    IncidentController
   ], 
 })
 export class EventModule {}

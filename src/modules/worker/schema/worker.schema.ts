@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 import { WorkerType } from './worker-type.schema';
 import { User } from 'src/modules/user/schema';
 import { DocType } from 'src/core/constants/app.constants';
-
+  
 @Schema({ collection: 'workers' })
 export class Worker {
   @Prop({ type: Types.ObjectId, required: true, ref: WorkerType.name })

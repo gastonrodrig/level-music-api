@@ -17,7 +17,6 @@ import { AuthService } from 'src/modules/firebase/services';
 import { errorCodes } from 'src/core/common';
 import { generateRandomPassword } from 'src/core/utils';
 import { Estado } from 'src/core/constants/app.constants';
-import { MailService } from 'src/modules/mail/service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
