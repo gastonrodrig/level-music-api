@@ -2,21 +2,21 @@ import { Module } from "@nestjs/common";
 import { MongooseModule, getConnectionToken } from "@nestjs/mongoose";
 import { ScheduleModule } from '@nestjs/schedule';
 import { 
-  Resource,
-  ResourceSchema,
+  Equipment,
+  EquipmentSchema,
   Maintenance,
   MaintenanceSchema,
 } from "./schema";
 import {
-  ResourceService,
+  EquipmentService,
   MaintenanceService,
   PreventiveMaintenanceSchedulerService,
 } from "./services";
 import {
-  ResourceController,
+  EquipmentController,
   MaintenanceController,
 } from "./controllers";
-import { addResourceHooks } from "./hooks";
+import { addEquipmentHooks } from "./hooks";
 import { Connection } from "mongoose";
 
 @Module({
@@ -26,13 +26,13 @@ import { Connection } from "mongoose";
       { name: Maintenance.name, schema: MaintenanceSchema },
     ]),
 
-    // Registramos Resource con hooks (requiere connection)
+    // Registramos Equipment con hooks (requiere connection)
     MongooseModule.forFeatureAsync([
       {
-        name: Resource.name,
+        name: Equipment.name,
         useFactory: (connection: Connection) => {
-          const schema = ResourceSchema;
-          addResourceHooks(schema, connection);
+          const schema = EquipmentSchema;
+          addEquipmentHooks(schema, connection);
           return schema;
         },
         inject: [getConnectionToken()],
@@ -42,16 +42,16 @@ import { Connection } from "mongoose";
     ScheduleModule.forRoot(), 
   ],
   providers: [
-    ResourceService, 
+    EquipmentService,
     MaintenanceService, 
     PreventiveMaintenanceSchedulerService 
   ],
   controllers: [
-    ResourceController, 
+    EquipmentController,
     MaintenanceController
   ],
   exports: [
     MongooseModule
   ],
 })
-export class ResourceModule {}
+export class EquipmentModule {}

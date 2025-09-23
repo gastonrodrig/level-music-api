@@ -5,7 +5,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { UserModule } from './modules/user/user.module';
 import { EventModule } from './modules/event/event.module';
 import { AuthModule } from './auth/auth.module';
-import { ResourceModule } from './modules/resources/resource.module';
+import { EquipmentModule } from './modules/equipments/equipment.module';
 import { WorkerModule } from './modules/worker/worker.module';
 import { ServiceModule } from './modules/service/service.module';
 import { StorehouseMovementModule } from './modules/storehouse/storehouse.module';
@@ -38,7 +38,7 @@ import { MailModule } from './modules/mail/mail.module';
     EventModule,
     AuthModule,
     ServiceModule,
-    ResourceModule,
+    EquipmentModule,
     WorkerModule,
     StorehouseMovementModule,
     ProviderModule

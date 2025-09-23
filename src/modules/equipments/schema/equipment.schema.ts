@@ -1,23 +1,23 @@
 import { Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { LocationType, ResourceStatusType, ResourceType } from "../enum";
+import { LocationType, EquipmentStatusType, EquipmentType } from "../enum";
 
-@Schema({ collection: 'resources' })
-export class Resource extends Document {
+@Schema({ collection: 'equipments' })
+export class Equipment extends Document {
   @Prop({ length: 255 }) 
   name: string;
 
   @Prop({ length: 255 })
   description: string;
 
-  @Prop({ enum: ResourceType, default: ResourceType.SONIDO })
-  resource_type: ResourceType; 
+  @Prop({ enum: EquipmentType, default: EquipmentType.SONIDO })
+  equipment_type: EquipmentType;
 
   @Prop({ required: true }) 
   serial_number: string;
 
-  @Prop({ enum: ResourceStatusType, default: ResourceStatusType.DISPONIBLE, required: false }) 
-  status?: ResourceStatusType;
+  @Prop({ enum: EquipmentStatusType, default: EquipmentStatusType.DISPONIBLE, required: false }) 
+  status?: EquipmentStatusType;
 
   @Prop({ enum: LocationType, default: LocationType.ALMACEN, required: false }) 
   location?: LocationType;
@@ -41,5 +41,5 @@ export class Resource extends Document {
   updated_at: Date;
 }
 
-export const ResourceSchema = SchemaFactory.createForClass(Resource);
+export const EquipmentSchema = SchemaFactory.createForClass(Equipment);
 

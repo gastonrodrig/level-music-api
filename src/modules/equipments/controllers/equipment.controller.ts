@@ -10,7 +10,6 @@ import {
   HttpStatus,
   DefaultValuePipe,
   ParseIntPipe,
-  Patch,
   UseGuards,
 } from '@nestjs/common';
 import { 
@@ -21,47 +20,63 @@ import {
   ApiBearerAuth
 } from '@nestjs/swagger';
 import { 
-  CreateResourceDto, 
-  UpdateResourceDto, 
+  CreateEquipmentDto, 
+  UpdateEquipmentDto, 
 } from '../dto';
-import { ResourceService } from '../services';
+import { EquipmentService } from '../services';
 import { Public } from '../../../auth/decorators';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 
-@Controller('resources')
-@ApiTags('Resource')
-export class ResourceController {
-  constructor(private readonly resourceService: ResourceService) {}
+@Controller('equipments')
+@ApiTags('Equipments')
+export class EquipmentController {
+  constructor(private readonly equipmentService: EquipmentService) {}
 
   @Post()
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear un nuevo recurso' })
+  @ApiOperation({ summary: 'Crear un nuevo equipo' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'El recurso ha sido creado correctamente.',
+    description: 'El equipo ha sido creado correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear el recurso.',
+    description: 'Error al crear el equipo.',
   })
-  create(@Body() createResourceDto: CreateResourceDto) {
-    return this.resourceService.create(createResourceDto);
+  create(@Body() createEquipmentDto: CreateEquipmentDto) {
+    return this.equipmentService.create(createEquipmentDto);
+  }
+
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los equipos disponibles' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de equipos disponibles obtenida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los equipos disponibles.',
+  })
+  findAll() {
+    return this.equipmentService.findAllAvailable();
   }
 
   @Get('paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener recurso con paginación, búsqueda y orden' })
+  @ApiOperation({ summary: 'Obtener equipos con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Lista de recursos obtenida paginada correctamente.',
+    description: 'Lista de equipos obtenida paginada correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los recursos paginada.',
+    description: 'Error al obtener los equipos paginada.',
   })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
   @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
@@ -75,7 +90,7 @@ export class ResourceController {
     @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
     @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
   ) {
-    return this.resourceService.findAllPaginated(
+    return this.equipmentService.findAllPaginated(
       limit,
       offset,
       search?.trim(),
@@ -99,43 +114,43 @@ export class ResourceController {
     description: 'Equipo no encontrado.',
   })
   findBySerial(@Query('serial') serial: string) {
-    return this.resourceService.findBySerial(serial);
+    return this.equipmentService.findBySerial(serial);
   }
 
   @Get(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Obtener un recurso por ID' })
+  @ApiOperation({ summary: 'Obtener un equipo por ID' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'Recurso encontrado correctamente.',
+    description: 'Equipo encontrado correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener el recurso.',
+    description: 'Error al obtener el equipo.',
   })
   findOne(@Param('id') id: string) {
-    return this.resourceService.findOne(id);
+    return this.equipmentService.findOne(id);
   }
 
   @Put(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar un recurso por ID' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'El recurso ha sido actualizado correctamente.' 
+  @ApiOperation({ summary: 'Actualizar un equipo por ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'El equipo ha sido actualizado correctamente.'
   })
-  @ApiResponse({ 
-    status: HttpStatus.BAD_REQUEST, 
-    description: 'Error al actualizar el recurso.' 
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar el equipo.'
   })
   update(
-    @Param('id') id: string, 
-    @Body() updateResourceDto: UpdateResourceDto
+    @Param('id') id: string,
+    @Body() updateEquipmentDto: UpdateEquipmentDto
   ) {
-    return this.resourceService.update(id, updateResourceDto);
+    return this.equipmentService.update(id, updateEquipmentDto);
   }
 }
