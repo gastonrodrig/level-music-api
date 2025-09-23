@@ -5,4 +5,5 @@ export * from './task-status-type.enum';
 export * from './phase-type.enum';
 export * from './equipment-type.enum';
 export * from './incident-type.enum';
+export * from './status-reprogramings-type.enum';
 export * from './resource-type.enum';
