@@ -77,30 +77,12 @@ export class ServiceService {
     }
   }
 
-  async findAll(): Promise<
-    Array<{
-      service: Service;
-      serviceDetails: Array<ServiceDetail>;
-    }>
-  > {
+  async findAll(): Promise<Service[]> {
     try {
-      const services = await this.serviceModel.find().lean();
-
-      return Promise.all(
-        services.map(async (service) => {
-          const details = await this.serviceDetailModel
-            .find({ service_id: service._id })
-            .lean();
-
-          return {
-            service,
-            serviceDetails: details,
-          };
-        }),
-      );
+      return await this.serviceModel.find().exec();
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error fetching all services with details: ${error.message}`,
+        `Error obteniendo todos los servicios: ${error.message}`,
       );
     }
   }

@@ -50,7 +50,8 @@ export class ProviderController {
   }
 
   @Get('all')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los proveedores' })
   @ApiResponse({

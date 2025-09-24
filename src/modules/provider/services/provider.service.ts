@@ -99,9 +99,8 @@ export class ProviderService {
     }
   }
 
-   async findAll(): Promise<Provider[]> {
+  async findAll(): Promise<Provider[]> {
     try {
-      // Si tienes un campo de estado, puedes filtrar por activos, si no, quita el filtro
       const providers = await this.providerModel.find().exec();
       return providers;
     } catch (error) {
