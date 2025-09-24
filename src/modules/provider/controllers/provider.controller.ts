@@ -25,6 +25,7 @@ import {
   UpdateProviderDto 
 } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @ApiTags('Providers')
 @Controller('providers')
@@ -46,6 +47,23 @@ export class ProviderController {
   })
   async create(@Body() createProviderDto: CreateProviderDto) {
     return this.providerService.create(createProviderDto);
+  }
+
+  @Get('all')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los proveedores' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de todos los proveedores obtenida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los proveedores.',
+  })
+  async findAll() {
+    return this.providerService.findAll();
   }
 
   @Get('paginated')

@@ -42,20 +42,19 @@ export class ServiceController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear el servicio.',
   })
-  async create(@Body() dto: CreateServiceDto) {
-    console.log('DTO recibido en controlador:', JSON.stringify(dto, null, 2));
+  create(@Body() dto: CreateServiceDto) {
     return this.serviceService.create(dto);
   }
 
   @Get('all')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener todos los servicios con sus detalles' })
+  @ApiOperation({ summary: 'Obtener todos los servicios' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Lista completa de servicios con sus detalles.',
+    description: 'Lista completa de servicios.',
   })
-  async findAllWithDetails() {
+  findAll() {
     return this.serviceService.findAll();
   }
 

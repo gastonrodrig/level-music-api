@@ -16,7 +16,7 @@ export class UpdateServiceDetailData {
     example: '64f1c7e1234567890abcd124',
   })
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   _id: string;
 
   @ApiPropertyOptional({
