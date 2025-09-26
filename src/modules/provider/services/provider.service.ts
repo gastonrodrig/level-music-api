@@ -99,6 +99,17 @@ export class ProviderService {
     }
   }
 
+  async findAll(): Promise<Provider[]> {
+    try {
+      const providers = await this.providerModel.find().exec();
+      return providers;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding all providers: ${error.message}`,
+      );
+    }
+  }
+
   async findOne(provider_id: string): Promise<Provider> {
     try {
       const provider = await this.providerModel.findOne({ _id: provider_id });

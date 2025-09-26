@@ -45,6 +45,16 @@ export class WorkerTypeService {
     }
   }
 
+  async findAll(): Promise<WorkerType[]> {
+    try {
+      return await this.workerTypeModel.find().exec();
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error obteniendo todos los tipos de trabajador: ${error.message}`,
+      );
+    }
+  }
+
   async findAllPaginated(
     limit = 5,
     offset = 0,
@@ -82,16 +92,6 @@ export class WorkerTypeService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error finding worker types with pagination: ${error.message}`,
-      );
-    }
-  }
-
-  async findAll(): Promise<WorkerType[]> {
-    try {
-      return await this.workerTypeModel.find().exec();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error obteniendo todos los tipos de trabajador: ${error.message}`,
       );
     }
   }

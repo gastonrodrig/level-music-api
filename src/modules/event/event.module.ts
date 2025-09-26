@@ -12,7 +12,9 @@ import {
   Incident, 
   IncidentSchema,
   Assignation,
-  AssignationSchema
+  AssignationSchema,
+  ReprogramingsSchema,
+  Reprogramings
 } from './schema';
 import { 
   EventService, 
@@ -20,7 +22,8 @@ import {
   EventTaskService, 
   FeaturedEventService,
   IncidentService, 
-  AssignationsService
+  AssignationsService,
+  ReprogramingsService
 } from './services';
 import { 
   EventController, 
@@ -28,7 +31,8 @@ import {
   EventTaskController, 
   FeaturedEventController,
   IncidentController,
-  AssignationsController
+  AssignationsController,
+  ReprogramingsController
 } from './controllers';
 import { 
   addEventHooks, 
@@ -66,7 +70,8 @@ import { ServiceModule } from '../service/service.module';
         { name: FeaturedEventsMedia.name, schema: FeaturedEventsMediaSchema },
         { name: Incident.name, schema: IncidentSchema },
         { name: Assignation.name, schema: AssignationSchema },
-      ]);
+        { name: Reprogramings.name, schema: ReprogramingsSchema },
+        ]);
     })(),
     FirebaseModule,
     EquipmentModule,
@@ -78,7 +83,9 @@ import { ServiceModule } from '../service/service.module';
     EventTypeService, 
     EventTaskService, 
     FeaturedEventService,
-    IncidentService,
+    ReprogramingsService,
+    FeaturedEventService,
+    IncidentService, 
     AssignationsService
   ],
   controllers: [
@@ -86,8 +93,9 @@ import { ServiceModule } from '../service/service.module';
     EventTypeController, 
     EventTaskController, 
     FeaturedEventController,
+    ReprogramingsController,
     IncidentController,
-    AssignationsController
+    AssignationsController,
   ], 
 })
 export class EventModule {}
