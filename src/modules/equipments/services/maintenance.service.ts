@@ -9,13 +9,14 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Maintenance, Equipment } from '../schema';
+import { EquipmentAvailability } from '../schema';
 import { CreateMaintenanceDto, UpdateMaintenanceStatusDto } from '../dto';
 import {
   MaintenanceStatusType,
   MaintenanceType,
   EquipmentStatusType,
 } from '../enum';
-import { SF_MAINTENANCE, toObjectId, getCurrentDateNormalized } from 'src/core/utils';
+import { SF_MAINTENANCE, toObjectId, getCurrentDateNormalized, getCurrentDate } from 'src/core/utils';
 import * as dayjs from 'dayjs';
 import { errorCodes } from 'src/core/common';
 
@@ -26,6 +27,8 @@ export class MaintenanceService {
     private maintenanceModel: Model<Maintenance>,
     @InjectModel(Equipment.name)
     private equipmentModel: Model<Equipment>,
+    @InjectModel(EquipmentAvailability.name)
+    private equipmentAvailabilityModel: Model<EquipmentAvailability>,
   ) {}
 
   async create(
@@ -76,6 +79,7 @@ export class MaintenanceService {
         equipment_serial_number: equipment.serial_number,
         equipment_name: equipment.name,
         equipment_type: equipment.equipment_type,
+        date: getCurrentDateNormalized(),
       });
 
       const saved = await maintenance.save();
@@ -206,23 +210,56 @@ export class MaintenanceService {
         );
       }
 
-      // Validar que no se puedan reagendar o cancelar mantenimientos correctivos
-      if (
-        maintenance.type === MaintenanceType.CORRECTIVO &&
-        (updateMaintenanceStatusDto.status === MaintenanceStatusType.REAGENDADO ||
-         updateMaintenanceStatusDto.status === MaintenanceStatusType.CANCELADO)
-      ) {
-        throw new BadRequestException(
-          'Los mantenimientos correctivos no pueden ser reagendados o cancelados.'
-        );
+      // Validaciones de transiciones de estado para mantenimientos correctivos
+      if (maintenance.type === MaintenanceType.CORRECTIVO) {
+        // Para correctivos EN_PROGRESO solo puede pasar a FINALIZADO
+        if (maintenance.status === MaintenanceStatusType.EN_PROGRESO && 
+            updateMaintenanceStatusDto.status !== MaintenanceStatusType.FINALIZADO) {
+          throw new BadRequestException(
+            'Un mantenimiento correctivo en progreso solo puede ser finalizado.'
+          );
+        }
+        
+        // Para correctivos PROGRAMADO solo puede pasar a EN_PROGRESO
+        if (maintenance.status === MaintenanceStatusType.PROGRAMADO && 
+            updateMaintenanceStatusDto.status !== MaintenanceStatusType.EN_PROGRESO) {
+          throw new BadRequestException(
+            'Un mantenimiento correctivo programado solo puede ser iniciado.'
+          );
+        }
       }
 
-      // Validar que no se pueda reagendar, cancelar o iniciar un mantenimiento preventivo si hay correctivos sin finalizar
+      // Validaciones de transiciones de estado para mantenimientos preventivos
+      if (maintenance.type === MaintenanceType.PREVENTIVO) {
+        // Para preventivos EN_PROGRESO solo puede pasar a FINALIZADO
+        if (maintenance.status === MaintenanceStatusType.EN_PROGRESO && 
+            updateMaintenanceStatusDto.status !== MaintenanceStatusType.FINALIZADO) {
+          throw new BadRequestException(
+            'Un mantenimiento preventivo en progreso solo puede ser finalizado.'
+          );
+        }
+        
+        // Para preventivos REAGENDADO solo puede pasar a EN_PROGRESO
+        if (maintenance.status === MaintenanceStatusType.REAGENDADO && 
+            updateMaintenanceStatusDto.status !== MaintenanceStatusType.EN_PROGRESO) {
+          throw new BadRequestException(
+            'Un mantenimiento preventivo reagendado solo puede ser iniciado.'
+          );
+        }
+        // Para preventivos PROGRAMADO puede pasar a EN_PROGRESO o REAGENDADO
+        if (maintenance.status === MaintenanceStatusType.PROGRAMADO && 
+            ![MaintenanceStatusType.EN_PROGRESO, MaintenanceStatusType.REAGENDADO]
+              .includes(updateMaintenanceStatusDto.status)) {
+          throw new BadRequestException(
+            'Un mantenimiento preventivo programado solo puede ser iniciado o reagendado.'
+          );
+        }
+      }
+
+      // Validar que si es preventivo y se quiere iniciar o reagendar, no haya correctivos sin finalizar
       if (
         (updateMaintenanceStatusDto.status ===
           MaintenanceStatusType.REAGENDADO ||
-          updateMaintenanceStatusDto.status ===
-            MaintenanceStatusType.CANCELADO ||
           updateMaintenanceStatusDto.status ===
             MaintenanceStatusType.EN_PROGRESO) &&
         maintenance.type === MaintenanceType.PREVENTIVO
@@ -230,8 +267,8 @@ export class MaintenanceService {
         const correctivoSinFinalizar = await this.maintenanceModel.findOne({
           equipment: maintenance.equipment,
           type: MaintenanceType.CORRECTIVO,
-          status: { 
-            $nin: [MaintenanceStatusType.FINALIZADO, MaintenanceStatusType.CANCELADO] 
+          status: {
+            $nin: [MaintenanceStatusType.FINALIZADO]
           },
         });
 
@@ -242,11 +279,6 @@ export class MaintenanceService {
             MaintenanceStatusType.REAGENDADO
           )
             action = 'reagendar';
-          if (
-            updateMaintenanceStatusDto.status ===
-            MaintenanceStatusType.CANCELADO
-          )
-            action = 'cancelar';
 
           throw new HttpException(
             {
@@ -263,6 +295,8 @@ export class MaintenanceService {
         updateMaintenanceStatusDto.status === MaintenanceStatusType.EN_PROGRESO
       ) {
         if (maintenance.date.toISOString() !== getCurrentDateNormalized()) {
+          console.log(maintenance.date.toISOString(), getCurrentDateNormalized());
+          console.log(getCurrentDate())
           throw new HttpException(
             {
               code: errorCodes.MAINTENANCE_DATE_NOT_TODAY,
@@ -278,54 +312,58 @@ export class MaintenanceService {
         });
       }
 
-      // Si pasa a estado reagendado, se requiere un motivo de reagendacion y se reprograma
-      if (
-        updateMaintenanceStatusDto.status === MaintenanceStatusType.REAGENDADO
-      ) {
+      // Manejar diferentes tipos de cambios de estado
+      if (updateMaintenanceStatusDto.status === MaintenanceStatusType.REAGENDADO) {
+        // Solo para mantenimientos preventivos
+        if (maintenance.type !== MaintenanceType.PREVENTIVO) {
+          throw new BadRequestException(
+            'Solo los mantenimientos preventivos pueden ser reagendados.'
+          );
+        }
+
         maintenance.reagendation_reason =
           updateMaintenanceStatusDto.reagendation_reason;
 
         // Si se proporciona una nueva fecha, actualizarla
         if (updateMaintenanceStatusDto.rescheduled_date) {
+          // Obtener el next_maintenance_date actual del equipo antes de actualizarlo
+          const currentEquipment = await this.equipmentModel.findById(maintenance.equipment);
+          const currentNextMaintenanceDate = currentEquipment?.next_maintenance_date;
+
           const rescheduledDate = new Date(
             updateMaintenanceStatusDto.rescheduled_date,
           );
           maintenance.date = rescheduledDate;
 
-          // Si es un mantenimiento preventivo, actualizar la next_maintenance_date del equipo
-          if (maintenance.type === MaintenanceType.PREVENTIVO) {
-            await this.equipmentModel.findByIdAndUpdate(maintenance.equipment, {
-              next_maintenance_date: rescheduledDate,
+          // pensamiento
+
+          // Borrar el registro anterior usando la fecha actual del next_maintenance_date
+          if (currentNextMaintenanceDate) {
+            await this.equipmentAvailabilityModel.findOneAndDelete({
+              equipment: maintenance.equipment,
+              date: currentNextMaintenanceDate,
             });
           }
+
+          await this.equipmentAvailabilityModel.create({
+            equipment: maintenance.equipment,
+            date: updateMaintenanceStatusDto.rescheduled_date,
+          });
+
+          // Actualizar la next_maintenance_date del equipo
+          await this.equipmentModel.findByIdAndUpdate(maintenance.equipment, {
+            next_maintenance_date: rescheduledDate,
+          });
         }
 
-        // El equipo regresa a Dañado cuando se reagenda
-        await this.equipmentModel.findByIdAndUpdate(maintenance.equipment, {
-          status:
-            maintenance.type === MaintenanceType.CORRECTIVO
-              ? EquipmentStatusType.DAÑADO
-              : EquipmentStatusType.DISPONIBLE,
-        });
-
-        // Establecer el estado como REAGENDADO
-        maintenance.status = MaintenanceStatusType.REAGENDADO;
-      } else if (
-        updateMaintenanceStatusDto.status === MaintenanceStatusType.CANCELADO
-      ) {
-        // Si pasa a estado cancelado, se requiere un motivo de cancelación
-        maintenance.cancelation_reason =
-          updateMaintenanceStatusDto.cancelation_reason;
-
-        // El equipo regresa a disponible cuando se cancela
+        // El equipo regresa a disponible cuando se reagenda un preventivo
         await this.equipmentModel.findByIdAndUpdate(maintenance.equipment, {
           status: EquipmentStatusType.DISPONIBLE,
         });
 
-        // Establecer el estado como CANCELADO
-        maintenance.status = MaintenanceStatusType.CANCELADO;
+        maintenance.status = MaintenanceStatusType.REAGENDADO;
       } else {
-        // Para otros estados que no sean REAGENDADO ni CANCELADO
+        // Para otros estados (EN_PROGRESO, FINALIZADO)
         maintenance.status = updateMaintenanceStatusDto.status;
       }
 

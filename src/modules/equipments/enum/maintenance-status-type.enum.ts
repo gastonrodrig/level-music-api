@@ -3,5 +3,4 @@ export enum MaintenanceStatusType {
   EN_PROGRESO = 'En Progreso',
   FINALIZADO = 'Finalizado',
   REAGENDADO = 'Reagendado',
-  CANCELADO = 'Cancelado',
 }
