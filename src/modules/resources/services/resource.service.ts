@@ -222,4 +222,53 @@ export class ResourceService {
       );
     }
   }
+
+  async getAvailableResourcesByDate(dateString: string, resourceType?: string): Promise<Resource[]> {
+    try {
+      const date = new Date(dateString);
+      
+      // Validar que la fecha sea válida
+      if (isNaN(date.getTime())) {
+        throw new BadRequestException('Fecha inválida');
+      }
+
+      // Construir query base para recursos
+      let resourceQuery: any = {};
+      if (resourceType) {
+        resourceQuery.resource_type = resourceType;
+      }
+
+      // Obtener todos los recursos del tipo especificado
+      const allResources = await this.resourceModel.find(resourceQuery);
+
+      // Obtener mantenimientos programados o en progreso para la fecha especificada
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+
+      const maintenancesOnDate = await this.maintenanceModel.find({
+        date: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
+        status: {
+          $in: [MaintenanceStatusType.PROGRAMADO, MaintenanceStatusType.EN_PROGRESO],
+        },
+      });
+
+      // Obtener IDs de recursos que tienen mantenimiento ese día
+      const resourcesInMaintenance = maintenancesOnDate.map(m => m.resource.toString());
+
+      // Filtrar recursos disponibles (excluir los que están en mantenimiento)
+      const availableResources = allResources.filter(resource => 
+        !resourcesInMaintenance.includes(resource._id.toString())
+      );
+
+      return availableResources;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(
+        `Error getting available resources: ${error.message}`,
+      );
+    }
+  }
 }
