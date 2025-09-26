@@ -5,6 +5,7 @@ import { User } from 'src/modules/user/schema';
 import { EventType } from './event-type.schema';
 import { ServiceRequested, ServiceRequestedSchema } from './service-requested.schema';
 import { ClientType } from 'src/modules/user/enum';
+import { QuotationCreator } from '../enum';
 
 @Schema({ collection: 'events' })
 export class Event {
@@ -21,10 +22,10 @@ export class Event {
   date: Date;
 
   @Prop({ required: true })
-  start_time: string;
+  available_from: string;
 
   @Prop({ required: true })
-  end_time: string;
+  available_to: string;
 
   @Prop({ required: true })
   attendees_count: number;
@@ -94,6 +95,9 @@ export class Event {
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  @Prop({ enum: QuotationCreator })
+  creator: QuotationCreator;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);
