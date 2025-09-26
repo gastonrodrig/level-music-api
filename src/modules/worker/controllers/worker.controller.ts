@@ -17,6 +17,7 @@ import { WorkerService } from '../services/worker.service';
 import { CreateWorkerDto, UpdateWorkerDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @Controller('workers')
 @ApiTags('Worker')
@@ -38,6 +39,22 @@ export class WorkerController {
   })
   create(@Body() createWorkerDto: CreateWorkerDto) {
     return this.workerService.create(createWorkerDto);
+  }
+
+  @Get('all')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los trabajadores disponibles' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de trabajadores disponibles obtenida correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los trabajadores disponibles.',
+  })
+  findAll() {
+    return this.workerService.findAllActive();
   }
 
   @Get('paginated')

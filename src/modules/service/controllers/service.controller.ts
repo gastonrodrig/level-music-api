@@ -19,10 +19,10 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Public } from '../../../auth/decorators';
 import { ServiceService } from '../services';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @ApiTags('Services')
 @Controller('services')
@@ -43,12 +43,12 @@ export class ServiceController {
     description: 'Error al crear el servicio.',
   })
   async create(@Body() dto: CreateServiceDto) {
+    console.log('DTO recibido en controlador:', JSON.stringify(dto, null, 2));
     return this.serviceService.create(dto);
   }
 
   @Get('all')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los servicios con sus detalles' })
   @ApiResponse({
@@ -96,6 +96,7 @@ export class ServiceController {
   @Patch(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un servicio y sus detalles' })
   @ApiResponse({
@@ -111,5 +112,21 @@ export class ServiceController {
     @Body() dto: UpdateServiceDto,
   ) {
     return this.serviceService.updateFullService(serviceId, dto);
+  }
+
+  @Get(':id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @ApiOperation({ summary: 'Obtener un servicio por ID con sus detalles' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Servicio obtenido correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Servicio no encontrado.',
+  })
+  async findOneWithDetails(@Param('id') serviceId: string) {
+    return this.serviceService.findOneWithDetails(serviceId);
   }
 }

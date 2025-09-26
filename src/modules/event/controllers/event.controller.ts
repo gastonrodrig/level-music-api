@@ -11,12 +11,20 @@ import {
     ParseIntPipe,
     Put,
     UseGuards,
+    Req,
  } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { 
+  ApiBearerAuth, 
+  ApiOperation, 
+  ApiQuery, 
+  ApiResponse, 
+  ApiTags 
+} from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { CreateQuotationDto } from '../dto/create-quotation.dto';
 
 @Controller('events')
 @ApiTags('Events')
@@ -24,7 +32,8 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @Post()
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo evento' })
   @ApiResponse({
@@ -39,8 +48,25 @@ export class EventController {
     return this.eventService.create(createEventDto);
   }
 
-  @Get('paginated')
+  @Post('quotation')
   @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Solicitar una cotización para un evento' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Cotización creada correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear la cotización',
+  })
+  createQuotation(@Body() dto: CreateQuotationDto, @Req() req) {
+    return this.eventService.createQuotation(dto, req.user ?? null);
+  }
+
+  @Get('paginated')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener eventos con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -73,7 +99,8 @@ export class EventController {
   }
 
   @Get(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Obtener un evento por ID' })
   @ApiResponse({
@@ -89,7 +116,8 @@ export class EventController {
   }
 
   @Put(':id')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un evento por ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'El evento ha sido actualizado correctamente.' })
@@ -113,5 +141,41 @@ export class EventController {
   })
   findByCode(@Param('event_code') event_code: string) {
     return this.eventService.findByCode(event_code);
+  }
+  
+  @Get('user/:user_id/paginated')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener los eventos por usuario con paginación, búsqueda y orden' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Eventos encontrados correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Eventos no encontrados',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
+  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
+  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  findByUserPaginated(
+    @Param('user_id') user_id: string,
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
+    @Query('search') search?: string,
+    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.eventService.findByUserPaginated(
+      user_id,
+      limit,
+      offset,
+      search?.trim(),
+      sortField,
+      sortOrder,
+    );
   }
 }

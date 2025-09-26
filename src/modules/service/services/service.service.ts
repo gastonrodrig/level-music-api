@@ -12,7 +12,6 @@ import { ServiceType } from '../schema';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { Estado } from 'src/core/constants/app.constants';
 import { parseDetailService, SF_SERVICE, toObjectId } from 'src/core/utils';
-import { StorageService } from '../../firebase/services';
 
 @Injectable()
 export class ServiceService {
@@ -33,6 +32,7 @@ export class ServiceService {
     service: Service;
     serviceDetails: Array<ServiceDetail>;
   }> {
+    console.log('DTO recibido en backend:', JSON.stringify(dto, null, 2));
     try {
       // 1) Validar provider y tipo de servicio
       const provider = await this.providerModel.findById(dto.provider_id);
@@ -70,6 +70,7 @@ export class ServiceService {
 
       return { service, serviceDetails };
     } catch (error) {
+      console.error('Error en create service:', error);
       throw new InternalServerErrorException(
         `Error creating service: ${error.message}`,
       );
@@ -112,10 +113,7 @@ export class ServiceService {
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{
     total: number;
-    items: Array<{
-      service: Service;
-      serviceDetails: Array<ServiceDetail>;
-    }>;
+    items: Array<Service & { serviceDetails: Array<ServiceDetail> }>;
   }> {
     try {
       // 1) Filtro de búsqueda dinámico
@@ -136,7 +134,7 @@ export class ServiceService {
       const [services, total] = await Promise.all([
         this.serviceModel
           .find(filter)
-          .collation({ locale: 'es', strength: 1 }) // Para búsqueda insensible a mayúsculas
+          .collation({ locale: 'es', strength: 1 }) 
           .sort(sortObj)
           .skip(offset)
           .limit(limit)
@@ -152,7 +150,7 @@ export class ServiceService {
             .lean();
 
           return {
-            service,
+            ...service,
             serviceDetails: details,
           };
         }),
@@ -225,4 +223,20 @@ export class ServiceService {
       );
     }
   }
+
+
+async findOneWithDetails(serviceId: string): 
+Promise<{ service: Service; serviceDetails: Array<ServiceDetail> }> {
+  try {
+    const service = await this.serviceModel.findById(serviceId).lean();
+    if (!service) throw new NotFoundException(`Service with ID ${serviceId} not found`);
+
+    const serviceDetails = await this.serviceDetailModel.find({ service_id: serviceId }).lean();
+
+    return { service, serviceDetails };
+  } catch (error) {
+    throw new InternalServerErrorException(`Error fetching service: ${error.message}`);
+  }
+}
+
 }

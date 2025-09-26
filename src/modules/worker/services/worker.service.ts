@@ -17,7 +17,8 @@ import { AuthService } from 'src/modules/firebase/services';
 import { errorCodes } from 'src/core/common';
 import { generateRandomPassword } from 'src/core/utils';
 import { Estado } from 'src/core/constants/app.constants';
-import { MailService } from 'src/modules/mail/service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class WorkerService {
@@ -28,8 +29,9 @@ export class WorkerService {
     private workerTypeModel: Model<WorkerType>,
     @InjectModel(User.name)
     private userModel: Model<User>,
+    @InjectQueue('temporal-credentials')
+    private temporalCredentialsQueue: Queue,
     private authService: AuthService,
-    private mailService: MailService,
   ) {}
 
   async create(createWorkerDto: CreateWorkerDto): Promise<Worker> {
@@ -37,8 +39,8 @@ export class WorkerService {
       // Validar email y documento únicos; y tipo de trabajador existente
       const [workerType, existingEmail, existingDoc] = await Promise.all([
         this.workerTypeModel.findById(createWorkerDto.worker_type_id),
-        this.workerModel.findOne({ email: createWorkerDto.email }),
-        this.workerModel.findOne({
+        this.userModel.findOne({ email: createWorkerDto.email }),
+        this.userModel.findOne({
           document_number: createWorkerDto.document_number,
         }), 
       ]);
@@ -98,17 +100,23 @@ export class WorkerService {
           status: Estado.ACTIVO,
           created_by_admin: true,
           needs_password_change: true,
-          is_extra_data_completed: true
+          is_extra_data_completed: true,
+          client_type: null
         };
 
         const newUser = new this.userModel(userToCreate);
         const user = await newUser.save();
 
-        // Enviar correo con credenciales
-        await this.mailService.sendTemporalCredentials({
+        // Encola el envío de correo con credenciales para envío en background
+        await this.temporalCredentialsQueue.add('sendTemporalCredentials', {
           to: createWorkerDto.email,
           email: createWorkerDto.email,
           password,
+        }, {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: 1000,
+          removeOnFail: 100,
         });
 
         // Crear trabajador en la BD
@@ -138,6 +146,20 @@ export class WorkerService {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
         `Error creating worker: ${error.message}`,
+      );
+    }
+  }
+
+  async findAllActive(): Promise<Worker[]> {
+    try {
+      const workers = await this.workerModel
+        .find({ status: Estado.ACTIVO }) 
+        .exec();
+
+      return workers;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error finding active workers: ${error.message}`,
       );
     }
   }
