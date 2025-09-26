@@ -17,9 +17,4 @@ export class CreateMaintenanceDto {
   @IsMongoId()
   @IsNotEmpty()
   equipment_id: string;
-
-  @ApiProperty({ example: '2023-10-01T00:00:00Z' })
-  @IsString() 
-  @IsNotEmpty()
-  date: string;
 }

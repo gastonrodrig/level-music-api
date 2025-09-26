@@ -3,6 +3,8 @@ import { MongooseModule, getConnectionToken } from "@nestjs/mongoose";
 import { ScheduleModule } from '@nestjs/schedule';
 import { 
   Equipment,
+  EquipmentAvailability,
+  EquipmentAvailabilitySchema,
   EquipmentSchema,
   Maintenance,
   MaintenanceSchema,
@@ -19,11 +21,13 @@ import {
 import { addEquipmentHooks } from "./hooks";
 import { Connection } from "mongoose";
 
+
 @Module({
   imports: [
     // Registramos Maintenance normalmente (no requiere hooks)
     MongooseModule.forFeature([
       { name: Maintenance.name, schema: MaintenanceSchema },
+      { name: EquipmentAvailability.name, schema: EquipmentAvailabilitySchema }
     ]),
 
     // Registramos Equipment con hooks (requiere connection)
