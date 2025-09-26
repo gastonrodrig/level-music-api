@@ -138,4 +138,36 @@ export class ResourceController {
   ) {
     return this.resourceService.update(id, updateResourceDto);
   }
+
+  @Get('available-by-date')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener equipos disponibles para una fecha específica' })
+  @ApiQuery({ 
+    name: 'date', 
+    required: true, 
+    type: String, 
+    description: 'Fecha para verificar disponibilidad (YYYY-MM-DD)' 
+  })
+  @ApiQuery({ 
+    name: 'resourceType', 
+    required: false, 
+    type: String, 
+    description: 'Filtrar por tipo de recurso' 
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de equipos disponibles para la fecha especificada.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los equipos disponibles.',
+  })
+  getAvailableResourcesByDate(
+    @Query('date') date: string,
+    @Query('resourceType') resourceType?: string,
+  ) {
+    return this.resourceService.getAvailableResourcesByDate(date, resourceType);
+  }
 }

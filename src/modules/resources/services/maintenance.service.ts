@@ -72,6 +72,7 @@ export class MaintenanceService {
       // Se crea el mantenimiento
       const maintenance = new this.maintenanceModel({
         ...createMaintenanceDto,
+        date: createMaintenanceDto.type === MaintenanceType.CORRECTIVO ? new Date() : createMaintenanceDto.date,
         resource: resource._id,
         resource_serial_number: resource.serial_number,
         resource_name: resource.name,
@@ -203,6 +204,17 @@ export class MaintenanceService {
             message: 'El mantenimiento ya se encuentra finalizado.',
           },
           HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Validar que no se puedan reagendar o cancelar mantenimientos correctivos
+      if (
+        maintenance.type === MaintenanceType.CORRECTIVO &&
+        (updateMaintenanceStatusDto.status === MaintenanceStatusType.REAGENDADO ||
+         updateMaintenanceStatusDto.status === MaintenanceStatusType.CANCELADO)
+      ) {
+        throw new BadRequestException(
+          'Los mantenimientos correctivos no pueden ser reagendados o cancelados.'
         );
       }
 
