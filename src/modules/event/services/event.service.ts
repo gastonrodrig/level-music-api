@@ -4,14 +4,19 @@ import {
   InternalServerErrorException, 
   NotFoundException 
 } from '@nestjs/common';
+import { CreateQuotationLandingDto, CreateQuotationAdminDto } from '../dto';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
-import { CreateQuotationDto } from '../dto/create-quotation.dto';
-import { QuotationCreator, StatusType } from '../enum';
+import { QuotationCreator, StatusType, ResourceType } from '../enum';
+import { Equipment } from 'src/modules/equipments/schema/equipment.schema';
+import { Worker } from 'src/modules/worker/schema/worker.schema';
+import { ServiceDetail } from 'src/modules/service/schema/service-detail.schema';
+import { Service } from 'src/modules/service/schema/service.schema';
+import { AssignationsService } from './assignations.service';
 
 @Injectable()
 export class EventService {
@@ -22,6 +27,15 @@ export class EventService {
     private eventTypeModel: Model<EventType>,
     @InjectModel(User.name)
     private userModel: Model<User>,
+    @InjectModel(Equipment.name)
+    private equipmentModel: Model<Equipment>,
+    @InjectModel(Worker.name)
+    private workerModel: Model<Worker>,
+    @InjectModel(ServiceDetail.name)
+    private serviceDetailModel: Model<ServiceDetail>,
+    @InjectModel(Service.name)
+    private serviceModel: Model<Service>,
+    private assignationService: AssignationsService,
   ) {}
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
@@ -63,7 +77,7 @@ export class EventService {
     }
   }
 
-  async createQuotationLanding(dto: CreateQuotationDto, authUser?: any): Promise<Event> {
+  async createQuotationLanding(dto: CreateQuotationLandingDto): Promise<Event> {
     try {
       // 1. Buscar tipo de evento
       const eventType = await this.eventTypeModel.findById(dto.event_type_id);
@@ -98,6 +112,63 @@ export class EventService {
         final_price: 0,
         creator: QuotationCreator.CLIENTE,
       });
+
+      return event;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al crear la cotización: ${error.message}`,
+      );
+    }
+  }
+
+  async createQuotationAdmin(dto: CreateQuotationAdminDto): Promise<Event> {
+    try {
+      // 1. Buscar tipo de evento
+      const eventType = await this.eventTypeModel.findById(dto.event_type_id);
+      if (!eventType) {
+        throw new BadRequestException('Event type not found');
+      }
+
+      // 2. Generar código único de evento
+      const startDate = dto.start_time
+        ? new Date(dto.start_time).toISOString().slice(0, 10).replace(/-/g, '')
+        : 'XXXXXX';
+
+      let event_code = '';
+      for (let i = 0; i < 8; i++) {
+        const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const code = `EVT-${startDate}-${rnd}`;
+        if (!(await this.eventModel.exists({ event_code: code }))) {
+          event_code = code;
+          break;
+        }
+      }
+
+      // 3. Construir objeto base para el evento
+      const eventToCreate: any = {
+        ...dto,
+        event_code,
+        event_type: eventType._id,
+        client_info: dto.client_info,
+        user: toObjectId(dto.user_id),
+        status: StatusType.PENDIENTE_APROBACION,
+        estimated_price: dto.estimated_price ?? 0,
+        final_price: 0,
+        creator: QuotationCreator.ADMIN,
+      };
+
+      // 4. Crear evento
+      const event = await this.eventModel.create(eventToCreate);
+
+      // 5. Crear asignaciones si vienen en el DTO
+      if (dto.assignations?.length) {
+        for (const assign of dto.assignations) {
+          await this.assignationService.create({
+            ...assign,
+            event_id: event._id.toString(), 
+          });
+        }
+      }
 
       return event;
     } catch (error) {

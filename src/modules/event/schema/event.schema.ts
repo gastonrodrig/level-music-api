@@ -48,7 +48,7 @@ export class Event {
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
 
-  @Prop({ type: [ServiceRequestedSchema], default: [] })
+  @Prop({ type: [ServiceRequestedSchema], default: [], required: false })
   services_requested: ServiceRequested[];
 
   @Prop({ type: Number, default: 0 })

@@ -92,6 +92,7 @@ export class CreateEventDto {
 
   @ApiProperty({ type: [ServiceRequestedDto], required: false })
   @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ServiceRequestedDto)
   services_requested?: ServiceRequestedDto[];
@@ -105,11 +106,4 @@ export class CreateEventDto {
   @IsNumber()
   @IsOptional()
   final_price?: number | null;
-
-  // segun yo cuando se modifica el schema tambien el dto ya que este recibe los datos y 
-  // los valida al sincronizar con la base de datos
-  // @ApiProperty({ enum: QuotationCreator, description: 'Quién creó la cotización (admin o cliente)' })
-  // @IsEnum(QuotationCreator)
-  // @IsOptional() // Si quieres que sea opcional
-  // creator?: QuotationCreator;
 }
