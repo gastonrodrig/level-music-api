@@ -11,7 +11,7 @@ import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
 import { CreateQuotationDto } from '../dto/create-quotation.dto';
-import { StatusType } from '../enum';
+import { QuotationCreator, StatusType } from '../enum';
 
 @Injectable()
 export class EventService {
@@ -32,14 +32,21 @@ export class EventService {
       const user = await this.userModel.findById(createEventDto.user_id);
       if (!user) throw new BadRequestException('User not found');
 
-      const ymd = new Date(createEventDto.date).toISOString().slice(0, 10).replace(/-/g, '');
+      const startDate = createEventDto.start_time 
+        ? new Date(createEventDto.start_time).toISOString().slice(0, 10).replace(/-/g, '')
+        : 'XXXXXX';
+
       let event_code = '';
       for (let i = 0; i < 8; i++) {
-        const rnd = Math.random().toString(36).slice(2, 8).toUpperCase(); // 6 chars
-        const code = `EVT-${ymd}-${rnd}`;
-        if (!(await this.eventModel.exists({ event_code: code }))) { event_code = code; break; }
+        const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
+        const code = `EVT-${startDate}-${rnd}`;
+        
+        // Validamos que no exista ya este código
+        if (!(await this.eventModel.exists({ event_code: code }))) {
+          event_code = code;
+          break;
+        }
       }
-      if (!event_code) throw new InternalServerErrorException('No se pudo generar un event_code único');
 
       const event = new this.eventModel({
         ...createEventDto,
@@ -56,21 +63,23 @@ export class EventService {
     }
   }
 
-  async createQuotation(dto: CreateQuotationDto, authUser?: any): Promise<Event> {
+  async createQuotationLanding(dto: CreateQuotationDto, authUser?: any): Promise<Event> {
     try {
       // 1. Buscar tipo de evento
       const eventType = await this.eventTypeModel.findById(dto.event_type_id);
       if (!eventType) throw new BadRequestException('Event type not found');
 
       // 2. Generar código único de evento
-      const ymd = dto.date
-        ? new Date(dto.date).toISOString().slice(0, 10).replace(/-/g, '')
+      const startDate = dto.start_time 
+        ? new Date(dto.start_time).toISOString().slice(0, 10).replace(/-/g, '')
         : 'XXXXXX';
 
       let event_code = '';
       for (let i = 0; i < 8; i++) {
         const rnd = Math.random().toString(36).slice(2, 8).toUpperCase();
-        const code = `EVT-${ymd}-${rnd}`;
+        const code = `EVT-${startDate}-${rnd}`;
+        
+        // Validamos que no exista ya este código
         if (!(await this.eventModel.exists({ event_code: code }))) {
           event_code = code;
           break;
@@ -87,6 +96,7 @@ export class EventService {
         status: StatusType.PENDIENTE_APROBACION,
         estimated_price: 0,
         final_price: 0,
+        creator: QuotationCreator.CLIENTE,
       });
 
       return event;

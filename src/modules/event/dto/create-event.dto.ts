@@ -42,20 +42,15 @@ export class CreateEventDto {
   @IsOptional()
   description: string;
 
-  @ApiProperty({ example: '2025-12-31T23:59:59.000Z', required: true })
-  @IsDate()
-  @Type(() => Date)
-  date: Date;
-
   @ApiProperty({ example: '18:00', required: true })
   @IsString()
   @IsNotEmpty()
-  available_from: string;
+  start_time: string;
 
   @ApiProperty({ example: '23:00', required: true })
   @IsString()
   @IsNotEmpty()
-  available_to: string;
+  end_time: string;
 
   @ApiProperty({ example: 100, required: false })
   @IsNumber()
