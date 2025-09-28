@@ -11,7 +11,7 @@ import {
   ValidateNested,
   IsBoolean,
 } from 'class-validator';
-import { StatusType, PlaceType } from '../enum';
+import { StatusType, PlaceType, QuotationCreator } from '../enum';
 import { Type } from 'class-transformer';
 
 class ServiceRequestedDto {
@@ -41,11 +41,6 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   description: string;
-
-  @ApiProperty({ example: '2025-12-31T23:59:59.000Z', required: true })
-  @IsDate()
-  @Type(() => Date)
-  date: Date;
 
   @ApiProperty({ example: '18:00', required: true })
   @IsString()
@@ -110,4 +105,11 @@ export class CreateEventDto {
   @IsNumber()
   @IsOptional()
   final_price?: number | null;
+
+  // segun yo cuando se modifica el schema tambien el dto ya que este recibe los datos y 
+  // los valida al sincronizar con la base de datos
+  // @ApiProperty({ enum: QuotationCreator, description: 'Quién creó la cotización (admin o cliente)' })
+  // @IsEnum(QuotationCreator)
+  // @IsOptional() // Si quieres que sea opcional
+  // creator?: QuotationCreator;
 }

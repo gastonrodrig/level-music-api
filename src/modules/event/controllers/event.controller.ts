@@ -61,7 +61,7 @@ export class EventController {
     description: 'Error al crear la cotización',
   })
   createQuotation(@Body() dto: CreateQuotationDto, @Req() req) {
-    return this.eventService.createQuotation(dto, req.user ?? null);
+    return this.eventService.createQuotationLanding(dto, req.user ?? null);
   }
 
   @Get('paginated')
