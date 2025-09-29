@@ -19,6 +19,9 @@ export class Event {
   description: string;
 
   @Prop({ required: true })
+  event_date: string;
+
+  @Prop({ required: true })
   start_time: string;
 
   @Prop({ required: true })
