@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Equipment, Maintenance } from '../schema';
+import { Equipment, EquipmentAvailability, Maintenance } from '../schema';
 import { MaintenanceType, MaintenanceStatusType, EquipmentStatusType } from '../enum';
 import { getCurrentDateNormalized } from 'src/core/utils';
 
@@ -15,6 +15,8 @@ export class PreventiveMaintenanceSchedulerService {
     private equipmentModel: Model<Equipment>,
     @InjectModel(Maintenance.name)
     private maintenanceModel: Model<Maintenance>,
+    @InjectModel(EquipmentAvailability.name)
+    private equipmentAvailabilityModel: Model<EquipmentAvailability>,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -34,7 +36,7 @@ export class PreventiveMaintenanceSchedulerService {
       // Calculamos la fecha esperada para el siguiente mantenimiento
       const expectedNextDate = new Date(baseDate);
 
-      expectedNextDate.setDate(expectedNextDate.getDate() + equipment.maintenance_interval_days - 7);
+      expectedNextDate.setDate(expectedNextDate.getDate() + equipment.maintenance_interval_days);
 
       // Si aún no le toca, lo saltamos
       if (expectedNextDate > today) {
@@ -63,6 +65,12 @@ export class PreventiveMaintenanceSchedulerService {
         equipment_type: equipment.equipment_type,
         date: expectedNextDate,
         description: 'Mantenimiento preventivo generado automáticamente.',
+      });
+
+      // Crear registro en equipment-availability para el día del mantenimiento preventivo
+      await this.equipmentAvailabilityModel.create({
+        equipment: equipment._id,
+        date: expectedNextDate,
       });
 
       this.logger.log(`Mantenimiento preventivo generado para ${equipment.name} (fecha: ${expectedNextDate.toISOString()})`);

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Maintenance, Equipment } from '../schema';
+import { Maintenance, Equipment, EquipmentAvailability } from '../schema';
 import {
   CreateEquipmentDto,
   UpdateEquipmentDto,
@@ -27,6 +27,8 @@ export class EquipmentService {
     @InjectModel(Maintenance.name)
     private maintenanceModel: Model<Maintenance>,
     private maintenanceService: MaintenanceService,
+    @InjectModel(EquipmentAvailability.name)
+    private equipmentAvailabilityModel: Model<EquipmentAvailability>,
   ) {}
 
   async create(createEquipmentDto: CreateEquipmentDto): Promise<Equipment> {
@@ -60,9 +62,14 @@ export class EquipmentService {
       const savedEquipment = await equipment.save();
 
       // Crear mantenimiento preventivo inicial
-      await this.maintenanceService.createInitialPreventiveMaintenance(
+      const preventiveMaintenance = await this.maintenanceService.createInitialPreventiveMaintenance(
         savedEquipment,
       );
+
+      await this.equipmentAvailabilityModel.create({
+        equipment: savedEquipment._id,
+        date: preventiveMaintenance.date,
+      });
 
       return savedEquipment;
     } catch (error) {

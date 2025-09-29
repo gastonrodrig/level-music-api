@@ -124,6 +124,12 @@ export class MaintenanceService {
         { next_maintenance_date: nextDate },
       );
 
+        // Crear registro en equipment-availability para el próximo mantenimiento preventivo
+      await this.equipmentAvailabilityModel.create({
+        equipment: equipment._id,
+        date: getCurrentDateNormalized(),
+      });
+
       return saved;
     } catch (error) {
       if (error instanceof HttpException) throw error;
@@ -335,19 +341,16 @@ export class MaintenanceService {
           );
           maintenance.date = rescheduledDate;
 
-          // pensamiento
-
           // Borrar el registro anterior usando la fecha actual del next_maintenance_date
-          if (currentNextMaintenanceDate) {
-            await this.equipmentAvailabilityModel.findOneAndDelete({
-              equipment: maintenance.equipment,
-              date: currentNextMaintenanceDate,
-            });
-          }
+          await this.equipmentAvailabilityModel.findOneAndDelete({
+            equipment: maintenance.equipment,
+            date: currentNextMaintenanceDate,
+          });
 
+          // Crear un nuevo registro en equipment-availability con la nueva fecha
           await this.equipmentAvailabilityModel.create({
             equipment: maintenance.equipment,
-            date: updateMaintenanceStatusDto.rescheduled_date,
+            date: rescheduledDate,
           });
 
           // Actualizar la next_maintenance_date del equipo
