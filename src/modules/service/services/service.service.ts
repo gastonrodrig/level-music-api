@@ -32,7 +32,6 @@ export class ServiceService {
     service: Service;
     serviceDetails: Array<ServiceDetail>;
   }> {
-    console.log('DTO recibido en backend:', JSON.stringify(dto, null, 2));
     try {
       // 1) Validar provider y tipo de servicio
       const provider = await this.providerModel.findById(dto.provider_id);

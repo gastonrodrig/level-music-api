@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Assignation } from '../schema';
 import { CreateAssignationDto } from '../dto';
 import { Event } from 'src/modules/event/schema/event.schema';
@@ -16,6 +16,7 @@ import { Equipment } from 'src/modules/equipments/schema';
 import { Worker } from 'src/modules/worker/schema/worker.schema';
 import { ServiceDetail } from 'src/modules/service/schema/service-detail.schema';
 import { Service } from 'src/modules/service/schema/service.schema';
+import { toObjectId } from 'src/core/utils';
 
 @Injectable()
 export class AssignationsService {
@@ -34,6 +35,32 @@ export class AssignationsService {
     private readonly serviceModel: Model<Service>,
   ) {}
 
+  async validateResourceAvailability(
+    resource_id: string,
+    available_from: Date,
+    available_to: Date,
+  ): Promise<void> {
+    const conflict = await this.assignationModel.findOne({
+      resource: toObjectId(resource_id),
+      $or: [
+        {
+          available_from: { $lt: available_to },
+          available_to: { $gt: available_from },
+        },
+      ],
+    });
+
+    if (conflict) {
+      throw new HttpException(
+        {
+          code: errorCodes.RESOURCE_ALREADY_ASSIGNED,
+          message: 'El recurso ya está ocupado en ese rango de horario.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
   async create(dto: CreateAssignationDto): Promise<Assignation> {
     try {
       // 1. Validar que el evento exista
@@ -41,31 +68,17 @@ export class AssignationsService {
       if (!event) throw new BadRequestException(`El evento no existe.`);
 
       // 2. Validar conflictos de horario
-      const conflict = await this.assignationModel.findOne({
-        resource_id: dto.resource_id,
-        $or: [
-          {
-            available_from: { $lt: dto.available_to },
-            available_to: { $gt: dto.available_from },
-          },
-        ],
-      });
-
-      if (conflict) {
-        throw new HttpException(
-          {
-            code: errorCodes.RESOURCE_ALREADY_ASSIGNED,
-            message: 'El recurso ya está asignado en ese rango de horario.',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+      await this.validateResourceAvailability(
+        dto.resource_id,
+        dto.available_from,
+        dto.available_to,
+      );
 
       // 3. Construir objeto base
       const assignationToCreate: any = {
         ...dto,
         event: event._id,
-        resource: dto.resource_id,
+        resource: toObjectId(dto.resource_id),
         assigned_at: new Date(),
       };
 

@@ -26,9 +26,6 @@ export class Maintenance extends Document {
   @Prop({ length: 255 , default: null })
   reagendation_reason?: string;
 
-  @Prop({ length: 255 , default: null })
-  cancelation_reason?: string;
-
   @Prop({ default: Date.now })
   date: Date;
 

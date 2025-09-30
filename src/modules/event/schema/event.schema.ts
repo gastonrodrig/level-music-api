@@ -19,10 +19,13 @@ export class Event {
   description: string;
 
   @Prop({ required: true })
-  start_time: string;
+  event_date: Date;
 
   @Prop({ required: true })
-  end_time: string;
+  start_time: Date;
+
+  @Prop({ required: true })
+  end_time: Date;
 
   @Prop({ required: true })
   attendees_count: number;
@@ -48,7 +51,7 @@ export class Event {
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
 
-  @Prop({ type: [ServiceRequestedSchema], default: [] })
+  @Prop({ type: [ServiceRequestedSchema], default: [], required: false })
   services_requested: ServiceRequested[];
 
   @Prop({ type: Number, default: 0 })

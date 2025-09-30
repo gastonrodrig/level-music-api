@@ -8,6 +8,6 @@ export class EquipmentAvailability{
 
   @Prop({ required: true })
   date: Date;
-
 }
+
 export const EquipmentAvailabilitySchema = SchemaFactory.createForClass(EquipmentAvailability);

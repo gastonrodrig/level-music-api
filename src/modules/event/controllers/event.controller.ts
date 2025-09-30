@@ -12,6 +12,7 @@ import {
     Put,
     UseGuards,
     Req,
+    Patch,
  } from '@nestjs/common';
 import { 
   ApiBearerAuth, 
@@ -22,9 +23,9 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
-import { CreateEventDto, UpdateEventDto } from '../dto';
+import { CreateEventDto, UpdateEventDto, UpdateEventWithResourcesDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-import { CreateQuotationDto } from '../dto/create-quotation.dto';
+import { CreateQuotationLandingDto, CreateQuotationAdminDto } from '../dto';
 
 @Controller('events')
 @ApiTags('Events')
@@ -48,7 +49,7 @@ export class EventController {
     return this.eventService.create(createEventDto);
   }
 
-  @Post('quotation')
+  @Post('quotation/landing')
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Solicitar una cotización para un evento' })
@@ -60,8 +61,24 @@ export class EventController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear la cotización',
   })
-  createQuotation(@Body() dto: CreateQuotationDto, @Req() req) {
-    return this.eventService.createQuotationLanding(dto, req.user ?? null);
+  createQuotation(@Body() dto: CreateQuotationLandingDto) {
+    return this.eventService.createQuotationLanding(dto);
+  }
+
+  @Post('quotation/admin')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear cotización de evento por admin (con asignaciones)' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Cotización de evento creada correctamente por admin',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al crear la cotización por admin',
+  })
+  createQuotationAdmin(@Body() dto: CreateQuotationAdminDto) {
+    return this.eventService.createQuotationAdmin(dto);
   }
 
   @Get('paginated')
@@ -177,5 +194,28 @@ export class EventController {
       sortField,
       sortOrder,
     );
+  }
+
+  @Patch(':id/with-resources')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Actualizar info del evento y asignar recursos en una sola operación',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Evento actualizado y recursos asignados correctamente',
+    type: Event,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar evento o asignar recursos',
+  })
+  updateEventWithResources(
+    @Param('id') id: string,
+    @Body() dto: UpdateEventWithResourcesDto,
+  ) {
+    return this.eventService.assignResources(id, dto);
   }
 }

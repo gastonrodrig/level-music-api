@@ -11,3 +11,6 @@ export * from './create-assignations.dto';
 export * from './create-incident.dto';
 export * from './update-incident.dto';
 export * from './create-reprogramings.dto';
+export * from './create-quotation-landing.dto';
+export * from './create-quotation-admin.dto';
+export * from './assign-resources.dto';
