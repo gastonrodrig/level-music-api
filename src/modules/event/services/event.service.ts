@@ -4,7 +4,7 @@ import {
   InternalServerErrorException, 
   NotFoundException 
 } from '@nestjs/common';
-import { CreateQuotationLandingDto, CreateQuotationAdminDto } from '../dto';
+import { CreateQuotationLandingDto, CreateQuotationAdminDto, UpdateEventWithResourcesDto } from '../dto';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -307,6 +307,37 @@ export class EventService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al buscar eventos por usuario: ${error.message}`,
+      );
+    }
+  }
+
+  async assignResources(
+    event_id: string,
+    dto: UpdateEventWithResourcesDto,
+  ): Promise<Event> {
+    try {
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new NotFoundException('Evento no encontrado');
+      }
+
+      if (dto.name) event.name = dto.name;
+      if (dto.description) event.description = dto.description;
+      await event.save();
+
+      if (dto.resources?.length) {
+        for (const resource of dto.resources) {
+          await this.assignationService.create({
+            ...resource,
+            event_id: event._id.toString(),
+          });
+        }
+      }
+
+      return event;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar evento y asignar recursos: ${error.message}`,
       );
     }
   }

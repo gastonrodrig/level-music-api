@@ -19,13 +19,13 @@ export class Event {
   description: string;
 
   @Prop({ required: true })
-  event_date: string;
+  event_date: Date;
 
   @Prop({ required: true })
-  start_time: string;
+  start_time: Date;
 
   @Prop({ required: true })
-  end_time: string;
+  end_time: Date;
 
   @Prop({ required: true })
   attendees_count: number;

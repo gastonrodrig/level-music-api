@@ -12,6 +12,7 @@ import {
     Put,
     UseGuards,
     Req,
+    Patch,
  } from '@nestjs/common';
 import { 
   ApiBearerAuth, 
@@ -22,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
-import { CreateEventDto, UpdateEventDto } from '../dto';
+import { CreateEventDto, UpdateEventDto, UpdateEventWithResourcesDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { CreateQuotationLandingDto, CreateQuotationAdminDto } from '../dto';
 
@@ -193,5 +194,28 @@ export class EventController {
       sortField,
       sortOrder,
     );
+  }
+
+  @Patch(':id/with-resources')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Actualizar info del evento y asignar recursos en una sola operación',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Evento actualizado y recursos asignados correctamente',
+    type: Event,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar evento o asignar recursos',
+  })
+  updateEventWithResources(
+    @Param('id') id: string,
+    @Body() dto: UpdateEventWithResourcesDto,
+  ) {
+    return this.eventService.assignResources(id, dto);
   }
 }

@@ -10,6 +10,7 @@ import {
   IsArray,
   ValidateNested,
   IsBoolean,
+  IsDateString,
 } from 'class-validator';
 import { StatusType, PlaceType, QuotationCreator } from '../enum';
 import { Type } from 'class-transformer';
@@ -43,19 +44,19 @@ export class CreateEventDto {
   description: string;
 
   @ApiProperty({ example: '2023-12-31', required: true })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
-  event_date: string;
+  event_date: Date;
 
   @ApiProperty({ example: '2025-10-01T12:00:00.000Z' })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
-  start_time: string;
+  start_time: Date;
 
   @ApiProperty({ example: '23:00', required: true })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
-  end_time: string;
+  end_time: Date;
 
   @ApiProperty({ example: 100, required: false })
   @IsNumber()
