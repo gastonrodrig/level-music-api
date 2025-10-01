@@ -98,6 +98,9 @@ export class Event {
 
   @Prop({ enum: QuotationCreator })
   creator: QuotationCreator;
+
+  @Prop({type:Boolean})
+  is_quotation: boolean;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);
