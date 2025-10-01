@@ -48,6 +48,22 @@ export class EquipmentController {
   create(@Body() createEquipmentDto: CreateEquipmentDto) {
     return this.equipmentService.create(createEquipmentDto);
   }
+  
+  @Get('availability/:id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verificar disponibilidad de un equipo en un rango de horas' })
+  @ApiQuery({ name: 'date', type: String, example: '2025-10-02T18:00:00Z' })
+  async checkEquipmentAvailability(
+    @Param('id') equipment_id: string,
+    @Query('date') date: Date,
+  ) {
+    await this.equipmentService.validateEquipmentAvailability(
+      equipment_id,
+      date
+    );
+  }
 
   @Get('all')
   @Public()
