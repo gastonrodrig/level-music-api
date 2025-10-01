@@ -9,13 +9,9 @@ import { CreateEventDto, UpdateEventDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
-import { Event, EventType } from '../schema';
+import { Assignation, Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
 import { QuotationCreator, StatusType, ResourceType } from '../enum';
-import { Equipment } from 'src/modules/equipments/schema/equipment.schema';
-import { Worker } from 'src/modules/worker/schema/worker.schema';
-import { ServiceDetail } from 'src/modules/service/schema/service-detail.schema';
-import { Service } from 'src/modules/service/schema/service.schema';
 import { AssignationsService } from './assignations.service';
 
 @Injectable()
@@ -27,14 +23,8 @@ export class EventService {
     private eventTypeModel: Model<EventType>,
     @InjectModel(User.name)
     private userModel: Model<User>,
-    @InjectModel(Equipment.name)
-    private equipmentModel: Model<Equipment>,
-    @InjectModel(Worker.name)
-    private workerModel: Model<Worker>,
-    @InjectModel(ServiceDetail.name)
-    private serviceDetailModel: Model<ServiceDetail>,
-    @InjectModel(Service.name)
-    private serviceModel: Model<Service>,
+    @InjectModel(Assignation.name)
+    private assignationModel: Model<Assignation>,
     private assignationService: AssignationsService,
   ) {}
 
@@ -218,6 +208,70 @@ export class EventService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error finding event with pagination: ${error.message}`,
+      );
+    }
+  }
+
+  async findAllQuotationPaginated(
+    limit = 5,
+    offset = 0,
+    search = '',
+    sortField: string = 'created_at',
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{
+    total: number;
+    items: Array<Event & { assignations: Array<Assignation> }>;
+  }> {
+    try {
+      // 1) Filtro base: solo cotizaciones
+      const baseFilter: any = { creator: { $exists: true } };
+
+      // 2) Filtro de búsqueda
+      const searchFilter = search
+        ? {
+            $or: SF_EVENT.map((field) => ({
+              [field]: { $regex: search, $options: 'i' },
+            })),
+          }
+        : {};
+
+      const filter = { ...baseFilter, ...searchFilter };
+
+      // 3) Orden dinámico
+      const sortObj: Record<string, 1 | -1> = {
+        [sortField]: sortOrder === 'asc' ? 1 : -1,
+      };
+
+      // 4) Consultas en paralelo
+      const [events, total] = await Promise.all([
+        this.eventModel
+          .find(filter)
+          .collation({ locale: 'es', strength: 1 })
+          .sort(sortObj)
+          .skip(offset)
+          .limit(limit)
+          .lean(),
+        this.eventModel.countDocuments(filter).exec(),
+      ]);
+
+      // 5) Obtener asignaciones relacionadas para cada evento
+      const items = await Promise.all(
+        events.map(async (event) => {
+          const assignations = await this.assignationModel
+            .find({ event: event._id })
+            .lean();
+
+          return {
+            ...event,
+            assignations, // 👈 aquí agregamos el array con todas las asignaciones del evento
+          };
+        }),
+      );
+
+      return { total, items };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error fetching quotations with assignations: ${error.message}`,
       );
     }
   }
