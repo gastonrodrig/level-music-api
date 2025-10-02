@@ -1,55 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsDate,
-  IsOptional,
-  IsMongoId,
-  IsEnum,
-  IsNotEmpty,
-} from 'class-validator';
-import { StatusReprogramingsType } from '../enum';
-import { Types } from 'mongoose';
-import { Type } from 'class-transformer';
+import { IsString, IsDateString, IsNotEmpty, IsMongoId } from 'class-validator';
 
 export class CreateReprogramingsDto {
   @ApiProperty({ example: '2023-12-31T23:59:59.000Z', required: true })
-  @IsDate()
-  @Type(() => Date)
-  previousDate: Date;
-
-  @ApiProperty({ example: 'Nombre del evento', required: true })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
-  previousTimeRange: string;
+  new_date: Date;
 
   @ApiProperty({ example: '2023-12-31T23:59:59.000Z', required: true })
-  @IsDate()
-  @Type(() => Date)
-  newDate: Date;
-
-  @ApiProperty({ example: '18:00 - 23:00', required: true })
-  @IsString()
+  @IsDateString()
   @IsNotEmpty()
-  newTimeRange: string;
+  new_start_time: Date;
+
+  @ApiProperty({ example: '2023-12-31T23:59:59.000Z', required: true })
+  @IsDateString()
+  @IsNotEmpty()
+  new_end_time: Date;
 
   @ApiProperty({ example: 'Descripcion del evento', required: true })
   @IsString()
   @IsNotEmpty()
   reason: string;
 
-  @ApiProperty({ example: 'Pendiente', enum: StatusReprogramingsType, required: true })
-  @IsEnum(StatusReprogramingsType)
+  @ApiProperty({ type: String, example: '68ca75fe4289595b8bb1a331' })
+  @IsMongoId()
   @IsNotEmpty()
-  status: StatusReprogramingsType;
-
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
-  @IsOptional()
-  event_id: Types.ObjectId;
-
-  @ApiProperty({ type: Types.ObjectId, required: true })
-  @IsMongoId()
-  @IsOptional()
-  user_id: Types.ObjectId;
-
+  event_id: string;
 }
