@@ -81,6 +81,26 @@ export class EventController {
     return this.eventService.createQuotationAdmin(dto);
   }
 
+@Patch('quotation/admin/:id')
+@Public()
+@HttpCode(HttpStatus.OK)
+@ApiOperation({ summary: 'Actualizar cotización de evento por admin (con asignaciones)' })
+@ApiResponse({
+  status: HttpStatus.OK,
+  description: 'Cotización de evento actualizada correctamente por admin',
+})
+@ApiResponse({
+  status: HttpStatus.BAD_REQUEST,
+  description: 'Error al actualizar la cotización por admin',
+})
+updateQuotationAdmin(
+  @Param('id') id: string,
+  @Body() dto: CreateQuotationAdminDto, 
+) {
+  return this.eventService.updateQuotationAdmin(id, dto);
+}
+
+
   @Get('paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')

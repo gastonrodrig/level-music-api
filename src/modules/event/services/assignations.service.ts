@@ -134,4 +134,14 @@ export class AssignationsService {
       );
     }
   }
+  async deleteByEventId(eventId: string): Promise<void> {
+  try {
+    await this.assignationModel.deleteMany({ event: toObjectId(eventId) }).exec();
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error al eliminar asignaciones del evento: ${error.message}`,
+    );
+  }
+}
+
 }
