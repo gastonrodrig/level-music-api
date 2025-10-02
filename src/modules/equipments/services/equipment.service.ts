@@ -35,13 +35,21 @@ export class EquipmentService {
     equipment_id: string,
     date: Date,
   ): Promise<void> {
-    // Restar 5 horas al día del evento para obtener el día técnicamente correcto
-    const adjustedEventDate = dayjs(date).subtract(5, 'hour').toDate();
-    // Buscar conflictos en equipment-availability: comparación directa
+    // Restar 5 horas y crear fechas del día con strings
+    const adjustedDate = dayjs(date).subtract(5, 'hour').toISOString();
+    const dayOnly = adjustedDate.split('T')[0]; // "2025-10-11"
+    const startOfDay = new Date(`${dayOnly}T00:00:00.000Z`);
+    const endOfDay = new Date(`${dayOnly}T23:59:59.999Z`);
+    
+    // Buscar conflictos: cualquier fecha en el mismo día
     const conflict = await this.equipmentAvailabilityModel.findOne({
       equipment: toObjectId(equipment_id),
-      date: adjustedEventDate
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      }
     });
+    
     // Debug para ver todos los registros de disponibilidad de este equipo
     const allAvailability = await this.equipmentAvailabilityModel.find({
       equipment: toObjectId(equipment_id)
