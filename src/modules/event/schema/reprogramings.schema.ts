@@ -1,11 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Date, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { StatusReprogramingsType } from '../enum';
 import { User } from 'src/modules/user/schema';
-import { EventType } from './event-type.schema';
+import { Event } from './event.schema';  
 
 @Schema({ collection: 'reprogramings' })
 export class Reprogramings {
+
+  @Prop({ maxlength: 255})
+  event_code?: string;
+
   @Prop({ type: Date, required: true })
   previous_date: Date;
 
@@ -30,7 +34,7 @@ export class Reprogramings {
   @Prop({ required: true, enum: StatusReprogramingsType })
   status: StatusReprogramingsType;
 
-  @Prop({ type: Types.ObjectId, required: true, ref: EventType.name })
+  @Prop({ type: Types.ObjectId, required: true, ref: Event.name })
   event: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, required: true, ref: User.name })

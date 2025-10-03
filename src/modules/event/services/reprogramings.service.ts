@@ -21,6 +21,7 @@ export class ReprogramingsService {
       const event = await this.eventModel.findById(createReprogramingsDto.event_id);     
       const reprograming = new this.reprogramingModel({
         ...createReprogramingsDto,
+        event_code: event.event_code,
         previous_date: event.event_date,
         previous_start_time: event.start_time,
         previous_end_time: event.end_time,
@@ -44,20 +45,23 @@ export class ReprogramingsService {
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; items: Reprogramings[] }> {
     try {
+      // Filtro de búsqueda por campos relevantes de reprogramación
       const filter = search
         ? {
             $or: [
               { reason: { $regex: search, $options: 'i' } },
-              { previous_time_range: { $regex: search, $options: 'i' } },
-              { new_time_range: { $regex: search, $options: 'i' } },
+              { status: { $regex: search, $options: 'i' } },
+              { event_code: { $regex: search, $options: 'i' } },
             ],
           }
         : {};
 
+      // Orden dinámico
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
       };
 
+      // Consulta paginada
       const [items, total] = await Promise.all([
         this.reprogramingModel
           .find(filter)
@@ -86,7 +90,7 @@ async findByUserPaginated(
   sortOrder: 'asc' | 'desc' = 'asc',
 ): Promise<{ total: number; items: Reprogramings[] }> {
   try {
-    // 👇 conversión a ObjectId
+   
     const baseFilter: any = { user: toObjectId(user_id) };
 
     const searchFields = ['reason', 'status'];

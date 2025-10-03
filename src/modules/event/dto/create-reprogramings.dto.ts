@@ -26,4 +26,6 @@ export class CreateReprogramingsDto {
   @IsMongoId()
   @IsNotEmpty()
   event_id: string;
+
+  
 }
