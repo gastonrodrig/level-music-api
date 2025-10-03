@@ -31,6 +31,34 @@ export class EquipmentService {
     private equipmentAvailabilityModel: Model<EquipmentAvailability>,
   ) {}
 
+  async validateEquipmentAvailability(
+    equipment_id: string,
+    date: Date,
+  ): Promise<void> {
+    // Restar 5 horas al día del evento para obtener el día técnicamente correcto
+    const adjustedEventDate = dayjs(date).subtract(5, 'hour').toDate();
+    // Buscar conflictos en equipment-availability: comparación directa
+    const conflict = await this.equipmentAvailabilityModel.findOne({
+      equipment: toObjectId(equipment_id),
+      date: adjustedEventDate
+    });
+    // Debug para ver todos los registros de disponibilidad de este equipo
+    const allAvailability = await this.equipmentAvailabilityModel.find({
+      equipment: toObjectId(equipment_id)
+    });
+
+    if (conflict) {
+      throw new HttpException(
+        {
+          code: errorCodes.RESOURCE_ALREADY_ASSIGNED,
+          message: 'El Equipo ya está ocupado en ese rango de horario.',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+  
+
   async create(createEquipmentDto: CreateEquipmentDto): Promise<Equipment> {
     try {
       // Validar que el nombre del equipo no exista
