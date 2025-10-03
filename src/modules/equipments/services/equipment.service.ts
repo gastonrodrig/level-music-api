@@ -9,13 +9,14 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Maintenance, Equipment, EquipmentAvailability } from '../schema';
-import {
-  CreateEquipmentDto,
-  UpdateEquipmentDto,
-} from '../dto';
+import { CreateEquipmentDto, UpdateEquipmentDto } from '../dto';
 import { MaintenanceService } from '.';
 import { SF_EQUIPMENT, getCurrentDate, toObjectId } from 'src/core/utils';
-import { EquipmentStatusType, MaintenanceStatusType, MaintenanceType } from '../enum';
+import {
+  EquipmentStatusType,
+  MaintenanceStatusType,
+  MaintenanceType,
+} from '../enum';
 import { errorCodes } from 'src/core/common';
 import * as dayjs from 'dayjs';
 
@@ -35,26 +36,17 @@ export class EquipmentService {
     equipment_id: string,
     date: Date,
   ): Promise<void> {
-    // Restar 5 horas y crear fechas del día con strings
     const adjustedDate = dayjs(date).subtract(5, 'hour').toISOString();
-    const dayOnly = adjustedDate.split('T')[0]; // "2025-10-11"
+    const dayOnly = adjustedDate.split('T')[0];
     const startOfDay = new Date(`${dayOnly}T00:00:00.000Z`);
-    const endOfDay = new Date(`${dayOnly}T23:59:59.999Z`);
-    
-    // Buscar conflictos: cualquier fecha en el mismo día
+
     const conflict = await this.equipmentAvailabilityModel.findOne({
       equipment: toObjectId(equipment_id),
-      date: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      }
+      date: startOfDay,
     });
-    
-    // Debug para ver todos los registros de disponibilidad de este equipo
-    const allAvailability = await this.equipmentAvailabilityModel.find({
-      equipment: toObjectId(equipment_id)
-    });
-
+    console.log('Conflict:', conflict);
+    console.log('Dia del intento de asignación:', startOfDay);
+    console.log('Dia del evento:', date);
     if (conflict) {
       throw new HttpException(
         {
@@ -65,7 +57,6 @@ export class EquipmentService {
       );
     }
   }
-  
 
   async create(createEquipmentDto: CreateEquipmentDto): Promise<Equipment> {
     try {
@@ -98,9 +89,10 @@ export class EquipmentService {
       const savedEquipment = await equipment.save();
 
       // Crear mantenimiento preventivo inicial
-      const preventiveMaintenance = await this.maintenanceService.createInitialPreventiveMaintenance(
-        savedEquipment,
-      );
+      const preventiveMaintenance =
+        await this.maintenanceService.createInitialPreventiveMaintenance(
+          savedEquipment,
+        );
 
       await this.equipmentAvailabilityModel.create({
         equipment: savedEquipment._id,
@@ -195,11 +187,11 @@ export class EquipmentService {
   async findOne(equipment_id: string): Promise<Equipment> {
     try {
       const equipment = await this.equipmentModel.findOne({
-        _id: equipment_id
+        _id: equipment_id,
       });
       if (!equipment) {
         throw new NotFoundException(
-          `Equipment with ID '${equipment_id}' not found`
+          `Equipment with ID '${equipment_id}' not found`,
         );
       }
 
