@@ -44,9 +44,7 @@ export class EquipmentService {
       equipment: toObjectId(equipment_id),
       date: startOfDay,
     });
-    console.log('Conflict:', conflict);
-    console.log('Dia del intento de asignación:', startOfDay);
-    console.log('Dia del evento:', date);
+    
     if (conflict) {
       throw new HttpException(
         {
