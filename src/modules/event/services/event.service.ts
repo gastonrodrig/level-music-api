@@ -410,17 +410,30 @@ export class EventService {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
       };
 
-      const [items, total] = await Promise.all([
-        this.eventModel
-          .find(filter)
-          .collation({ locale: 'es', strength: 1 })
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.eventModel.countDocuments(filter).exec(),
-      ]);
+     const [events, total] = await Promise.all([
+      this.eventModel
+        .find(filter)
+        .collation({ locale: 'es', strength: 1 })
+        .sort(sortObj)
+        .skip(offset)
+        .limit(limit)
+        .lean(),
+      this.eventModel.countDocuments(filter).exec(),
+    ]);
 
+    // Obtener asignaciones para cada evento
+    const items = await Promise.all(
+      events.map(async (event) => {
+        const assignations = await this.assignationModel
+          .find({ event: event._id })
+          .lean();
+        return {
+          ...event,
+          assignations,
+        };
+      }),
+    );
+      
       return { total, items };
     } catch (error) {
       throw new InternalServerErrorException(

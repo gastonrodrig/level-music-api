@@ -1,11 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
+import { Model } from 'mongoose';
+import { Assignation, Event, EventType } from '../../event/schema';
+import puppeteer from 'puppeteer';
 import * as nodemailer from 'nodemailer';
 import { 
   CreateTemporalCredentialMailDto, 
   CreatePasswordResetLinkMailDto, 
-  CreateContactMailDto } 
-from '../dto';
+  CreateContactMailDto,
+  CreateGmailPdfDto
+} from '../dto';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class MailService {
@@ -13,6 +18,10 @@ export class MailService {
   private transporter;
 
   constructor(
+    @InjectModel(Event.name)
+    private eventModel: Model<Event>,
+    @InjectModel(Assignation.name)
+    private assignationModel: Model<Assignation>,
   ) {
     this.oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -181,5 +190,109 @@ export class MailService {
       throw new Error(`Failed to send contact email: ${error.message}`);
     }
   }
+  async generateQuotationPdf(quotation: any): Promise<Buffer> {
+    console.log('Generating PDF for quotation:', quotation);
+  // 1. Define el HTML de la cotización (puedes personalizarlo)
+  const html = `
+    <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 32px; }
+          h2 { color: #E08438; }
+          .section { margin-bottom: 16px; }
+          .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+          .table th, .table td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+          .table th { background: #f5f5f5; }
+        </style>
+      </head>
+      <body>
+        <h2>Cotización de Evento</h2>
+        <div class="section">
+          <strong>Cliente:</strong> ${quotation.client_info?.first_name || ''} ${quotation.client_info?.last_name || ''}
+        </div>
+        <div class="section">
+          <strong>Evento:</strong> ${quotation.event_type_name || ''} <br/>
+          <strong>Fecha:</strong> ${quotation.event_date ? new Date(quotation.event_date).toLocaleDateString() : ''}
+        </div>
+        <div class="section">
+          <strong>Servicios:</strong> ${(quotation.services_requested || []).map(s => s.name).join(', ')}
+        </div>
+        <div class="section">
+          <strong>Asignaciones:</strong>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Nombre</th>
+                <th>Horas</th>
+                <th>Tarifa</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(quotation.assignations || []).map(a => `
+                <tr>
+                  <td>${a.resource_type || '-'}</td>
+                  <td>${a.service_provider_name || a.equipment_name || a.worker_role || '-'}</td>
+                  <td>${a.hours ?? '-'}</td>
+                  <td>S/. ${a.hourly_rate ?? '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="section">
+          <strong>Total:</strong> S/. ${
+            (quotation.assignations || [])
+              .reduce((acc, a) => acc + ((Number(a.hourly_rate) || 0) * (Number(a.hours) || 0)), 0)
+              .toFixed(2)
+          }
+        </div>
+      </body>
+    </html>
+  `;
+
+  // 2. Usa Puppeteer para generar el PDF
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+  const pdfBufferRaw = await page.pdf({ format: 'A4' });
+  const pdfBuffer = Buffer.from(pdfBufferRaw); 
+  await browser.close();
+  return pdfBuffer;
+}
+
+
+
+  async sendEmailWithQuotationPdf(quotationId: string, dto: CreateGmailPdfDto) {
+  // 1. Busca la cotización en la base de datos
+  const quotation = await this.eventModel.findById(quotationId).lean();
+  if (!quotation) throw new BadRequestException('Cotización no encontrada.');
+
+  const assignations = await this.assignationModel.find({ event: quotation._id }).lean();
+  const quotationForPdf = { ...quotation, assignations };
+  
+  // 2. Genera el PDF con Puppeteer (adapta el HTML para la cotización)
+  const pdfBuffer = await this.generateQuotationPdf(quotationForPdf);
+
+  // 3. Envía el correo con el PDF adjunto
+  const mailOptions = {
+    from: process.env.GMAIL_USER,
+    to: dto.to,
+    subject: dto.subject,
+    text: 'Adjunto PDF de cotización.',
+    attachments: [
+      {
+        filename: `COTIZACION_${quotation.event_code}.pdf`,
+        content: pdfBuffer,
+      },
+    ],
+  };
+  await this.transporter.sendMail(mailOptions);
+}
+
+
 }
 
