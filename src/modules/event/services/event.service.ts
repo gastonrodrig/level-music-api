@@ -4,15 +4,24 @@ import {
   InternalServerErrorException, 
   NotFoundException 
 } from '@nestjs/common';
-import { CreateQuotationLandingDto, CreateQuotationAdminDto, UpdateEventWithResourcesDto, UpdateQuotationAdminDto } from '../dto';
+import {
+  CreateQuotationLandingDto,
+  CreateQuotationAdminDto,
+  UpdateEventWithResourcesDto,
+  UpdateQuotationAdminDto,
+} from '../dto';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Assignation, Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
-import { QuotationCreator, StatusType, ResourceType } from '../enum';
+import { QuotationCreator, StatusType } from '../enum';
 import { AssignationsService } from './assignations.service';
+import { ClientType } from 'src/modules/user/enum/client-type.enum';
+import { ActivationTokenService } from 'src/auth/services/activation-token.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class EventService {
@@ -25,7 +34,10 @@ export class EventService {
     private userModel: Model<User>,
     @InjectModel(Assignation.name)
     private assignationModel: Model<Assignation>,
+    @InjectQueue('quotation-ready')
+    private quotationReadyQueue: Queue,
     private assignationService: AssignationsService,
+    private activationTokenService: ActivationTokenService,
   ) {}
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
@@ -464,6 +476,31 @@ export class EventService {
           });
         }
       }
+
+      const clientEmail = event.client_info.email;
+      const clientName = event.client_info.client_type === ClientType.PERSONA ?
+        `${event.client_info.first_name}, ${event.client_info.last_name}` :
+        `${event.client_info.company_name}`;
+
+
+      const { token } = await this.activationTokenService.issueToken({
+        email: clientEmail,
+        eventId: event._id.toString(),
+        ttlMs: 24 * 60 * 60 * 1000,
+      });
+
+      const activationUrl = `${process.env.API_URL}/t/${token}`;
+
+      await this.quotationReadyQueue.add(
+        'sendQuotationReady',
+        { to: clientEmail, clientName, activationUrl },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: 1000,
+          removeOnFail: 100,
+        },
+      );
 
       return event;
     } catch (error) {

@@ -52,9 +52,15 @@ import { FirebaseModule } from '../firebase/firebase.module';
 import { EquipmentModule } from '../equipments/equipment.module';
 import { WorkerModule } from '../worker/worker.module';
 import { ServiceModule } from '../service/service.module';
+import { BullModule } from '@nestjs/bullmq';
+import { ActivationTokenService } from 'src/auth/services';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
+     BullModule.registerQueue(
+      { name: 'quotation-ready' }
+    ),
     (() => {
       addEventHooks(EventSchema);
       addEventTypeHooks(EventTypeSchema);
@@ -76,7 +82,8 @@ import { ServiceModule } from '../service/service.module';
     FirebaseModule,
     EquipmentModule,
     WorkerModule,
-    ServiceModule
+    ServiceModule,
+    AuthModule,
   ],
   providers: [
     EventService, 
@@ -86,7 +93,7 @@ import { ServiceModule } from '../service/service.module';
     ReprogramingsService,
     FeaturedEventService,
     IncidentService, 
-    AssignationsService
+    AssignationsService,
   ],
   controllers: [
     EventController, 
