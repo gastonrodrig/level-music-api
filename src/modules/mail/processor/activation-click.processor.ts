@@ -7,7 +7,7 @@ import { MailService } from '../service';
 import { AuthService } from 'src/modules/firebase/services';
 import { ActivationTokenService } from 'src/auth/services';
 import { User } from 'src/modules/user/schema';
-import { generateRandomPassword } from 'src/core/utils';
+import { generateRandomPassword, toObjectId } from 'src/core/utils';
 import { Estado, Roles } from 'src/core/constants/app.constants';
 import { StatusType } from 'src/modules/event/enum';
 import { Event } from 'src/modules/event/schema';
@@ -62,7 +62,7 @@ export class ActivationClickProcessor extends WorkerHost {
       }
 
       // 4️⃣ Crear usuario temporal en Mongo
-      await this.userModel.create({
+      const newUser = await this.userModel.create({
         email,
         auth_id: fb.uid,
         role: Roles.CLIENTE,
@@ -75,6 +75,7 @@ export class ActivationClickProcessor extends WorkerHost {
 
       // 5️⃣ Actualizar estado del evento
       await this.eventModel.findByIdAndUpdate(event, {
+        user: toObjectId(newUser._id),
         status: StatusType.REVISION_CLIENTE,
       });
 

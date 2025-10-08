@@ -45,8 +45,14 @@ export class ActivationTokenService {
     const doc = await this.tokenModel.findOne({ token }).lean();
     if (!doc) throw new BadRequestException('Token inválido');
     if ((doc as any).used) throw new BadRequestException('Token ya usado');
-    if (doc.expiresAt.getTime() < Date.now())
+
+    // Asegurar Date válida aunque venga con lean()
+    const exp = doc.expiresAt instanceof Date
+      ? doc.expiresAt
+      : new Date(doc.expiresAt as any);
+    if (exp.getTime() < Date.now()) {
       throw new BadRequestException('Token expirado');
+    }
     return doc;
   }
 
@@ -56,49 +62,5 @@ export class ActivationTokenService {
       { $set: { used: true } },
     );
     return res.modifiedCount > 0;
-  }
-
-  /**
-   * Maneja el CLICK del botón del correo:
-   * - Lee email desde event.client_info.email
-   * - Si el usuario ya existe: marca usado y devuelve URL de login con aviso
-   * - Si NO existe: marca usado, encola job para crear y mandar credenciales,
-   *   y devuelve URL de "te enviaremos credenciales"
-   */
-  async handleMailClickAndGetRedirect(token: string, frontendUrl: string) {
-    // 1) Token válido (NO lo consumimos aún)
-    const tok = await this.validateToken(token);
-
-    // 2) Email desde el EVENTO
-    const ev = await this.eventModel.findById(tok.event, 'client_info.email').lean();
-    const email = (ev as any)?.client_info?.email as string | undefined;
-    if (!email) {
-      await this.markUsed(token); // opcional: evitar reintentos
-      return `${frontendUrl}/activation?status=error`;
-    }
-
-    // 3) ¿Existe usuario? (SOLO Mongo)
-    const exists = !!(await this.userModel.findOne({ email }).lean());
-
-    if (exists) {
-      // A) Ya existe → marcar usado y redirigir a login con aviso
-      await this.markUsed(token);
-      return `${frontendUrl}/login?notice=account-exists&email=${encodeURIComponent(email)}`;
-    }
-
-    // B) No existe → marcar usado, encolar creación y redirigir a pantalla de “en breve…”
-    await this.markUsed(token);
-    await this.activationClicksQ.add(
-      'createAccountAndSendCreds',
-      { email },
-      {
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 2000 },
-        removeOnComplete: 500,
-        removeOnFail: 200,
-      },
-    );
-
-    return `${frontendUrl}/activation?status=sent&email=${encodeURIComponent(email)}`;
   }
 }

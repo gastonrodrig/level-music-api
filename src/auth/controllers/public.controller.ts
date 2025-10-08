@@ -1,82 +1,59 @@
+// src/auth/controllers/public.controller.ts
 import { Controller, Get, Param } from '@nestjs/common';
 import { Public } from '../decorators/public.decorator';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { ApiTags } from '@nestjs/swagger';
-import { ActivationTokenService } from 'src/auth/services';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { ActivationToken } from 'src/auth/schema';
 
 @Controller('')
-@ApiTags('Activation Token')
 export class PublicController {
   constructor(
-    @InjectQueue('activation-clicks')
-    private readonly clicksQ: Queue,
-    private readonly activationTokenService: ActivationTokenService,
+    @InjectQueue('activation-clicks') private readonly clicksQ: Queue,
+    @InjectModel(ActivationToken.name) private readonly tokenModel: Model<ActivationToken>,
   ) {}
 
-  @Get('t/:token')
   @Public()
+  @Get('t/:token')
   async onMailButtonClick(@Param('token') token: string) {
-    try {
-      // 1️⃣ Buscar el token directamente en la base
-      const tokenDoc = await this.activationTokenService.validateToken(token);
-
-      console.log('Token doc:', tokenDoc);
-
-      if (!tokenDoc) {
-        return {
-          success: false,
-          used: null,
-          message: 'Token no encontrado o inválido.',
-        };
-      }
-
-      // 2️⃣ Si el token ya fue usado o expiró
-      const isExpired = tokenDoc.expiresAt.getTime() < Date.now();
-      if (tokenDoc.used || isExpired) {
-        return {
-          success: false,
-          used: true,
-          message: isExpired
-            ? 'Token expirado.'
-            : 'El enlace ya fue utilizado.',
-        };
-      }
-
-      // 3️⃣ Crear jobId único (evita duplicar trabajos)
-      const jobId = `activation-${token}`;
-      const existingJob = await this.clicksQ.getJob(jobId);
-
-      if (!existingJob) {
-        await this.clicksQ.add(
-          'handleActivationClick',
-          { token },
-          {
-            jobId,
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 2000 },
-            removeOnComplete: true,
-            removeOnFail: 200,
-          },
-        );
-        console.log(`✅ Job creado: ${jobId}`);
-      } else {
-        console.log(`⚠️ Job ya existente: ${jobId}`);
-      }
-
-      // 4️⃣ Devolver al frontend info clara para decidir qué mostrar
-      return {
-        success: true,
-        used: false,
-        message: 'Token válido. Procesando activación...',
-      };
-    } catch (err: any) {
-      console.error(`❌ Error validando token: ${err?.message || err}`);
-      return {
-        success: false,
-        used: null,
-        message: err?.message || 'Token inválido o expirado.',
-      };
+    // 1) Leer el token SIN lanzar excepciones
+    const doc = await this.tokenModel.findOne({ token }).lean();
+    if (!doc) {
+      return { success: false, used: null, message: 'Token no encontrado' };
     }
+
+    // Normaliza fecha con lean()
+    const exp = doc.expiresAt instanceof Date ? doc.expiresAt : new Date(doc.expiresAt as any);
+    const expired = exp.getTime() < Date.now();
+    if (expired) {
+      return { success: false, used: null, message: 'Token expirado' };
+    }
+
+    // 2) Si ya fue usado → DEVOLVER ERROR (como pediste)
+    if (doc.used) {
+      return { success: false, used: true, message: 'Ya lo usaste' };
+      // (si quieres exactamente used:null, cambia a used: null)
+    }
+
+    // 3) Aún no usado → encola job una sola vez
+    const jobId = `activation-${token}`;
+    const existing = await this.clicksQ.getJob(jobId);
+    if (!existing) {
+      await this.clicksQ.add(
+        'handleActivationClick',
+        { token },
+        {
+          jobId,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: true,
+          removeOnFail: 200,
+        },
+      );
+    }
+
+    // 4) Respuesta OK (primera vez)
+    return { success: true, used: false, message: 'Procesando activación…' };
   }
 }
