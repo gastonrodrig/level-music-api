@@ -466,7 +466,6 @@ export class EventService {
 
       if (dto.name) event.name = dto.name;
       if (dto.description) event.description = dto.description;
-      await event.save();
 
       if (dto.resources?.length) {
         for (const resource of dto.resources) {
@@ -477,23 +476,40 @@ export class EventService {
         }
       }
 
-      const clientEmail = event.client_info.email;
-      const clientName = event.client_info.client_type === ClientType.PERSONA ?
-        `${event.client_info.first_name}, ${event.client_info.last_name}` :
-        `${event.client_info.company_name}`;
+      if (!event.user) {
+        event.status = StatusType.ESPERA_REGISTRO; 
+      } else {
+        event.status = StatusType.REVISION_CLIENTE; 
+      }
 
+      await event.save();
 
-      const { token } = await this.activationTokenService.issueToken({
-        email: clientEmail,
-        eventId: event._id.toString(),
-        ttlMs: 24 * 60 * 60 * 1000,
-      });
+      const user = event.user ? await this.userModel.findById(event.user) : null;
 
-      const activationUrl = `${process.env.API_URL}/t/${token}`;
+      const clientEmail = user ? user.email : event.client_info.email;
+      const clientName =
+        event.client_info.client_type === ClientType.PERSONA
+          ? `${event.client_info.first_name} ${event.client_info.last_name}`
+          : `${event.client_info.company_name}`;
+
+      let activationUrl = null;
+      if (!user) {
+        const { token } = await this.activationTokenService.issueToken({
+          email: clientEmail,
+          eventId: event._id.toString(),
+          ttlMs: 24 * 60 * 60 * 1000, 
+        });
+        activationUrl = `${process.env.APP_URL}/t/${token}`;
+      }
 
       await this.quotationReadyQueue.add(
         'sendQuotationReady',
-        { to: clientEmail, clientName, activationUrl },
+        {
+          to: clientEmail,
+          clientName,
+          activationUrl,
+          hasAccount: user ? true : false,
+        },
         {
           attempts: 3,
           backoff: { type: 'exponential', delay: 2000 },

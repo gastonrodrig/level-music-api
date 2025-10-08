@@ -22,7 +22,6 @@ import { FirebaseAuthGuard } from 'src/auth/guards/firebase-auth.guard';
 
 @Controller('assignations')
 @ApiTags('Assignations')
-
 export class AssignationsController {
   constructor(private readonly assignationsService: AssignationsService) {}
 

@@ -300,69 +300,102 @@ export class MailService {
     await this.transporter.sendMail(mailOptions);
   }
 
-  // mail.service.ts
   async sendQuotationReadyMail(dto: {
     to: string;
-    activationUrl: string;
     clientName?: string;
+    hasAccount: boolean;
+    activationUrl?: string | null;
   }) {
-    const html = `
-  <html>
-    <head>
+    const appUrl = process.env.APP_URL;
+    const loginUrl = `${appUrl}/auth/login`;
+
+    const baseHead = `
       <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap" rel="stylesheet">
-    </head>
-    <body style="margin:0; padding:0; background:#DFE0E2; font-family:'Mulish', Arial, sans-serif;">
-      <div style="background:#E08438; padding:32px;">
-        <div style="max-width:520px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); padding:32px; border:1px solid #C1BFC0;">
+      <meta name="color-scheme" content="light only">
+      <meta name="supported-color-schemes" content="light">
+    `;
 
-          <h2 style="color:#252020; font-weight:700; margin-top:0;">Tu cotización ya está lista</h2>
-
-          <p style="color:#252020; font-size:16px; margin:0 0 12px 0;">
-            Hola ${dto.clientName ? `<strong>${dto.clientName}</strong>` : '👋'},
-          </p>
-          <p style="color:#252020; font-size:16px; margin:0 0 16px 0;">
-            Para verla y continuar con el proceso, por favor <strong>activa tu cuenta temporal</strong> haciendo clic en el siguiente botón:
-          </p>
-
-          <div style="text-align:center; margin:24px 0;">
-            <a href="${dto.activationUrl}"
-               style="display:inline-block; background:#E08438; color:#fff; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:700; font-family:'Mulish', Arial, sans-serif;">
-               Activar mi cuenta
-            </a>
-          </div>
-
-          <div style="background:#F9F9F9; padding:16px; border-radius:6px; border:1px solid #E0E0E0; margin-top:16px;">
-            <p style="margin:0 0 8px 0; color:#252020; font-size:16px;"><strong>Una vez que ingreses, podrás:</strong></p>
-            <ul style="margin:0; padding-left:18px; color:#252020; font-size:16px;">
-              <li>Revisar los detalles de tu cotización.</li>
-              <li>Consultar servicios y recursos asignados.</li>
-              <li>Aceptar o solicitar ajustes antes de la aprobación final.</li>
-            </ul>
-          </div>
-
-          <div style="margin-top:24px; padding:12px; border-left:4px solid #C1BFC0; background:#FBFBFB; color:#252020; border-radius:4px;">
-            Si ya tienes una cuenta con nosotros, simplemente inicia sesión y encontrarás tu cotización disponible.
-          </div>
-
-          <!-- Separador visual -->
-          <hr style="border:none; border-top:1px solid #C1BFC0; margin:32px 0;">
-
-          <div style="font-size:14px; color:#252020;">
-            Este mensaje fue enviado por 
-            <a href="https://level-music.vercel.app" style="color:#E08438; text-decoration:none; font-weight:700;">
-              Level Music Corp
-            </a>.
+    // ---------- Plantilla (B) Cliente CON cuenta ----------
+    const htmlHasAccount = `
+    <html>
+      <head>${baseHead}</head>
+      <body style="margin:0; padding:0; background:#DFE0E2; font-family:'Mulish', Arial, sans-serif;">
+        <div style="background:#E08438; padding:32px;">
+          <div style="max-width:520px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); padding:32px; border:1px solid #C1BFC0;">
+            <h2 style="color:#252020; font-weight:700; margin-top:0;">Tu cotización ya está lista</h2>
+            <p style="color:#252020; font-size:16px; margin:0 0 12px 0;">Hola ${dto.clientName}</p>
+            <p style="color:#252020; font-size:16px; margin:0 0 16px 0;">
+              Ingresa a tu cuenta para revisar los detalles, ver los servicios asignados y confirmar o solicitar ajustes.
+            </p>
+            <div style="text-align:center; margin:24px 0;">
+              <a href="${loginUrl}"
+                style="display:inline-block; background:#E08438; color:#fff; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:700; font-family:'Mulish', Arial, sans-serif;">
+                Iniciar sesión en Level Music Corp
+              </a>
+            </div>
+            <hr style="border:none; border-top:1px solid #C1BFC0; margin:32px 0;">
+            <div style="font-size:14px; color:#252020;">
+              Este mensaje fue enviado por
+              <a href="${appUrl}" style="color:#E08438; text-decoration:none; font-weight:700;">Level Music Corp</a>.
+            </div>
           </div>
         </div>
-      </div>
-    </body>
-  </html>
-  `;
+      </body>
+    </html>`.trim();
+
+    // ---------- Plantilla (A) Cliente SIN cuenta (activar temporal) ----------
+    if (!dto.hasAccount && !dto.activationUrl) {
+      throw new Error('activationUrl es obligatorio cuando hasAccount=false');
+    }
+
+    const htmlNoAccount = `
+    <html>
+      <head>${baseHead}</head>
+      <body style="margin:0; padding:0; background:#DFE0E2; font-family:'Mulish', Arial, sans-serif;">
+        <div style="background:#E08438; padding:32px;">
+          <div style="max-width:520px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); padding:32px; border:1px solid #C1BFC0;">
+            <h2 style="color:#252020; font-weight:700; margin-top:0;">Tu cotización te espera</h2>
+            <p style="color:#252020; font-size:16px; margin:0 0 12px 0;">Hola ${dto.clientName}</p>
+            <p style="color:#252020; font-size:16px; margin:0 0 16px 0;">
+              Para verla y continuar con el proceso, por favor <strong>activa tu cuenta temporal</strong> haciendo clic en el siguiente botón:
+            </p>
+            <div style="text-align:center; margin:24px 0;">
+              <a href="${dto.activationUrl}"
+                style="display:inline-block; background:#E08438; color:#fff; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:700; font-family:'Mulish', Arial, sans-serif;">
+                Activar mi cuenta
+              </a>
+            </div>
+            <div style="background:#F9F9F9; padding:16px; border-radius:6px; border:1px solid #E0E0E0; margin-top:16px;">
+              <p style="margin:0 0 8px 0; color:#252020; font-size:16px;"><strong>Una vez que ingreses, podrás:</strong></p>
+              <ul style="margin:0; padding-left:18px; color:#252020; font-size:16px;">
+                <li>Revisar los detalles de tu cotización.</li>
+                <li>Consultar servicios y recursos asignados.</li>
+                <li>Aceptar o solicitar ajustes antes de la aprobación final.</li>
+              </ul>
+            </div>
+            <div style="margin-top:24px; padding:12px; border-left:4px solid #C1BFC0; background:#FBFBFB; color:#252020; border-radius:4px;">
+              Si ya tienes una cuenta con nosotros, simplemente inicia sesión y encontrarás tu cotización disponible.
+            </div>
+            <hr style="border:none; border-top:1px solid #C1BFC0; margin:32px 0;">
+            <div style="font-size:14px; color:#252020;">
+              Este mensaje fue enviado por
+              <a href="${appUrl}" style="color:#E08438; text-decoration:none; font-weight:700;">Level Music Corp</a>.
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>`.trim();
+
+    const subject = dto.hasAccount
+      ? 'Tu cotización está lista — Inicia sesión para revisarla'
+      : 'Tu cotización está lista — Activa tu cuenta';
+
+    const html = dto.hasAccount ? htmlHasAccount : htmlNoAccount;
 
     await this.transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: dto.to,
-      subject: 'Tu cotización está lista – Activa tu cuenta',
+      subject,
       html,
     });
   }
