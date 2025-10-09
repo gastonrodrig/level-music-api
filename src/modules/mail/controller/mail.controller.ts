@@ -13,8 +13,6 @@ import {
 export class MailController {
   constructor(private readonly mailService: MailService) {}
 
-
-
   @Post('send-temporal-credentials')
   @Public()
   async sendTemporalCredentials(
@@ -35,15 +33,12 @@ export class MailController {
 
   @Patch('send-quotation/:quotationId')
   @Public()
-async sendQuotationPdf(
-  @Param('quotationId') quotationId: string,
-  @Body() createGmailPdfDto: CreateGmailPdfDto,
-) {
-  await this.mailService.sendEmailWithQuotationPdf(
-    quotationId,
-    createGmailPdfDto,
-  );
-  return { message: 'Correo con PDF de cotización enviado satisfactoriamente' };
-}
+  async sendQuotationPdf(
+    @Param('quotationId') quotationId: string,
+    @Body() createGmailPdfDto: CreateGmailPdfDto,
+  ) {
+    await this.mailService.sendEmailWithQuotationPdf(quotationId, createGmailPdfDto,);
+    return { message: 'Correo con PDF de cotización enviado satisfactoriamente' };
+  }
 }
 

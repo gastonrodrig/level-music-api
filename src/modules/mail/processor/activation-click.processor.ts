@@ -32,7 +32,7 @@ export class ActivationClickProcessor extends WorkerHost {
     this.logger.log(`🟡 Procesando click de activación (JobID=${job.id})`);
 
     try {
-      // 1️⃣ Validar token y obtener datos
+      // Validar token y obtener datos
       const payload = await this.activationTokenService.validateToken(token);
       if (!payload) {
         this.logger.warn(`⚠️ Token inválido o expirado: ${token}`);
@@ -41,19 +41,20 @@ export class ActivationClickProcessor extends WorkerHost {
 
       const { email, event } = payload;
 
-      // 🔒 Marcar token como usado al inicio (evita reprocesamientos)
+      // Marcar token como usado al inicio (evita reprocesamientos)
       await this.activationTokenService.markUsed(token);
 
-      // 2️⃣ Verificar si el usuario ya existe (idempotencia)
+      // Verificar si el usuario ya existe (idempotencia)
       const existing = await this.userModel.findOne({ email }).lean();
       if (existing) {
-        this.logger.log(`ℹ️ Usuario ya existe: ${email}. No se recrea.`);
-        // Puedes actualizar estado del evento si corresponde
-        await this.eventModel.findByIdAndUpdate(event, { status: StatusType.REVISION_CLIENTE });
+        this.logger.log(`Usuario ya existe: ${email}. No se recrea.`);
+        await this.eventModel.findByIdAndUpdate(event, 
+          { status: StatusType.REVISION_CLIENTE }
+        );
         return;
       }
 
-      // 3️⃣ Crear usuario en Firebase con contraseña temporal
+      // Crear usuario en Firebase con contraseña temporal
       const password = generateRandomPassword();
       const fb = await this.authService.createUserWithEmail({ email, password });
 
@@ -61,7 +62,7 @@ export class ActivationClickProcessor extends WorkerHost {
         throw new Error(fb.message || 'Error al crear usuario en Firebase');
       }
 
-      // 4️⃣ Crear usuario temporal en Mongo
+      // Crear usuario temporal en Mongo
       const newUser = await this.userModel.create({
         email,
         auth_id: fb.uid,
@@ -73,13 +74,13 @@ export class ActivationClickProcessor extends WorkerHost {
         is_temp_account: true,
       });
 
-      // 5️⃣ Actualizar estado del evento
+      // Actualizar estado del evento
       await this.eventModel.findByIdAndUpdate(event, {
         user: toObjectId(newUser._id),
         status: StatusType.REVISION_CLIENTE,
       });
 
-      // 6️⃣ Enviar credenciales por correo
+      // Enviar credenciales por correo
       await this.mailService.sendTemporalCredentials({ to: email, email, password });
 
       this.logger.log(`✅ Cuenta temporal creada y credenciales enviadas a ${email}`);

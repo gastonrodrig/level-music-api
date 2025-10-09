@@ -1,4 +1,3 @@
-// src/auth/controllers/public.controller.ts
 import { Controller, Get, Param } from '@nestjs/common';
 import { Public } from '../decorators/public.decorator';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -6,6 +5,7 @@ import { Queue } from 'bullmq';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ActivationToken } from 'src/auth/schema';
+import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 @Controller('')
 export class PublicController {
@@ -14,29 +14,43 @@ export class PublicController {
     @InjectModel(ActivationToken.name) private readonly tokenModel: Model<ActivationToken>,
   ) {}
 
-  @Public()
   @Get('t/:token')
+  @Public()
+  @ApiOperation({ summary: 'Activar cuenta de usuario' })
+  @ApiQuery({ name: 'token', type: String,  })
   async onMailButtonClick(@Param('token') token: string) {
-    // 1) Leer el token SIN lanzar excepciones
+    // Buscar token
     const doc = await this.tokenModel.findOne({ token }).lean();
     if (!doc) {
-      return { success: false, used: null, message: 'Token no encontrado' };
+      return { 
+        success: false, 
+        used: null, 
+        message: 'Token no encontrado' 
+      };
     }
 
-    // Normaliza fecha con lean()
-    const exp = doc.expiresAt instanceof Date ? doc.expiresAt : new Date(doc.expiresAt as any);
-    const expired = exp.getTime() < Date.now();
-    if (expired) {
-      return { success: false, used: null, message: 'Token expirado' };
+    // Verificar expiración
+    const exp = doc.expiresAt instanceof Date
+      ? doc.expiresAt
+      : new Date(doc.expiresAt as any);
+    if (exp.getTime() < Date.now()) {
+      return { 
+        success: false, 
+        used: null, 
+        message: 'Token expirado' 
+      };
     }
 
-    // 2) Si ya fue usado → DEVOLVER ERROR (como pediste)
+    // Fue usado?
     if (doc.used) {
-      return { success: false, used: true, message: 'Ya lo usaste' };
-      // (si quieres exactamente used:null, cambia a used: null)
+      return { 
+        success: false,
+        used: true, 
+        message: 'Ya lo usaste' 
+      };
     }
 
-    // 3) Aún no usado → encola job una sola vez
+    // Agregar job para procesar la activación
     const jobId = `activation-${token}`;
     const existing = await this.clicksQ.getJob(jobId);
     if (!existing) {
@@ -53,7 +67,11 @@ export class PublicController {
       );
     }
 
-    // 4) Respuesta OK (primera vez)
-    return { success: true, used: false, message: 'Procesando activación…' };
+    // Retornar éxito
+    return { 
+      success: true, 
+      used: false, 
+      message: 'Procesando activación' 
+    };
   }
 }

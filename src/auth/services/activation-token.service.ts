@@ -1,14 +1,13 @@
-// src/modules/auth/services/activation-token.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, ClientSession } from 'mongoose';
 import { ActivationToken } from '../schema';
-import * as crypto from 'crypto';
 import { toObjectId } from 'src/core/utils/mongo-utils';
 import { Event } from 'src/modules/event/schema';
 import { User } from 'src/modules/user/schema';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class ActivationTokenService {
