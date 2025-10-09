@@ -1,5 +1,5 @@
 export enum StatusType {
-  PENDIENTE_APROBACION = 'Pendiente de aprobación',
+  PENDIENTE_APROBACION = 'Pendiente de Aprobación',
   ESPERA_REGISTRO = 'En Espera de Registro',
   REVISION_CLIENTE = 'Pendiente de Revisión del Cliente',
   ENVIADO = 'Enviado',
