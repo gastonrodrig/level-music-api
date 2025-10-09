@@ -38,6 +38,7 @@
     "firebase-admin": "^13.1.0",
     "googleapis": "^149.0.0",
     "ioredis": "^5.7.0",
+    "mercadopago": "^2.9.0",
     "mongoose": "^8.10.1",
     "nodemailer": "^7.0.3",
     "passport": "^0.7.0",

@@ -534,9 +534,15 @@ export class EventService {
       if (!event) {
         throw new NotFoundException('Evento no encontrado');
       }
+
       if (dto.status) {
         event.status = dto.status;
       }
+
+      if(dto.status === StatusType.APROBADO) {
+        // Lógica adicional para el estado APROBADO
+      }
+
       return await event.save();
     } catch (error) {
       throw new InternalServerErrorException(
