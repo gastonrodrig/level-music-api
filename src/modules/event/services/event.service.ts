@@ -22,6 +22,7 @@ import { ClientType } from 'src/modules/user/enum/client-type.enum';
 import { ActivationTokenService } from 'src/auth/services/activation-token.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 
 @Injectable()
 export class EventService {
@@ -523,6 +524,23 @@ export class EventService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al actualizar evento y asignar recursos: ${error.message}`,
+      );
+    }
+  }
+
+  async updateStatus(event_id: string, dto: UpdateStatusEventDto): Promise<Event> {
+    try {
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new NotFoundException('Evento no encontrado');
+      }
+      if (dto.status) {
+        event.status = dto.status;
+      }
+      return await event.save();
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar el estado del evento: ${error.message}`,
       );
     }
   }

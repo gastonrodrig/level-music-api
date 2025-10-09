@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
-import { CreateEventDto, UpdateEventDto, UpdateEventWithResourcesDto } from '../dto';
+import { UpdateStatusEventDto, CreateEventDto, UpdateEventDto, UpdateEventWithResourcesDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { CreateQuotationLandingDto, CreateQuotationAdminDto } from '../dto';
 
@@ -272,4 +272,16 @@ updateQuotationAdmin(
   ) {
     return this.eventService.assignResources(id, dto);
   }
+
+  @Patch(':event_id/status')
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
+@Public()
+  @HttpCode(HttpStatus.OK)
+async updateEventStatus(
+  @Param('event_id') event_id: string,
+  @Body() dto: UpdateStatusEventDto,
+) {
+  return this.eventService.updateStatus(event_id, dto);
+}
 }
