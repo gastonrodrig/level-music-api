@@ -223,70 +223,71 @@ export class EventService {
       );
     }
   }
+
   async updateQuotationAdmin(
-  event_id: string,
-  dto: UpdateQuotationAdminDto,
-): Promise<Event> {
-  try {
-    // 1. Buscar evento existente
-    const event = await this.eventModel.findById(event_id);
-    if (!event) {
-      throw new NotFoundException('Evento no encontrado');
-    }
-
-    // 2. Si envía un tipo de evento distinto, validarlo
-    if (dto.event_type_id) {
-      const eventType = await this.eventTypeModel.findById(dto.event_type_id);
-      if (!eventType) {
-        throw new BadRequestException('Event type not found');
+    event_id: string,
+    dto: UpdateQuotationAdminDto,
+  ): Promise<Event> {
+    try {
+      // 1. Buscar evento existente
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new NotFoundException('Evento no encontrado');
       }
-      event.event_type = eventType._id;
-    }
 
-    // 3. Actualizar datos básicos del evento
-    event.name = dto.name ?? event.name;
-    event.description = dto.description ?? event.description;
-    event.start_time = dto.start_time ?? event.start_time;
-    event.end_time = dto.end_time ?? event.end_time;
-    event.attendees_count = dto.attendees_count ?? event.attendees_count;
-    event.exact_address = dto.exact_address ?? event.exact_address;
-    event.location_reference = dto.location_reference ?? event.location_reference;
-    event.place_type = dto.place_type ?? event.place_type;
-    event.place_size = dto.place_size ?? event.place_size;
-    event.estimated_price = dto.estimated_price ?? event.estimated_price;
-    event.final_price = dto.final_price ?? event.final_price;
-
-    // 4. Actualizar client_info si viene
-    if (dto.client_info) {
-      event.client_info = {
-        ...event.client_info,
-        ...dto.client_info,
-      };
-    }
-
-    // 5. Guardar cambios del evento
-    const updatedEvent = await event.save();
-
-    // 6. Manejar asignaciones
-    if (dto.assignations) {
-      //  opción simple: borrar todas y recrear
-      await this.assignationService.deleteByEventId(event._id.toString());
-
-      for (const assign of dto.assignations) {
-        await this.assignationService.create({
-          ...assign,
-          event_id: event._id.toString(),
-        });
+      // 2. Si envía un tipo de evento distinto, validarlo
+      if (dto.event_type_id) {
+        const eventType = await this.eventTypeModel.findById(dto.event_type_id);
+        if (!eventType) {
+          throw new BadRequestException('Event type not found');
+        }
+        event.event_type = eventType._id;
       }
-    }
 
-    return updatedEvent;
-  } catch (error) {
-    throw new InternalServerErrorException(
-      `Error al actualizar la cotización: ${error.message}`,
-    );
+      // 3. Actualizar datos básicos del evento
+      event.name = dto.name ?? event.name;
+      event.description = dto.description ?? event.description;
+      event.start_time = dto.start_time ?? event.start_time;
+      event.end_time = dto.end_time ?? event.end_time;
+      event.attendees_count = dto.attendees_count ?? event.attendees_count;
+      event.exact_address = dto.exact_address ?? event.exact_address;
+      event.location_reference = dto.location_reference ?? event.location_reference;
+      event.place_type = dto.place_type ?? event.place_type;
+      event.place_size = dto.place_size ?? event.place_size;
+      event.estimated_price = dto.estimated_price ?? event.estimated_price;
+      event.final_price = dto.final_price ?? event.final_price;
+
+      // 4. Actualizar client_info si viene
+      if (dto.client_info) {
+        event.client_info = {
+          ...event.client_info,
+          ...dto.client_info,
+        };
+      }
+
+      // 5. Guardar cambios del evento
+      const updatedEvent = await event.save();
+
+      // 6. Manejar asignaciones
+      if (dto.assignations) {
+        //  opción simple: borrar todas y recrear
+        await this.assignationService.deleteByEventId(event._id.toString());
+
+        for (const assign of dto.assignations) {
+          await this.assignationService.create({
+            ...assign,
+            event_id: event._id.toString(),
+          });
+        }
+      }
+
+      return updatedEvent;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar la cotización: ${error.message}`,
+      );
+    }
   }
-}
 
   async findAllQuotationPaginated(
     limit = 5,
