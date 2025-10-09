@@ -69,7 +69,7 @@ export class ActivationClickProcessor extends WorkerHost {
         role: Roles.CLIENTE,
         status: Estado.ACTIVO,
         created_by_admin: false,
-        needs_password_change: false,
+        needs_password_change: true,
         is_extra_data_completed: true,
         is_temp_account: true,
       });
