@@ -8,7 +8,9 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -44,6 +46,13 @@ class AssignResourceItemDto {
   @IsDateString()
   @IsNotEmpty()
   available_to: Date;
+
+  @ApiProperty({ type: Number, example: 50 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  payment_percentage_required?: number;
 }
 
 export class UpdateEventWithResourcesDto {

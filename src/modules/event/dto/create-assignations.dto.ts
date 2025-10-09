@@ -1,11 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { ResourceType } from '../enum';
 
@@ -44,4 +47,11 @@ export class CreateAssignationDto {
   @IsDateString()
   @IsNotEmpty()
   available_to: Date;
+
+  @ApiProperty({ type: Number, example: 50 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  payment_percentage_required?: number;
 }

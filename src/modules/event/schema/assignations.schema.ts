@@ -48,15 +48,28 @@ export class Assignation {
   @Prop({ type: String })
   equipment_serial_number?: string;
 
+  @Prop({ type: Number })
+  equipment_location?: number;
+
   @Prop({ type: String })
   equipment_status?: string;
 
   // --- Solo si es trabajador ---
   @Prop({ type: String })
+  worker_first_name?: string;
+
+  @Prop({ type: String })
+  worker_last_name?: string;
+
+  @Prop({ type: String })
   worker_role?: string;
 
   @Prop({ enum: Estado }) 
   worker_status?: Estado;
+
+  // --- Política de pago del servicio ---
+  @Prop({ type: Number, min: 0, max: 100, default: 100 })
+  payment_percentage_required: number;
 
   // Referencias
   @Prop({ enum: ResourceType, required: true })
