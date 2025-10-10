@@ -94,6 +94,7 @@ export class AssignationsService {
         assignationToCreate.equipment_type = equipment.equipment_type;
         assignationToCreate.equipment_serial_number = equipment.serial_number;
         assignationToCreate.equipment_status = equipment.status;
+        assignationToCreate.equipment_location = equipment.location;
       }
 
       if (dto.resource_type === ResourceType.WORKER) {
@@ -104,6 +105,8 @@ export class AssignationsService {
 
         assignationToCreate.worker_role = worker.worker_type_name;
         assignationToCreate.worker_status = worker.status;
+        assignationToCreate.worker_first_name = worker.first_name;
+        assignationToCreate.worker_last_name = worker.last_name;
       }
 
       if (dto.resource_type === ResourceType.SERVICE_DETAIL) {

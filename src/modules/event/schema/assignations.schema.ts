@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { ResourceType } from "../enum";
 import { Estado } from "src/core/constants/app.constants";
+import {LocationType} from "src/modules/equipments/enum";
 
 @Schema({ collection: 'assignations' })
 export class Assignation {
@@ -48,8 +49,8 @@ export class Assignation {
   @Prop({ type: String })
   equipment_serial_number?: string;
 
-  @Prop({ type: Number })
-  equipment_location?: number;
+  @Prop({ enum: LocationType  })
+  equipment_location?: LocationType;
 
   @Prop({ type: String })
   equipment_status?: string;
