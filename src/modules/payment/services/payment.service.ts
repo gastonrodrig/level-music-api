@@ -6,7 +6,7 @@ import { PaymentSchedule } from '../schema/payment-schedules.schema';
 import { SalesDocument } from '../schema/sales-documents.schema';
 import { SalesDocumentDetail } from '../schema/sales-documents-details.schema';
 import { mercadoPagoClient } from './../mercadopago.config';
-const { Payment } = require('mercadopago');
+import { Payment } from 'mercadopago';
 
 @Injectable()
 export class PaymentService {

@@ -67,6 +67,10 @@ export class Assignation {
   @Prop({ enum: Estado }) 
   worker_status?: Estado;
 
+  // --- Política de pago del servicio ---
+  @Prop({ type: Number, min: 0, max: 100, default: 100 })
+  payment_percentage_required: number;
+
   // Referencias
   @Prop({ enum: ResourceType, required: true })
   resource_type: ResourceType;
