@@ -479,9 +479,19 @@ export class UserService {
       throw new InternalServerErrorException(`Error eliminando foto: ${error.message}`);
     }
   }
-  async findByDocument(document_number: string): Promise<User> {
-    try{
-      const user = await this.userModel.findOne({ document_number });
+  async findByDocument(document_number: string, document_type: string): Promise<User> {
+    try {
+      // Validación según tipo de documento
+        if (document_type === 'Dni' && !/^\d{8}$/.test(document_number)) {
+          throw new BadRequestException('El número no corresponde a un DNI válido');
+        }
+        
+
+        // Buscar usuario por número y tipo de documento
+        const user = await this.userModel.findOne({
+          document_number,
+          document_type,
+        });
       if (!user) throw new BadRequestException('Usuario no encontrado');
       return user;
     } catch (error) {

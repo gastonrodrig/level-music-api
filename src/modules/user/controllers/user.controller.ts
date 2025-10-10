@@ -311,7 +311,10 @@ export class UserController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al obtener el documento.',
   })
-  getUserDocument(@Query('document') document: string) {
-    return this.userService.findByDocument(document);
-  }
+  async getUserByDocument(
+  @Query('document_number') documentNumber: string,
+  @Query('document_type') documentType: string,
+) {
+  return this.userService.findByDocument(documentNumber, documentType);
+}
 }
