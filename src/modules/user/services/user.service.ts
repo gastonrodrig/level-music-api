@@ -479,4 +479,15 @@ export class UserService {
       throw new InternalServerErrorException(`Error eliminando foto: ${error.message}`);
     }
   }
+  async findByDocument(document_number: string): Promise<User> {
+    try{
+      const user = await this.userModel.findOne({ document_number });
+      if (!user) throw new BadRequestException('Usuario no encontrado');
+      return user;
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException(`Error buscando usuario: ${error.message}`);
+    }
+
+  }
 }

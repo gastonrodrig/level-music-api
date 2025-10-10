@@ -14,3 +14,5 @@ export * from './create-reprogramings.dto';
 export * from './create-quotation-landing.dto';
 export * from './create-quotation-admin.dto';
 export * from './assign-resources.dto';
+export * from './update-quotation-admin.dto';
+export * from './update-status-event.dto';

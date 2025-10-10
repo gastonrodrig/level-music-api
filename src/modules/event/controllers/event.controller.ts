@@ -23,7 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
-import { CreateEventDto, UpdateEventDto, UpdateEventWithResourcesDto } from '../dto';
+import { UpdateStatusEventDto, CreateEventDto, UpdateEventDto, UpdateEventWithResourcesDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { CreateQuotationLandingDto, CreateQuotationAdminDto } from '../dto';
 
@@ -80,6 +80,26 @@ export class EventController {
   createQuotationAdmin(@Body() dto: CreateQuotationAdminDto) {
     return this.eventService.createQuotationAdmin(dto);
   }
+
+@Patch('quotation/admin/:id')
+@Public()
+@HttpCode(HttpStatus.OK)
+@ApiOperation({ summary: 'Actualizar cotización de evento por admin (con asignaciones)' })
+@ApiResponse({
+  status: HttpStatus.OK,
+  description: 'Cotización de evento actualizada correctamente por admin',
+})
+@ApiResponse({
+  status: HttpStatus.BAD_REQUEST,
+  description: 'Error al actualizar la cotización por admin',
+})
+updateQuotationAdmin(
+  @Param('id') id: string,
+  @Body() dto: CreateQuotationAdminDto, 
+) {
+  return this.eventService.updateQuotationAdmin(id, dto);
+}
+
 
   @Get('paginated')
   @UseGuards(FirebaseAuthGuard)
@@ -251,5 +271,27 @@ export class EventController {
     @Body() dto: UpdateEventWithResourcesDto,
   ) {
     return this.eventService.assignResources(id, dto);
+  }
+
+  @Patch(':event_id/status')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Actualizar estado del evento',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Estado del evento actualizado correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al actualizar el estado del evento',
+  })
+  async updateEventStatus(
+    @Param('event_id') event_id: string,
+    @Body() dto: UpdateStatusEventDto,
+  ) {
+    return this.eventService.updateStatus(event_id, dto);
   }
 }

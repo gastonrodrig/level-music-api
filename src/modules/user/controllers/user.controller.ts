@@ -296,4 +296,22 @@ export class UserController {
   async deleteClientPhoto(@Param('uid') uid: string) {
     return this.userService.deleteClientPhoto(uid);
   }
+
+  @Get('get/document')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener documento de un usuario por su auth_id' })
+  @HttpCode(HttpStatus.OK)
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'El documento ha sido obtenido correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener el documento.',
+  })
+  getUserDocument(@Query('document') document: string) {
+    return this.userService.findByDocument(document);
+  }
 }

@@ -44,5 +44,6 @@ export class CreateQuotationAdminDto extends IntersectionType(CreateEventDto) {
 
   @ApiProperty()
   @IsNumber()
+  @IsNotEmpty()
   estimated_price: number;
 }

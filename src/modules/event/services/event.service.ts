@@ -4,15 +4,25 @@ import {
   InternalServerErrorException, 
   NotFoundException 
 } from '@nestjs/common';
-import { CreateQuotationLandingDto, CreateQuotationAdminDto, UpdateEventWithResourcesDto } from '../dto';
+import {
+  CreateQuotationLandingDto,
+  CreateQuotationAdminDto,
+  UpdateEventWithResourcesDto,
+  UpdateQuotationAdminDto,
+} from '../dto';
 import { CreateEventDto, UpdateEventDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Assignation, Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
-import { QuotationCreator, StatusType, ResourceType } from '../enum';
+import { QuotationCreator, StatusType } from '../enum';
 import { AssignationsService } from './assignations.service';
+import { ClientType } from 'src/modules/user/enum/client-type.enum';
+import { ActivationTokenService } from 'src/auth/services/activation-token.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 
 @Injectable()
 export class EventService {
@@ -25,7 +35,10 @@ export class EventService {
     private userModel: Model<User>,
     @InjectModel(Assignation.name)
     private assignationModel: Model<Assignation>,
+    @InjectQueue('quotation-ready')
+    private quotationReadyQueue: Queue,
     private assignationService: AssignationsService,
+    private activationTokenService: ActivationTokenService,
   ) {}
 
   async create(createEventDto: CreateEventDto): Promise<Event> {
@@ -212,6 +225,71 @@ export class EventService {
     }
   }
 
+  async updateQuotationAdmin(
+    event_id: string,
+    dto: UpdateQuotationAdminDto,
+  ): Promise<Event> {
+    try {
+      // 1. Buscar evento existente
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new NotFoundException('Evento no encontrado');
+      }
+
+      // 2. Si envía un tipo de evento distinto, validarlo
+      if (dto.event_type_id) {
+        const eventType = await this.eventTypeModel.findById(dto.event_type_id);
+        if (!eventType) {
+          throw new BadRequestException('Event type not found');
+        }
+        event.event_type = eventType._id;
+      }
+
+      // 3. Actualizar datos básicos del evento
+      event.name = dto.name ?? event.name;
+      event.description = dto.description ?? event.description;
+      event.start_time = dto.start_time ?? event.start_time;
+      event.end_time = dto.end_time ?? event.end_time;
+      event.attendees_count = dto.attendees_count ?? event.attendees_count;
+      event.exact_address = dto.exact_address ?? event.exact_address;
+      event.location_reference = dto.location_reference ?? event.location_reference;
+      event.place_type = dto.place_type ?? event.place_type;
+      event.place_size = dto.place_size ?? event.place_size;
+      event.estimated_price = dto.estimated_price ?? event.estimated_price;
+      event.final_price = dto.final_price ?? event.final_price;
+
+      // 4. Actualizar client_info si viene
+      if (dto.client_info) {
+        event.client_info = {
+          ...event.client_info,
+          ...dto.client_info,
+        };
+      }
+
+      // 5. Guardar cambios del evento
+      const updatedEvent = await event.save();
+
+      // 6. Manejar asignaciones
+      if (dto.assignations) {
+        //  opción simple: borrar todas y recrear
+        await this.assignationService.deleteByEventId(event._id.toString());
+
+        for (const assign of dto.assignations) {
+          await this.assignationService.create({
+            ...assign,
+            event_id: event._id.toString(),
+          });
+        }
+      }
+
+      return updatedEvent;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar la cotización: ${error.message}`,
+      );
+    }
+  }
+
   async findAllQuotationPaginated(
     limit = 5,
     offset = 0,
@@ -346,17 +424,30 @@ export class EventService {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
       };
 
-      const [items, total] = await Promise.all([
-        this.eventModel
-          .find(filter)
-          .collation({ locale: 'es', strength: 1 })
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .exec(),
-        this.eventModel.countDocuments(filter).exec(),
-      ]);
+     const [events, total] = await Promise.all([
+      this.eventModel
+        .find(filter)
+        .collation({ locale: 'es', strength: 1 })
+        .sort(sortObj)
+        .skip(offset)
+        .limit(limit)
+        .lean(),
+      this.eventModel.countDocuments(filter).exec(),
+    ]);
 
+    // Obtener asignaciones para cada evento
+    const items = await Promise.all(
+      events.map(async (event) => {
+        const assignations = await this.assignationModel
+          .find({ event: event._id })
+          .lean();
+        return {
+          ...event,
+          assignations,
+        };
+      }),
+    );
+      
       return { total, items };
     } catch (error) {
       throw new InternalServerErrorException(
@@ -377,7 +468,6 @@ export class EventService {
 
       if (dto.name) event.name = dto.name;
       if (dto.description) event.description = dto.description;
-      await event.save();
 
       if (dto.resources?.length) {
         for (const resource of dto.resources) {
@@ -388,10 +478,75 @@ export class EventService {
         }
       }
 
+      if (!event.user) {
+        event.status = StatusType.ESPERA_REGISTRO; 
+      } else {
+        event.status = StatusType.REVISION_CLIENTE; 
+      }
+
+      await event.save();
+
+      const user = event.user ? await this.userModel.findById(event.user) : null;
+
+      const clientEmail = user ? user.email : event.client_info.email;
+      const clientName =
+        event.client_info.client_type === ClientType.PERSONA
+          ? `${event.client_info.first_name} ${event.client_info.last_name}`
+          : `${event.client_info.company_name}`;
+
+      let activationUrl = null;
+      if (!user) {
+        const { token } = await this.activationTokenService.issueToken({
+          email: clientEmail,
+          eventId: event._id.toString(),
+          ttlMs: 24 * 60 * 60 * 1000, 
+        });
+        activationUrl = `${process.env.APP_URL}/t/${token}`;
+      }
+
+      await this.quotationReadyQueue.add(
+        'sendQuotationReady',
+        {
+          to: clientEmail,
+          clientName,
+          activationUrl,
+          hasAccount: user ? true : false,
+        },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: 1000,
+          removeOnFail: 100,
+        },
+      );
+
       return event;
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al actualizar evento y asignar recursos: ${error.message}`,
+      );
+    }
+  }
+
+  async updateStatus(event_id: string, dto: UpdateStatusEventDto): Promise<Event> {
+    try {
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new NotFoundException('Evento no encontrado');
+      }
+
+      if (dto.status) {
+        event.status = dto.status;
+      }
+
+      if(dto.status === StatusType.APROBADO) {
+        // Lógica adicional para el estado APROBADO
+      }
+
+      return await event.save();
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar el estado del evento: ${error.message}`,
       );
     }
   }
