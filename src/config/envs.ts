@@ -49,6 +49,15 @@ class EnvConfig {
 
   @IsString()
   CUQUI_SECRET: string;
+
+  @IsString()
+  TWILIO_ACCOUNT_SID: string;
+
+  @IsString()
+  TWILIO_AUTH_TOKEN: string;
+
+  @IsString()
+  TWILIO_WHATSAPP_NUMBER: string;
 }
 
 // Convertir y validar variables de entorno
@@ -89,5 +98,8 @@ export const envs = {
   AUTH0_CLIENT_SECRET: envConfig.AUTH0_CLIENT_SECRET,
   AUTH0_DOMAIN: envConfig.AUTH0_DOMAIN,
   CULQI_PUBLIC: envConfig.CULQI_PUBLIC,
-  CUQUI_SECRET: envConfig.CUQUI_SECRET
+  CUQUI_SECRET: envConfig.CUQUI_SECRET,
+  TWILIO_ACCOUNT_SID: envConfig.TWILIO_ACCOUNT_SID,
+  TWILIO_AUTH_TOKEN: envConfig.TWILIO_AUTH_TOKEN,
+  TWILIO_WHATSAPP_NUMBER: envConfig.TWILIO_WHATSAPP_NUMBER
 }

@@ -13,6 +13,7 @@ import {
   EquipmentService,
   MaintenanceService,
   PreventiveMaintenanceSchedulerService,
+  MaintenanceNotificationSchedulerService,
 } from "./services";
 import {
   EquipmentController,
@@ -20,6 +21,7 @@ import {
 } from "./controllers";
 import { addEquipmentHooks } from "./hooks";
 import { Connection } from "mongoose";
+import { WhatsAppModule } from '../whatsapp/whatsapp.module';
 
 
 @Module({
@@ -43,12 +45,14 @@ import { Connection } from "mongoose";
       }
     ]),
 
-    ScheduleModule.forRoot(), 
+    ScheduleModule.forRoot(),
+    WhatsAppModule,
   ],
   providers: [
     EquipmentService,
     MaintenanceService, 
-    PreventiveMaintenanceSchedulerService 
+    PreventiveMaintenanceSchedulerService,
+    MaintenanceNotificationSchedulerService
   ],
   controllers: [
     EquipmentController,
