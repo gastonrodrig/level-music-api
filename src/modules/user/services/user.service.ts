@@ -4,7 +4,6 @@ import {
   HttpStatus,
   Injectable,
   InternalServerErrorException,
-  NotFoundException,
 } from '@nestjs/common';
 import { 
   CreateClientAdminDto, 
@@ -20,7 +19,7 @@ import { User } from '../schema';
 import { SF_USER } from 'src/core/utils';
 import { generateRandomPassword } from 'src/core/utils';
 import { AuthService, StorageService } from 'src/modules/firebase/services';
-import { Estado, Roles } from 'src/core/constants/app.constants';
+import { DocType, Estado, Roles } from 'src/core/constants/app.constants';
 import { errorCodes } from 'src/core/common';
 import { ClientType } from '../enum';
 
@@ -458,7 +457,7 @@ export class UserService {
       const user = await this.userModel.findOne({ auth_id });
       if (!user) throw new BadRequestException('Usuario no encontrado');
       if (!user.profile_picture) {
-         throw new HttpException(
+        throw new HttpException(
           {
             code: errorCodes.PROFILE_PICTURE_NOT_FOUND,
             message: 'El usuario no tiene foto de perfil.',
@@ -479,25 +478,65 @@ export class UserService {
       throw new InternalServerErrorException(`Error eliminando foto: ${error.message}`);
     }
   }
-  async findByDocument(document_number: string, document_type: string): Promise<User> {
-    try {
-      // Validación según tipo de documento
-        if (document_type === 'Dni' && !/^\d{8}$/.test(document_number)) {
-          throw new BadRequestException('El número no corresponde a un DNI válido');
-        }
-        
 
-        // Buscar usuario por número y tipo de documento
-        const user = await this.userModel.findOne({
-          document_number,
-          document_type,
-        });
-      if (!user) throw new BadRequestException('Usuario no encontrado');
+  async findByDocument(
+    document_number: string, 
+    document_type: string, 
+    client_type: string
+  ): Promise<User> {
+    try {
+      const user = await this.userModel.findOne({
+        document_number,
+        document_type,
+      });
+
+      if (!user) {
+        const documentLength = document_number.length;
+        let message = 'El cliente con este documento no existe.';
+        
+        if (documentLength === 8) {
+          message = 'El cliente con este DNI no existe.';
+        } else if (documentLength === 11) {
+          message = 'El cliente con este RUC no existe.';
+        }
+
+        throw new HttpException(
+          {
+            code: errorCodes.CLIENT_NOT_FOUND,
+            message,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Validar que el usuario sea un cliente
+      if (user.role !== Roles.CLIENTE) {
+        throw new HttpException(
+          {
+            code: errorCodes.USER_IS_NOT_CLIENT,
+            message: 'Este nro. de documento no pertenece a un cliente.',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Validar que el tipo de documento coincida con el tipo de cliente
+      if(client_type === ClientType.PERSONA) {
+        if (document_type === 'Ruc' && document_number.length === 11 && user.client_type === ClientType.EMPRESA) {
+          throw new HttpException(
+            {
+              code: errorCodes.CLIENT_NOT_FOUND,
+              message: 'Este RUC pertenece a un cliente de tipo Empresa, no Persona.',
+            },
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
       return user;
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(`Error buscando usuario: ${error.message}`);
     }
-
   }
 }

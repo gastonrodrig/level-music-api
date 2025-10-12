@@ -312,9 +312,10 @@ export class UserController {
     description: 'Error al obtener el documento.',
   })
   async getUserByDocument(
-  @Query('document_number') documentNumber: string,
-  @Query('document_type') documentType: string,
-) {
-  return this.userService.findByDocument(documentNumber, documentType);
-}
+    @Query('document_number') documentNumber: string,
+    @Query('document_type') documentType: string,
+    @Query('client_type') clientType: string,
+  ) {
+    return this.userService.findByDocument(documentNumber, documentType, clientType);
+  }
 }
