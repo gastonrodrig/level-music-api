@@ -12,6 +12,7 @@ import { StorehouseMovementModule } from './modules/storehouse/storehouse.module
 import { ProviderModule } from './modules/provider/provider.module';
 import { MailModule } from './modules/mail/mail.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -43,7 +44,8 @@ import { PaymentModule } from './modules/payment/payment.module';
     WorkerModule,
     StorehouseMovementModule,
     ProviderModule,
-    PaymentModule
+    PaymentModule,
+    WhatsAppModule
   ],
   providers: [],
   controllers: []
