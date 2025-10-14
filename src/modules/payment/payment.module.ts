@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PaymentSchedule, PaymentScheduleSchema } from './schema';
 import { SalesDocument, SalesDocumentSchema } from './schema';
 import { SalesDocumentDetail, SalesDocumentDetailSchema } from './schema';
-
+import { Event, EventSchema } from '../event/schema';
 import { PaymentService } from './services';
 import { PaymentController } from './controllers';
 
@@ -13,6 +13,7 @@ import { PaymentController } from './controllers';
       { name: PaymentSchedule.name, schema: PaymentScheduleSchema },
       { name: SalesDocument.name, schema: SalesDocumentSchema },
       { name: SalesDocumentDetail.name, schema: SalesDocumentDetailSchema },
+      { name: Event.name, schema: EventSchema },
     ]),
   ],
   controllers: [PaymentController],

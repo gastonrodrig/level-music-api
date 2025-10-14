@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 import { PaymentType, Status } from '../enum';
 import { Event } from 'src/modules/event/schema';
 
-@Schema({ collection: 'payment_schedules' })
+@Schema({ collection: 'payment-schedules' })
 export class PaymentSchedule {
   @Prop({ required: true, enum: PaymentType })
   payment_type: PaymentType;

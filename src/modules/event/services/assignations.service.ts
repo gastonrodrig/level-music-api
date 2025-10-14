@@ -39,8 +39,9 @@ export class AssignationsService {
     resource_id: string,
     available_from: Date,
     available_to: Date,
+    eventId?: string
   ): Promise<void> {
-    const conflict = await this.assignationModel.findOne({
+    const query: any ={
       resource: toObjectId(resource_id),
       $or: [
         {
@@ -48,7 +49,13 @@ export class AssignationsService {
           available_to: { $gt: available_from },
         },
       ],
-    });
+    };
+
+    if (eventId) {
+      query.event = { $ne: toObjectId(eventId) };
+    }
+
+    const conflict = await this.assignationModel.findOne(query);
 
     if (conflict) {
       throw new HttpException(

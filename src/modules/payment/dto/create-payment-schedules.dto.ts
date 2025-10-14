@@ -1,38 +1,51 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsDate,
-  IsOptional,
+  IsDateString,
   IsMongoId,
-  IsEnum,
   IsNumber,
+  IsOptional,
+  IsNotEmpty,
 } from 'class-validator';
 import { Types } from 'mongoose';
-import { Type } from 'class-transformer/types/decorators/type.decorator';
-import { PaymentType, Status } from '../enum';
 
 export class CreatePaymentSchedulesDto {
-  @ApiProperty({ enum: PaymentType, example: PaymentType.PARCIAL })
-  @IsEnum(PaymentType)
+  @ApiProperty({
+    example: '2025-10-17',
+    description: 'Fecha del pago parcial',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  partial_payment_date: string;
+
+  @ApiProperty({
+    example: '2025-11-06',
+    description: 'Fecha del pago final',
+  })
+  @IsDateString()
+  @IsNotEmpty()
+  final_payment_date: string;
+
+  @ApiProperty({
+    example: 1200,
+    description: 'Monto del pago parcial',
+  })
   @IsOptional()
-  payment_type?: PaymentType;
-
-  @ApiProperty({ example: '2023-12-31T23:59:59.000Z', required: true })
-  @IsDate()
-  @Type(() => Date)
-  due_date: Date;
-
-  @ApiProperty({ example: 500, required: false })
   @IsNumber()
-  @IsOptional()
-  total_amount?: number;
+  partial_amount?: number;
 
-  @ApiProperty({ enum: Status, example: Status.PENDIENTE })
-  @IsEnum(Status)
+  @ApiProperty({
+    example: 2800,
+    description: 'Monto del pago final',
+  })
   @IsOptional()
-  status?: Status;
+  @IsNumber()
+  final_amount?: number;
 
-  @ApiProperty({ type: Types.ObjectId, required: true })
+  @ApiProperty({
+    example: '6710a2ff6b5c7d7e28c7a123',
+    description: 'ID del evento asociado',
+  })
   @IsMongoId()
-  @IsOptional()
-  event: Types.ObjectId;
+  @IsNotEmpty()
+  event_id: Types.ObjectId;
 }

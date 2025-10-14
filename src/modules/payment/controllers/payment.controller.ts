@@ -4,31 +4,38 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  Body,
+  UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
+import { CreatePaymentSchedulesDto } from '../dto';
+import { FirebaseAuthGuard } from 'src/auth/guards';
 
 @ApiTags('payments')
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  @Post(':scheduleId')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Crear un pago para una programación de pago' })
+  @Post()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear programaciones de pago (Parcial y Final)' })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Pago creado correctamente en MercadoPago',
+    status: HttpStatus.CREATED,
+    description: 'Programaciones de pago creadas correctamente',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear el pago',
+    description: 'Error al crear las programaciones de pago',
   })
-  async pay(@Param('scheduleId') scheduleId: string) {
-    return this.paymentService.createPayment(scheduleId);
-  }
+  async create(@Body() dto: CreatePaymentSchedulesDto) {
+    return this.paymentService.createPayments(dto);
+  } 
 }
