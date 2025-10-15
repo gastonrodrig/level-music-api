@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsEmail, IsOptional, ValidateNested } from 'class-validator';
+import { IsNumber, IsString, ValidateNested, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class IdentificationDto {
@@ -7,14 +7,14 @@ class IdentificationDto {
     example: 'DNI',
     description: 'Tipo de documento del pagador (DNI, RUC, CE, etc.)',
   })
-  @IsString()
+  @IsOptional()
   type: string;
 
   @ApiProperty({
     example: '12345678',
     description: 'Número de documento del pagador',
   })
-  @IsString()
+  @IsOptional()
   number: string;
 }
 
@@ -23,17 +23,8 @@ class PayerDto {
     example: 'cliente@gmail.com',
     description: 'Correo electrónico del pagador',
   })
-  @IsEmail()
-  email: string;
-
-  @ApiProperty({
-    example: 'Carlos',
-    description: 'Nombre del pagador',
-    required: false,
-  })
   @IsOptional()
-  @IsString()
-  first_name?: string;
+  email: string;
 
   @ApiProperty({
     type: () => IdentificationDto,
@@ -46,21 +37,21 @@ class PayerDto {
 
 export class CreateMercadoPagoDto {
   @ApiProperty({
-    example: 250.5,
+    example: 150,
     description: 'Monto total de la transacción en soles (S/)',
   })
   @IsNumber()
   transaction_amount: number;
 
   @ApiProperty({
-    example: 'a3d7d1f5b3f1b7e8f1f7f3a1f',
+    example: '21ddc8d94c83ee89d3c713114dbf92bd',
     description: 'Token generado por el frontend de Mercado Pago',
   })
   @IsString()
   token: string;
 
   @ApiProperty({
-    example: 'Pago del evento Fiesta Corporativa Lima 2025',
+    example: 'Pago del servicio Level Music',
     description: 'Descripción del pago',
   })
   @IsString()
@@ -74,8 +65,8 @@ export class CreateMercadoPagoDto {
   installments: number;
 
   @ApiProperty({
-    example: 'visa',
-    description: 'Método de pago seleccionado por el usuario',
+    example: 'master',
+    description: 'Método de pago seleccionado por el usuario (visa, master, etc.)',
   })
   @IsString()
   payment_method_id: string;

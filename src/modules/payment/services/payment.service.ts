@@ -6,15 +6,14 @@ import { SalesDocument } from '../schema/sales-documents.schema';
 import { SalesDocumentDetail } from '../schema/sales-documents-details.schema';
 import { Event } from 'src/modules/event/schema/event.schema';
 import { StatusType } from 'src/modules/event/enum/status-type.enum';
-import { mercadoPagoClient } from './../mercadopago.config';
-import { Payment } from 'mercadopago';
+import MercadoPagoConfig, { Payment } from 'mercadopago';
 import { CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
 import { PaymentType, PaymentStatus } from '../enum';
 import { toObjectId } from 'src/core/utils';
 
 @Injectable()
 export class PaymentService {
-  private payment = new Payment(mercadoPagoClient);
+  private payment: Payment;
 
   constructor(
     @InjectModel(PaymentSchedule.name)
@@ -25,7 +24,12 @@ export class PaymentService {
     private readonly detailsModel: Model<SalesDocumentDetail>,
     @InjectModel(Event.name)
     private readonly eventModel: Model<Event>,
-  ) {}
+  ) {
+    const client = new MercadoPagoConfig({
+      accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
+    });
+    this.payment = new Payment(client);
+  }
 
   async createPaymentSchedules(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
     const { 
@@ -136,20 +140,13 @@ export class PaymentService {
 
   async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
     try {
+      console.log(createMercadoPagoDto);
+      console.log(this.payment)
       const payment = await this.payment.create({
         body: createMercadoPagoDto,
       });
 
-      return {
-        message: 'Pago procesado correctamente (modo prueba)',
-        id: payment.id,
-        status: payment.status,
-        status_detail: payment.status_detail,
-        payment_type_id: payment.payment_type_id,
-        date_approved: payment.date_approved,
-        card_last_four: payment.card?.last_four_digits,
-        raw_response: payment,
-      };
+      return payment;
     } catch (error) {
       console.error('Error en pago de prueba:', error);
       throw new BadRequestException(error.message || 'Error al procesar el pago de prueba');
