@@ -5,6 +5,6 @@ export enum StatusType {
   APROBADO = 'Aprobado',
   PAGOS_ASIGNADOS = 'Pagos Asignados',
   RECHAZADO = 'Rechazado',
-  TERMINADO = 'Terminado',
-  CANCELADO = 'Cancelado',
+  EN_SEGUIMIENTO = 'En Seguimiento',
+  FINALIZADO = 'Finalizado',
 }
