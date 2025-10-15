@@ -9,7 +9,7 @@ import { StatusType } from 'src/modules/event/enum/status-type.enum';
 import { mercadoPagoClient } from './../mercadopago.config';
 import { Payment } from 'mercadopago';
 import { CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
-import { PaymentType, Status } from '../enum';
+import { PaymentType, PaymentStatus } from '../enum';
 import { toObjectId } from 'src/core/utils';
 
 @Injectable()
@@ -27,7 +27,7 @@ export class PaymentService {
     private readonly eventModel: Model<Event>,
   ) {}
 
-  async createPayments(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
+  async createPaymentSchedules(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
     const { 
       partial_payment_date, 
       final_payment_date, 
@@ -46,7 +46,7 @@ export class PaymentService {
         payment_type: PaymentType.PARCIAL,
         due_date: new Date(partial_payment_date),
         total_amount: partial_amount || 0,
-        status: Status.PENDIENTE,
+        status: PaymentStatus.PENDIENTE,
         event: toObjectId(event_id),
       });
 
@@ -55,7 +55,7 @@ export class PaymentService {
         payment_type: PaymentType.FINAL,
         due_date: new Date(final_payment_date),
         total_amount: final_amount || 0,
-        status: Status.PENDIENTE,
+        status: PaymentStatus.PENDIENTE,
         event: toObjectId(event_id),
       });
 
@@ -73,19 +73,86 @@ export class PaymentService {
     }
   }
 
-  async processPayment(dto: CreateMercadoPagoDto) {
-    try {
-      const body = JSON.parse(JSON.stringify(dto));
+  // async processPayment(dto: CreateMercadoPagoDto) {
+  //   try {
+  //     const { event_id, payment_type, transaction_amount, ...mercadoPagoData } = dto;
+  //     const body = JSON.parse(JSON.stringify(mercadoPagoData));
 
-      const result = await this.payment.create({ body });
+  //     // Procesar pago con MercadoPago
+  //     const result = await this.payment.create({ body });
+
+  //     if (result.status === 'approved') {
+  //       // Buscar y actualizar el cronograma de pago correspondiente
+  //       const paymentSchedule = await this.scheduleModel.findOneAndUpdate(
+  //         {
+  //           event: toObjectId(event_id),
+  //           payment_type: PaymentType[payment_type],
+  //           status: PaymentStatus.PENDIENTE
+  //         },
+  //         {
+  //           status: PaymentStatus.COMPLETO,
+  //           paid_date: new Date(),
+  //           mercado_pago_payment_id: result.id,
+  //           actual_amount: transaction_amount
+  //         },
+  //         { new: true }
+  //       );
+
+  //       if (!paymentSchedule) {
+  //         throw new BadRequestException('No se encontró el cronograma de pago correspondiente');
+  //       }
+
+  //       // Verificar si ambos pagos están completos para actualizar el estado del evento
+  //       const pendingPayments = await this.scheduleModel.countDocuments({
+  //         event: toObjectId(event_id),
+  //         status: PaymentStatus.PENDIENTE
+  //       });
+
+  //       // Si no hay pagos pendientes, actualizar estado del evento
+  //       if (pendingPayments === 0) {
+  //         await this.eventModel.findByIdAndUpdate(
+  //           event_id,
+  //           { status: StatusType.APROBADO },
+  //           { new: true }
+  //         );
+  //       }
+
+  //       return {
+  //         message: 'Pago procesado correctamente.',
+  //         data: {
+  //           mercadoPagoResult: result,
+  //           paymentSchedule,
+  //           allPaymentsCompleted: pendingPayments === 0
+  //         },
+  //       };
+  //     } else {
+  //       throw new BadRequestException('El pago no fue aprobado por MercadoPago');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error al procesar pago:', error);
+  //     throw new BadRequestException(error.message || 'No se pudo procesar el pago.');
+  //   }
+  // }
+
+  async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
+    try {
+      const payment = await this.payment.create({
+        body: createMercadoPagoDto,
+      });
 
       return {
-        message: 'Pago procesado correctamente.',
-        data: result,
+        message: 'Pago procesado correctamente (modo prueba)',
+        id: payment.id,
+        status: payment.status,
+        status_detail: payment.status_detail,
+        payment_type_id: payment.payment_type_id,
+        date_approved: payment.date_approved,
+        card_last_four: payment.card?.last_four_digits,
+        raw_response: payment,
       };
     } catch (error) {
-      console.error('Error al crear pago con Mercado Pago:', error);
-      throw new BadRequestException('No se pudo procesar el pago.');
+      console.error('Error en pago de prueba:', error);
+      throw new BadRequestException(error.message || 'Error al procesar el pago de prueba');
     }
   }
 }

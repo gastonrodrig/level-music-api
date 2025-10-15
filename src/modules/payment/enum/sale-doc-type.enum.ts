@@ -1,4 +1,4 @@
-export enum Type {
+export enum SaleDocType {
   BOLETA = 'Boleta',
   FACTURA = 'Factura'
 }

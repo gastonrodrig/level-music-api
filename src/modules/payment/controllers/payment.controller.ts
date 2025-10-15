@@ -1,7 +1,6 @@
 import {
   Controller,
   Post,
-  Param,
   HttpCode,
   HttpStatus,
   Body,
@@ -35,11 +34,11 @@ export class PaymentController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear las programaciones de pago',
   })
-  async createPayment(@Body() dto: CreatePaymentSchedulesDto) {
-    return this.paymentService.createPayments(dto);
+  async createPaymentSchedules(@Body() dto: CreatePaymentSchedulesDto) {
+    return this.paymentService.createPaymentSchedules(dto);
   }
 
-  @Post('mercadopago')
+  @Post('test/mercadopago')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.CREATED)
@@ -53,6 +52,6 @@ export class PaymentController {
     description: 'Error al procesar el pago.',
   })
   async processPayment(@Body() dto: CreateMercadoPagoDto) {
-    return this.paymentService.processPayment(dto);
+    return this.paymentService.testMercadoPagoPayment(dto);
   }
 }
