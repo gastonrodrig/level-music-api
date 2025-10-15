@@ -577,4 +577,36 @@ export class EventService {
       );
     }
   }
+async findByStatus(status: string): Promise<Event[]> {
+  // Lista de estados válidos
+  const validStatuses = [
+  'Pendiente de Aprobación',
+  'En Espera de Registro',
+  'Pendiente de Revisión del Cliente',
+  'Rechazado',
+  'Aprobado',
+  'Pagos Asignados',
+];
+
+  if (!validStatuses.includes(status)) {
+    throw new BadRequestException('Estado inválido');
+  }
+
+  return await this.eventModel.find({ status }).lean();
+}
+
+async findByPaymentStatus(status: string): Promise<Event[]> {
+  const validStatuses = [
+    'En Seguimiento',
+    'Reprogramado',
+    'Finalizado',
+  ];
+
+  if (!validStatuses.includes(status)) {
+    throw new BadRequestException('Estado inválido');
+  }
+
+  return await this.eventModel.find({ status }).lean();
+}
+
 }
