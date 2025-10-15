@@ -8,7 +8,7 @@ import { Event } from 'src/modules/event/schema/event.schema';
 import { StatusType } from 'src/modules/event/enum/status-type.enum';
 import { mercadoPagoClient } from './../mercadopago.config';
 import { Payment } from 'mercadopago';
-import { CreatePaymentSchedulesDto } from '../dto';
+import { CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
 import { PaymentType, Status } from '../enum';
 import { toObjectId } from 'src/core/utils';
 
@@ -70,6 +70,22 @@ export class PaymentService {
     } catch (error) {
       console.error('Error al crear pagos:', error);
       throw new BadRequestException('Error al crear las programaciones de pago');
+    }
+  }
+
+  async processPayment(dto: CreateMercadoPagoDto) {
+    try {
+      const body = JSON.parse(JSON.stringify(dto));
+
+      const result = await this.payment.create({ body });
+
+      return {
+        message: 'Pago procesado correctamente.',
+        data: result,
+      };
+    } catch (error) {
+      console.error('Error al crear pago con Mercado Pago:', error);
+      throw new BadRequestException('No se pudo procesar el pago.');
     }
   }
 }
