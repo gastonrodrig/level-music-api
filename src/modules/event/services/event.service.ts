@@ -577,25 +577,41 @@ export class EventService {
       );
     }
   }
-async findByStatus(status: string): Promise<Event[]> {
+async findByStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
   // Lista de estados válidos
   const validStatuses = [
-  'Pendiente de Aprobación',
-  'En Espera de Registro',
-  'Pendiente de Revisión del Cliente',
-  'Rechazado',
-  'Aprobado',
-  'Pagos Asignados',
-];
+    'Pendiente de Aprobación',
+    'En Espera de Registro',
+    'Pendiente de Revisión del Cliente',
+    'Rechazado',
+    'Aprobado',
+    'Pagos Asignados',
+  ];
 
   if (!validStatuses.includes(status)) {
     throw new BadRequestException('Estado inválido');
   }
 
-  return await this.eventModel.find({ status }).lean();
-}
+  try {
+    const events = await this.eventModel.find({ status }).lean();
 
-async findByPaymentStatus(status: string): Promise<Event[]> {
+    const items = await Promise.all(
+      events.map(async (event) => {
+        const assignations = await this.assignationModel.find({ event: event._id }).lean();
+        return {
+          ...event,
+          assignations,
+        };
+      }),
+    );
+
+    return items;
+  } catch (error) {
+    throw new InternalServerErrorException(`Error finding events by status: ${error.message}`);
+  }
+}
+// ...existing code...
+async findByPaymentStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
   const validStatuses = [
     'En Seguimiento',
     'Reprogramado',
@@ -606,7 +622,22 @@ async findByPaymentStatus(status: string): Promise<Event[]> {
     throw new BadRequestException('Estado inválido');
   }
 
-  return await this.eventModel.find({ status }).lean();
-}
+  try {
+    const events = await this.eventModel.find({ status }).lean();
 
+    const items = await Promise.all(
+      events.map(async (event) => {
+        const assignations = await this.assignationModel.find({ event: event._id }).lean();
+        return {
+          ...event,
+          assignations,
+        };
+      }),
+    );
+
+    return items;
+  } catch (error) {
+    throw new InternalServerErrorException(`Error finding events by payment status: ${error.message}`);
+  }
+}
 }
