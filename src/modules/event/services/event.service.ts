@@ -1,5 +1,7 @@
 import { 
   BadRequestException, 
+  HttpException, 
+  HttpStatus, 
   Injectable, 
   InternalServerErrorException, 
   NotFoundException 
@@ -23,6 +25,7 @@ import { ActivationTokenService } from 'src/auth/services/activation-token.servi
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
+import { errorCodes } from 'src/core/common';
 
 @Injectable()
 export class EventService {
@@ -235,6 +238,30 @@ export class EventService {
       if (!event) {
         throw new NotFoundException('Evento no encontrado');
       }
+
+        // Validación de cruce de horarios
+      const start = dto.start_time ?? event.start_time;
+      const end = dto.end_time ?? event.end_time;
+
+      const cruzado = await this.eventModel.findOne({
+        _id: { $ne: event_id },
+        $or: [
+          {
+            start_time: { $lt: end },
+            end_time: { $gt: start }
+          }
+        ]
+      });
+
+    if (cruzado) {
+  throw new HttpException(
+    {
+      code: errorCodes.EVENT_TIME_CONFLICT, // Usa el código que prefieras, puedes crear uno específico como EVENT_TIME_CONFLICT
+      message: 'El horario se cruza con otro evento existente',
+    },
+    HttpStatus.BAD_REQUEST,
+  );
+}
 
       // 2. Si envía un tipo de evento distinto, validarlo
       if (dto.event_type_id) {
@@ -550,4 +577,67 @@ export class EventService {
       );
     }
   }
+async findByStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
+  // Lista de estados válidos
+  const validStatuses = [
+    'Pendiente de Aprobación',
+    'En Espera de Registro',
+    'Pendiente de Revisión del Cliente',
+    'Rechazado',
+    'Aprobado',
+    'Pagos Asignados',
+  ];
+
+  if (!validStatuses.includes(status)) {
+    throw new BadRequestException('Estado inválido');
+  }
+
+  try {
+    const events = await this.eventModel.find({ status }).lean();
+
+    const items = await Promise.all(
+      events.map(async (event) => {
+        const assignations = await this.assignationModel.find({ event: event._id }).lean();
+        return {
+          ...event,
+          assignations,
+        };
+      }),
+    );
+
+    return items;
+  } catch (error) {
+    throw new InternalServerErrorException(`Error finding events by status: ${error.message}`);
+  }
+}
+// ...existing code...
+async findByPaymentStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
+  const validStatuses = [
+    'En Seguimiento',
+    'Reprogramado',
+    'Finalizado',
+  ];
+
+  if (!validStatuses.includes(status)) {
+    throw new BadRequestException('Estado inválido');
+  }
+
+  try {
+    const events = await this.eventModel.find({ status }).lean();
+
+    const items = await Promise.all(
+      events.map(async (event) => {
+        const assignations = await this.assignationModel.find({ event: event._id }).lean();
+        return {
+          ...event,
+          assignations,
+        };
+      }),
+    );
+
+    return items;
+  } catch (error) {
+    throw new InternalServerErrorException(`Error finding events by payment status: ${error.message}`);
+  }
+}
 }

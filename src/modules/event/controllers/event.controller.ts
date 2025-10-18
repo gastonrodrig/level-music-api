@@ -169,22 +169,7 @@ updateQuotationAdmin(
     );
   }
 
-  @Get(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Obtener un evento por ID' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Evento encontrado correctamente',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Evento no encontrado',
-  })
-  findOne(@Param('id') event_id: string) {
-    return this.eventService.findOne(event_id);
-  }
+  
 
   @Put(':id')
   @UseGuards(FirebaseAuthGuard)
@@ -273,6 +258,27 @@ updateQuotationAdmin(
     return this.eventService.assignResources(id, dto);
   }
 
+  @Get('status')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @ApiQuery({ name: 'status', required: true, type: String, description: 'Estado del evento' })
+  @ApiOperation({ summary: 'Listar eventos por estado' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Eventos filtrados por estado' })
+  findByStatus(@Query('status') status: string) {
+    return this.eventService.findByStatus(status);
+  }
+
+
+  @Get('status-payment')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @ApiQuery({ name: 'status', required: true, type: String, description: 'Estado del evento (En Seguimiento, Reprogramado, Finalizado)' })
+  @ApiOperation({ summary: 'Listar eventos por estado de seguimiento' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Eventos filtrados por estado de seguimiento' })
+  findByTrackingStatus(@Query('status') status: string) {
+    return this.eventService.findByPaymentStatus(status);
+}
+
   @Patch(':event_id/status')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
@@ -294,4 +300,22 @@ updateQuotationAdmin(
   ) {
     return this.eventService.updateStatus(event_id, dto);
   }
+
+  @Get(':id')
+    @UseGuards(FirebaseAuthGuard)
+    @ApiBearerAuth('firebase-auth')
+    @HttpCode(HttpStatus.CREATED)
+    @ApiOperation({ summary: 'Obtener un evento por ID' })
+    @ApiResponse({
+      status: HttpStatus.CREATED,
+      description: 'Evento encontrado correctamente',
+    })
+    @ApiResponse({
+      status: HttpStatus.NOT_FOUND,
+      description: 'Evento no encontrado',
+    })
+    findOne(@Param('id') event_id: string) {
+      return this.eventService.findOne(event_id);
+    }
+  
 }

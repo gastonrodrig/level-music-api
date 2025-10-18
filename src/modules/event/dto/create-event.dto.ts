@@ -75,7 +75,7 @@ export class CreateEventDto {
 
   @ApiProperty({ example: 'Abierto', enum: PlaceType, required: true })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   place_type: PlaceType;
 
   @ApiProperty({ example: 500, required: false })
