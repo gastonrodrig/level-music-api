@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { CreateEventTaskDto, UpdateEventTaskDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model,Types } from 'mongoose';
 import { SF_EVENT_TASK } from 'src/core/utils';
-import { EventTask, Event } from '../schema';
-import { WorkerType } from 'src/modules/worker/schema';
+import { EventTask, Event, EventType } from '../schema';
+import { WorkerType,Worker } from 'src/modules/worker/schema';
 
 @Injectable()
 export class EventTaskService {
@@ -18,24 +18,69 @@ export class EventTaskService {
     private eventTaskModel: Model<EventTask>,
     @InjectModel(Event.name)
     private eventModel: Model<Event>,
+    @InjectModel(EventType.name)
+    private eventTypeModel: Model<EventType>,
     @InjectModel(WorkerType.name)
     private workerTypeModel: Model<WorkerType>,
+    @InjectModel(Worker.name)
+    private workerModel: Model<Worker>,
+
   ) {}
+
+  async findByStatus( status?: string): Promise<EventTask[]> {
+    try {
+      const query = status ? { status } : {};
+      return await this.eventTaskModel.find(query).lean().exec();
+    } catch (error) {
+      throw new InternalServerErrorException(`Error finding tasks for event ${status}: ${error.message}`);
+    }
+  }
+
+  async findByEventId(eventId?: string): Promise<EventTask[]> {
+    try {
+      const objectId = new Types.ObjectId(eventId);
+      const query = eventId ? { event: objectId } : {};
+      if (!eventId) {
+        throw new BadRequestException('Event ID is required');
+      }
+      const tasks = await this.eventTaskModel.find(query).lean().exec();
+      return tasks;
+
+    } catch (error) {
+      throw new InternalServerErrorException(`Error finding tasks for event ${eventId}: ${error.message}`);
+    }
+  }
 
   async create(createEventTaskDto: CreateEventTaskDto): Promise<EventTask> {
     try {
       const event = await this.eventModel.findById(createEventTaskDto.event_id);
       if (!event) throw new BadRequestException('Event not found');
 
+      let workerTypeName: string ;
       const workerType = await this.workerTypeModel.findById(createEventTaskDto.worker_type_id);
       if (!workerType) throw new BadRequestException('Worker type not found');
+      workerTypeName = workerType.name;
+
+      let workerName: string ;
+      const worker = await this.workerModel.findById(createEventTaskDto.worker_id);
+      workerName = `${(worker.first_name )} ${(worker.last_name)}`.trim();
+      if (!worker) throw new BadRequestException('Worker not found');
+
+      const eventType = await this.eventTypeModel.findById(createEventTaskDto.event_type_id);
+      if (!eventType) throw new BadRequestException('Event type not found');
+      
 
       const eventTask = new this.eventTaskModel({
         ...createEventTaskDto,
         event: event._id,
         worker_type: workerType._id,
+        worker: worker._id,
+        worker_name: workerName,
+        worker_type_name: workerTypeName,
+        event_type: eventType._id,
+        
       });
-
+      console.log('Creating event task:', eventTask);
       return await eventTask.save();
     } catch (error) {
       throw new InternalServerErrorException(
@@ -43,50 +88,6 @@ export class EventTaskService {
       );
     }
   }
-
-  async findAllPaginated(
-      limit = 5,
-      offset = 0,
-      search = '',
-      sortField: string,
-      sortOrder: 'asc' | 'desc' = 'asc',
-    ): Promise<{ total: number; items: EventTask[] }> {
-      try {
-        // Notas:
-        // 1) se filtra por nombre o descripción (Campos de la tabla)
-        const filter = search
-        ? {
-            $or: SF_EVENT_TASK.map(field => ({
-              [field]: { $regex: search, $options: 'i' }
-            })),
-          }
-        : {};
-  
-        // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
-        const sortObj: Record<string, 1 | -1> = {
-          [sortField]: sortOrder === 'asc' ? 1 : -1,
-        };
-  
-        const [items, total] = await Promise.all([
-          this.eventTaskModel
-            .find(filter)
-            .collation({ locale: 'es', strength: 1 })
-            .sort(sortObj)
-            .skip(offset)
-            .limit(limit)
-            .exec(),
-          this.eventTaskModel
-            .countDocuments(filter)
-            .exec(),
-        ]);
-  
-        return { total, items };
-      } catch (error) {
-        throw new InternalServerErrorException(
-          `Error finding event task with pagination: ${error.message}`,
-        );
-      }
-    }
 
   async findOne(event_task_id: string): Promise<EventTask> {
     try {

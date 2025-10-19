@@ -1,4 +1,6 @@
 export enum TaskStatusType {
   PENDIENTE ='Pendiente',
-  REALIZADO ='Realizado',
+  COMPLETADO ='Completado',
+  BLOQUEADAS ='Bloqueadas',
+  EN_PROGRESO ='En Progreso',
 }
