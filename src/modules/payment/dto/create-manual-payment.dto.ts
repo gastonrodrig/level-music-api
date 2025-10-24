@@ -29,7 +29,7 @@ export class CreateManualPaymentDto {
   @IsNotEmpty()
   payment_method: PaymentMethod;
 
-  @IsNotEmpty()
+  @IsNotEmpty() 
   amount: number;
 
   @IsOptional()
