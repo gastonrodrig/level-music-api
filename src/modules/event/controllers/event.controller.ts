@@ -81,95 +81,64 @@ export class EventController {
     return this.eventService.createQuotationAdmin(dto);
   }
 
-@Patch('quotation/admin/:id')
-@Public()
-@HttpCode(HttpStatus.OK)
-@ApiOperation({ summary: 'Actualizar cotización de evento por admin (con asignaciones)' })
-@ApiResponse({
-  status: HttpStatus.OK,
-  description: 'Cotización de evento actualizada correctamente por admin',
-})
-@ApiResponse({
-  status: HttpStatus.BAD_REQUEST,
-  description: 'Error al actualizar la cotización por admin',
-})
-updateQuotationAdmin(
-  @Param('id') id: string,
-  @Body() dto: CreateQuotationAdminDto, 
-) {
-  return this.eventService.updateQuotationAdmin(id, dto);
-}
-
-
-  @Get('paginated')
+  @Get('quotation/paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener eventos con paginación, búsqueda y orden' })
+  @ApiOperation({ summary: 'Obtener todas las cotizaciones (eventos) con paginación, búsqueda y orden' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Lista de eventos obtenida paginada correctamente.',
+    description: 'Cotizaciones encontradas correctamente',
   })
   @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los eventos paginada.',
+    status: HttpStatus.NOT_FOUND,
+    description: 'Cotizaciones no encontradas',
   })
+  @ApiQuery({ name: 'user_id', required: false, type: String, description: 'ID del usuario' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
   @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
   @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
   @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
-  findAllPaginated(
-    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+  @ApiQuery({ name: 'case', required: false, type: Number, description: 'Número de caso opcional para filtrar por conjunto de estados' })
+  findAllQuotationsPaginated(
+    @Query('user_id') user_id?: string,
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit?: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset?: number,
     @Query('search') search?: string,
-    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortField', new DefaultValuePipe('created_at')) sortField?: string,
     @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+    @Query('case') caseFilterRaw?: string,
   ) {
-    return this.eventService.findAllPaginated(
+    return this.eventService.findAllQuotationsPaginated(
+      user_id,
       limit,
       offset,
       search?.trim(),
       sortField,
       sortOrder,
+      Number(caseFilterRaw),
     );
   }
 
-  @Get('paginated/quotation')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Patch('quotation/admin/:id')
+  @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener eventos con paginación, búsqueda y orden' })
+  @ApiOperation({ summary: 'Actualizar cotización de evento por admin (con asignaciones)' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Lista de eventos obtenida paginada correctamente.',
+    description: 'Cotización de evento actualizada correctamente por admin',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los eventos paginada.',
+    description: 'Error al actualizar la cotización por admin',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
-  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
-  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
-  findAllQuotationPaginated(
-    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
-    @Query('search') search?: string,
-    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
-    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+  updateQuotationAdmin(
+    @Param('id') id: string,
+    @Body() dto: CreateQuotationAdminDto, 
   ) {
-    return this.eventService.findAllQuotationPaginated(
-      limit,
-      offset,
-      search?.trim(),
-      sortField,
-      sortOrder,
-    );
+    return this.eventService.updateQuotationAdmin(id, dto);
   }
-
-  
 
   @Put(':id')
   @UseGuards(FirebaseAuthGuard)
@@ -198,42 +167,6 @@ updateQuotationAdmin(
   findByCode(@Param('event_code') event_code: string) {
     return this.eventService.findByCode(event_code);
   }
-  
-  @Get('user/:user_id/paginated')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener los eventos por usuario con paginación, búsqueda y orden' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Eventos encontrados correctamente',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Eventos no encontrados',
-  })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
-  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
-  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
-  findByUserPaginated(
-    @Param('user_id') user_id: string,
-    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
-    @Query('search') search?: string,
-    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
-    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
-  ) {
-    return this.eventService.findByUserPaginated(
-      user_id,
-      limit,
-      offset,
-      search?.trim(),
-      sortField,
-      sortOrder,
-    );
-  }
 
   @Patch(':id/with-resources')
   @UseGuards(FirebaseAuthGuard)
@@ -257,17 +190,6 @@ updateQuotationAdmin(
   ) {
     return this.eventService.assignResources(id, dto);
   }
-
-  @Get('status')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @ApiQuery({ name: 'status', required: true, type: String, description: 'Estado del evento' })
-  @ApiOperation({ summary: 'Listar eventos por estado' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Eventos filtrados por estado' })
-  findByStatus(@Query('status') status: string) {
-    return this.eventService.findByStatus(status);
-  }
-
 
   @Get('status-payment')
   @UseGuards(FirebaseAuthGuard)

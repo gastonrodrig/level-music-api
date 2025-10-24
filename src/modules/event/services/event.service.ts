@@ -26,6 +26,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 import { errorCodes } from 'src/core/common';
+import { PaymentSchedule } from 'src/modules/payment/schema';
 
 @Injectable()
 export class EventService {
@@ -38,6 +39,8 @@ export class EventService {
     private userModel: Model<User>,
     @InjectModel(Assignation.name)
     private assignationModel: Model<Assignation>,
+    @InjectModel(PaymentSchedule.name)
+    private paymentScheduleModel: Model<PaymentSchedule>,
     @InjectQueue('quotation-ready')
     private quotationReadyQueue: Queue,
     private assignationService: AssignationsService,
@@ -184,46 +187,92 @@ export class EventService {
     }
   }
 
-  async findAllPaginated(
+  async findAllQuotationsPaginated(
+    user_id?: string,
     limit = 5,
     offset = 0,
     search = '',
-    sortField: string,
+    sortField: string = 'created_at',
     sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Event[] }> {
+    caseFilter?: number
+  ): Promise<{ total: number; items: any[] }> {
     try {
-      // Notas:
-      // 1) se filtra por nombre o descripción (Campos de la tabla)
-      const filter = search
-      ? {
-          $or: SF_EVENT.map(field => ({
-            [field]: { $regex: search, $options: 'i' }
-          })),
-        }
-      : {};
+      const baseFilter: any = {};
 
-      // 2) se ordena por el campo que se pasa por parámetro (Ascendente o Descendente)
+      if (user_id) {
+        baseFilter.user = toObjectId(user_id);
+      }
+
+      const statusCases: Record<number, string[]> = {
+        1: [
+          'Pendiente de Aprobación',
+          'En Espera de Registro',
+          'Pendiente de Revisión del Cliente',
+          'Rechazado',
+          'Aprobado',
+          'Pagos Asignados',
+        ],
+        2: [
+          'En Seguimiento', 
+          'Reprogramado', 
+          'Finalizado'
+        ]
+      };
+
+      if (caseFilter && statusCases[caseFilter]) {
+        baseFilter.status = { $in: statusCases[caseFilter] };
+      }
+
+      // Filtro de búsqueda
+      const searchFilter = search
+        ? {
+            $or: SF_EVENT.map((field) => ({
+              [field]: { $regex: search, $options: 'i' },
+            })),
+          }
+        : {};
+
+      const filter = { ...baseFilter, ...searchFilter };
+
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
       };
 
-      const [items, total] = await Promise.all([
+      // Buscar eventos
+      const [events, total] = await Promise.all([
         this.eventModel
           .find(filter)
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)
           .limit(limit)
-          .exec(),
-        this.eventModel
-          .countDocuments(filter)
-          .exec(),
+          .lean(),
+        this.eventModel.countDocuments(filter).exec(),
       ]);
+
+      // Obtener asignaciones y pagos
+      const items = await Promise.all(
+        events.map(async (event) => {
+          const [assignations, payment_schedules] = await Promise.all([
+            this.assignationModel.find({ event: event._id }).lean(),
+            this.paymentScheduleModel
+              .find({ event: event._id })
+              .sort({ due_date: 1 })
+              .lean(),
+          ]);
+
+          return {
+            ...event,
+            assignations,
+            payment_schedules,
+          };
+        }),
+      );
 
       return { total, items };
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error finding event with pagination: ${error.message}`,
+        `Error al buscar cotizaciones: ${error.message}`,
       );
     }
   }
@@ -253,15 +302,15 @@ export class EventService {
         ]
       });
 
-    if (cruzado) {
-  throw new HttpException(
-    {
-      code: errorCodes.EVENT_TIME_CONFLICT, // Usa el código que prefieras, puedes crear uno específico como EVENT_TIME_CONFLICT
-      message: 'El horario se cruza con otro evento existente',
-    },
-    HttpStatus.BAD_REQUEST,
-  );
-}
+      if (cruzado) {
+        throw new HttpException(
+          {
+            code: errorCodes.EVENT_TIME_CONFLICT,
+            message: 'El horario se cruza con otro evento existente',
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
       // 2. Si envía un tipo de evento distinto, validarlo
       if (dto.event_type_id) {
@@ -317,70 +366,6 @@ export class EventService {
     }
   }
 
-  async findAllQuotationPaginated(
-    limit = 5,
-    offset = 0,
-    search = '',
-    sortField: string = 'created_at',
-    sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{
-    total: number;
-    items: Array<Event & { assignations: Array<Assignation> }>;
-  }> {
-    try {
-      // 1) Filtro base: solo cotizaciones
-      const baseFilter: any = { creator: { $exists: true } };
-
-      // 2) Filtro de búsqueda
-      const searchFilter = search
-        ? {
-            $or: SF_EVENT.map((field) => ({
-              [field]: { $regex: search, $options: 'i' },
-            })),
-          }
-        : {};
-
-      const filter = { ...baseFilter, ...searchFilter };
-
-      // 3) Orden dinámico
-      const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
-      };
-
-      // 4) Consultas en paralelo
-      const [events, total] = await Promise.all([
-        this.eventModel
-          .find(filter)
-          .collation({ locale: 'es', strength: 1 })
-          .sort(sortObj)
-          .skip(offset)
-          .limit(limit)
-          .lean(),
-        this.eventModel.countDocuments(filter).exec(),
-      ]);
-
-      // 5) Obtener asignaciones relacionadas para cada evento
-      const items = await Promise.all(
-        events.map(async (event) => {
-          const assignations = await this.assignationModel
-            .find({ event: event._id })
-            .lean();
-
-          return {
-            ...event,
-            assignations, // 👈 aquí agregamos el array con todas las asignaciones del evento
-          };
-        }),
-      );
-
-      return { total, items };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error fetching quotations with assignations: ${error.message}`,
-      );
-    }
-  }
-
   async findOne(event_id: string): Promise<Event> {
     try {
       const event = await this.eventModel.findOne({
@@ -424,61 +409,6 @@ export class EventService {
       if (error instanceof NotFoundException) throw error;
       throw new InternalServerErrorException(
         `Error al buscar evento por código: ${error.message}`,
-      );
-    }
-  }
-
-  async findByUserPaginated(
-    user_id: string,
-    limit = 5,
-    offset = 0,
-    search = '',
-    sortField: string = 'created_at',
-    sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; items: Event[] }> {
-    try {
-      const baseFilter: any = { user: toObjectId(user_id) };
-      const searchFilter = search
-        ? {
-            $or: SF_EVENT.map(field => ({
-              [field]: { $regex: search, $options: 'i' }
-            })),
-          }
-        : {};
-      const filter = { ...baseFilter, ...searchFilter };
-
-      const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
-      };
-
-     const [events, total] = await Promise.all([
-      this.eventModel
-        .find(filter)
-        .collation({ locale: 'es', strength: 1 })
-        .sort(sortObj)
-        .skip(offset)
-        .limit(limit)
-        .lean(),
-      this.eventModel.countDocuments(filter).exec(),
-    ]);
-
-    // Obtener asignaciones para cada evento
-    const items = await Promise.all(
-      events.map(async (event) => {
-        const assignations = await this.assignationModel
-          .find({ event: event._id })
-          .lean();
-        return {
-          ...event,
-          assignations,
-        };
-      }),
-    );
-      
-      return { total, items };
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error al buscar eventos por usuario: ${error.message}`,
       );
     }
   }
@@ -577,67 +507,34 @@ export class EventService {
       );
     }
   }
-async findByStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
-  // Lista de estados válidos
-  const validStatuses = [
-    'Pendiente de Aprobación',
-    'En Espera de Registro',
-    'Pendiente de Revisión del Cliente',
-    'Rechazado',
-    'Aprobado',
-    'Pagos Asignados',
-  ];
 
-  if (!validStatuses.includes(status)) {
-    throw new BadRequestException('Estado inválido');
+  async findByPaymentStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
+    const validStatuses = [
+      'En Seguimiento',
+      'Reprogramado',
+      'Finalizado',
+    ];
+
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException('Estado inválido');
+    }
+
+    try {
+      const events = await this.eventModel.find({ status }).lean();
+
+      const items = await Promise.all(
+        events.map(async (event) => {
+          const assignations = await this.assignationModel.find({ event: event._id }).lean();
+          return {
+            ...event,
+            assignations,
+          };
+        }),
+      );
+
+      return items;
+    } catch (error) {
+      throw new InternalServerErrorException(`Error finding events by payment status: ${error.message}`);
+    }
   }
-
-  try {
-    const events = await this.eventModel.find({ status }).lean();
-
-    const items = await Promise.all(
-      events.map(async (event) => {
-        const assignations = await this.assignationModel.find({ event: event._id }).lean();
-        return {
-          ...event,
-          assignations,
-        };
-      }),
-    );
-
-    return items;
-  } catch (error) {
-    throw new InternalServerErrorException(`Error finding events by status: ${error.message}`);
-  }
-}
-// ...existing code...
-async findByPaymentStatus(status: string): Promise<Array<Event & { assignations: Array<Assignation> }>> {
-  const validStatuses = [
-    'En Seguimiento',
-    'Reprogramado',
-    'Finalizado',
-  ];
-
-  if (!validStatuses.includes(status)) {
-    throw new BadRequestException('Estado inválido');
-  }
-
-  try {
-    const events = await this.eventModel.find({ status }).lean();
-
-    const items = await Promise.all(
-      events.map(async (event) => {
-        const assignations = await this.assignationModel.find({ event: event._id }).lean();
-        return {
-          ...event,
-          assignations,
-        };
-      }),
-    );
-
-    return items;
-  } catch (error) {
-    throw new InternalServerErrorException(`Error finding events by payment status: ${error.message}`);
-  }
-}
 }

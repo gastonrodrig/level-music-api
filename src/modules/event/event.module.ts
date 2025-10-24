@@ -47,13 +47,13 @@ import {
   User,
   UserSchema
 } from 'src/modules/user/schema';
+import { PaymentSchedule, PaymentScheduleSchema } from '../payment/schema';
 import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { EquipmentModule } from '../equipments/equipment.module';
 import { WorkerModule } from '../worker/worker.module';
 import { ServiceModule } from '../service/service.module';
 import { BullModule } from '@nestjs/bullmq';
-import { ActivationTokenService } from 'src/auth/services';
 import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
@@ -77,6 +77,7 @@ import { AuthModule } from 'src/auth/auth.module';
         { name: Incident.name, schema: IncidentSchema },
         { name: Assignation.name, schema: AssignationSchema },
         { name: Reprogramings.name, schema: ReprogramingsSchema },
+        { name: PaymentSchedule.name, schema: PaymentScheduleSchema },
         ]);
     })(),
     FirebaseModule,
