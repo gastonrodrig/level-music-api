@@ -6,29 +6,34 @@ import { SalesDocument } from '../schema/sales-documents.schema';
 import { SalesDocumentDetail } from '../schema/sales-documents-details.schema';
 import { Event } from 'src/modules/event/schema/event.schema';
 import { StatusType } from 'src/modules/event/enum/status-type.enum';
-import MercadoPagoConfig, { Payment } from 'mercadopago';
-import { CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
+import MercadoPagoConfig, { Payment as MP_Payment } from 'mercadopago';
+import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
 import { PaymentType, PaymentStatus } from '../enum';
 import { toObjectId } from 'src/core/utils';
+import { StorageService } from 'src/modules/firebase/services';
+import { Payment } from '../schema';
 
 @Injectable()
 export class PaymentService {
-  private payment: Payment;
+  private mp_payment: MP_Payment;
 
   constructor(
     @InjectModel(PaymentSchedule.name)
     private readonly scheduleModel: Model<PaymentSchedule>,
+    @InjectModel(Payment.name)
+    private readonly paymentModel: Model<Payment>,
     @InjectModel(SalesDocument.name)
     private readonly documentModel: Model<SalesDocument>,
     @InjectModel(SalesDocumentDetail.name)
     private readonly detailsModel: Model<SalesDocumentDetail>,
     @InjectModel(Event.name)
     private readonly eventModel: Model<Event>,
+    private readonly storageService: StorageService,
   ) {
     const client = new MercadoPagoConfig({
       accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
     });
-    this.payment = new Payment(client);
+    this.mp_payment = new MP_Payment(client);
   }
 
   async createPaymentSchedules(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
@@ -76,6 +81,62 @@ export class PaymentService {
       throw new BadRequestException('Error al crear las programaciones de pago');
     }
   }
+
+  async processManualPayment(
+    dto: CreateManualPaymentDto,
+    file?: Express.Multer.File,
+    mode: 'partial' | 'both' = 'partial',
+  ) {
+    const { schedule_id, event_id, user_id, amount } = dto;
+
+    // Subir comprobante
+    let voucher_url = '';
+    if (file) {
+      const upload = await this.storageService.uploadFile(
+        'payments',
+        file,
+        String(event_id),
+      );
+      voucher_url = upload.url;
+    }
+
+    // Crear pago manual para el pago parcial
+    const payment = await this.paymentModel.create({
+      ...dto,
+      event_id: toObjectId(event_id),
+      schedule_id: toObjectId(schedule_id),
+      user_id: toObjectId(user_id),
+      amount: Number(amount),
+      voucher_url,
+    });
+
+    // Si el modo es "both", crear también el pago final
+    if (mode === 'both') {
+      const schedules = await this.scheduleModel.find({ event: event_id });
+      const finalSchedule = schedules.find(
+        (s) => s.payment_type === 'Final',
+      );
+
+      if (finalSchedule) {
+        await this.paymentModel.create({
+          ...dto,
+          schedule_id: finalSchedule._id,
+          payment_type: 'Final',
+          amount: finalSchedule.total_amount,
+          voucher_url,
+        });
+      }
+    }
+
+    return {
+      message:
+        mode === 'both'
+          ? 'Pagos parcial y final registrados correctamente.'
+          : 'Pago parcial registrado correctamente.',
+      payment,
+    };
+  }
+
 
   // async processPayment(dto: CreateMercadoPagoDto) {
   //   try {
@@ -141,8 +202,8 @@ export class PaymentService {
   async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
     try {
       console.log(createMercadoPagoDto);
-      console.log(this.payment)
-      const payment = await this.payment.create({
+      console.log(this.mp_payment);
+      const payment = await this.mp_payment.create({
         body: createMercadoPagoDto,
       });
 

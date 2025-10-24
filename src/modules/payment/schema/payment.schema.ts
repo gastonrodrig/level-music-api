@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 import { PaymentType, PaymentMethod, PaymentStatus } from '../enum';
 import { PaymentSchedule } from './payment-schedules.schema';
 import { SalesDocument } from './sales-documents.schema';
+import { Event } from 'src/modules/event/schema';
+import { User } from 'src/modules/user/schema';
 
 @Schema({ collection: 'payments' })
 export class Payment {
@@ -10,7 +12,7 @@ export class Payment {
   payment_type: PaymentType; 
 
   @Prop({ required: true, enum: PaymentMethod })
-  method: PaymentMethod; 
+  payment_method: PaymentMethod; 
 
   @Prop({ required: true })
   amount: number; 
@@ -19,19 +21,19 @@ export class Payment {
   operation_number?: string; // Numero de operacion (manual)
 
   @Prop()
-  payment_reference?: string; // ID del pago en MercadoPago
+  voucher_url?: string; // Comprobante de pago (manual)
 
-  @Prop()
-  proof_url?: string; // Comprobante de pago (manual)
-
-  @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDIENTE })
+  @Prop({ enum: PaymentStatus, default: PaymentStatus.PENDIENTE })
   status: PaymentStatus;
 
-  @Prop({ type: Types.ObjectId, ref: PaymentSchedule.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: Event.name })
+  event?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: PaymentSchedule.name })
   schedule: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: SalesDocument.name })
-  sales_document?: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: User.name })
+  user: Types.ObjectId;
 
   @Prop({ default: Date.now })
   created_at: Date;

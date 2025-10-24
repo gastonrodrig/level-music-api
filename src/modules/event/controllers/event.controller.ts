@@ -81,7 +81,7 @@ export class EventController {
     return this.eventService.createQuotationAdmin(dto);
   }
 
-  @Get('quotation/paginated')
+  @Get('paginated')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
