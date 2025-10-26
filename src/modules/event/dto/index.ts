@@ -16,3 +16,5 @@ export * from './create-quotation-admin.dto';
 export * from './assign-resources.dto';
 export * from './update-quotation-admin.dto';
 export * from './update-status-event.dto';
+export * from './create-task-evidence.dto';
+export * from './update-task-evidence.dto';

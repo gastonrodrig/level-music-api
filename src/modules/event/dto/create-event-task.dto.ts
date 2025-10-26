@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsBoolean,IsArray,ValidateNested ,  IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from "class-validator";
 import { Types } from "mongoose";
-import { PhaseType, TaskStatusType } from "../enum";
+import { Type } from "class-transformer";
+import { PhaseType, TaskStatusType,TaskPhase } from "../enum";
+import { CreateTaskEvidenceDto } from "./create-task-evidence.dto";
 
 export class CreateEventTaskDto {
   @ApiProperty({ type: String, description: "Event id relacionado" })
@@ -42,10 +44,10 @@ export class CreateEventTaskDto {
   @ApiProperty({ description: "Si la tarea requiere evidencia" })
   @IsBoolean()
   @IsOptional()
+  @Type(() => Boolean)
   requires_evidence?: boolean;
 
-   @ApiProperty({ example: '2025-10-01T12:00:00.000Z' })
-  
+  @ApiProperty({ example: '2025-10-01T12:00:00.000Z' })
   @IsOptional()
   assigned_at?: Date;
 
@@ -64,5 +66,18 @@ export class CreateEventTaskDto {
   @IsOptional()
   worker_name?: string;
 
+  // opcional: phase (para que coincida con tu modelo de respuesta)
+  @ApiPropertyOptional({ enum: TaskPhase })
+  @IsEnum(TaskPhase)
+  @IsOptional()
+  phase?: TaskPhase;
+
+  // opcional: permitir evidences si el cliente envía snapshots al crear (no es obligatorio)
+  @ApiPropertyOptional({ type: [CreateTaskEvidenceDto], description: 'Evidences (opcional al crear)' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateTaskEvidenceDto)
+  evidences?: CreateTaskEvidenceDto[];
 
 }

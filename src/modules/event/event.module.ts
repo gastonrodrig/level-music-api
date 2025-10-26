@@ -4,7 +4,8 @@ import {
   Event, 
   EventType, 
   EventTask, 
-  EventSchema, 
+  EventSchema,
+  TaskEvidenceSchema,
   EventTypeSchema, 
   EventTaskSchema, 
   FeaturedEvent,
@@ -14,7 +15,8 @@ import {
   Assignation,
   AssignationSchema,
   ReprogramingsSchema,
-  Reprogramings
+  Reprogramings,
+  TaskEvidence
 } from './schema';
 import { 
   EventService, 
@@ -23,7 +25,8 @@ import {
   FeaturedEventService,
   IncidentService, 
   AssignationsService,
-  ReprogramingsService
+  ReprogramingsService,
+  TaskEvidenceService,
 } from './services';
 import { 
   EventController, 
@@ -70,6 +73,7 @@ import { AuthModule } from 'src/auth/auth.module';
         { name: Event.name, schema: EventSchema },
         { name: EventType.name, schema: EventTypeSchema },
         { name: EventTask.name, schema: EventTaskSchema },
+        { name: TaskEvidence.name, schema: TaskEvidenceSchema },
         { name: WorkerType.name, schema: WorkerTypeSchema },
         { name: User.name, schema: UserSchema },
         { name: FeaturedEvent.name, schema: FeaturedEventSchema },
@@ -89,6 +93,7 @@ import { AuthModule } from 'src/auth/auth.module';
     EventService, 
     EventTypeService, 
     EventTaskService, 
+    TaskEvidenceService,
     FeaturedEventService,
     ReprogramingsService,
     FeaturedEventService,

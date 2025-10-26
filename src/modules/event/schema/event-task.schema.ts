@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { Multimedia, MultimediaSchema } from '../../uploads';
-import { PhaseType, TaskStatusType } from "../enum";
+import { PhaseType, TaskStatusType, TaskPhase } from "../enum";
 import { Event } from "./event.schema";
 import { EventType } from "./event-type.schema";
 import { WorkerType, Worker } from "src/modules/worker/schema";
@@ -27,7 +27,7 @@ export class EventTask {
   event_type?: Types.ObjectId;
 
   @Prop({ enum: TaskStatusType, default: TaskStatusType.PENDIENTE }) 
-  status: string;
+  status: TaskStatusType;
   
   @Prop({ length: 255 })
   notes: string;
@@ -38,17 +38,19 @@ export class EventTask {
   @Prop({ type: Boolean, default: false })
   requires_evidence: boolean;
 
-  //todo lo de arriba si va 
+  @Prop({ type: String, enum: TaskPhase, default: TaskPhase.PLANIFICACION })
+  phase?: TaskPhase;
 
-
-  // @Prop({ type: MultimediaSchema, required: false, default: null })
-  // evidence?: Multimedia;
-
-  @Prop({ default: Date.now })
-  assigned_at: Date;
-
-  @Prop({ type: Date})
-  completed_at: Date ;
+  
+  @Prop({ type: Date, default: Date.now })
+  assigned_at?: Date;
+  
+  @Prop({ type: Date, default: null  })
+  completed_at?: Date;
+  
+  // array de evidencias (si usas MultimediaSchema para evidences)
+  @Prop({ type: [Types.ObjectId], ref: 'TaskEvidence', default: [] })
+  evidences: Types.ObjectId[];
 }
 
 export const EventTaskSchema = SchemaFactory.createForClass(EventTask);

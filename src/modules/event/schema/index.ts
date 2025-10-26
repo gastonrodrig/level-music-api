@@ -7,3 +7,4 @@ export * from './featured-event.schema';
 export * from './featured-event-custom-field.schema';
 export * from './incident.schema';
 export * from './reprogramings.schema';
+export * from './event-task-evidence.schema';

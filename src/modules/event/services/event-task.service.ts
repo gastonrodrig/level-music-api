@@ -10,6 +10,7 @@ import { Model,Types } from 'mongoose';
 import { SF_EVENT_TASK } from 'src/core/utils';
 import { EventTask, Event, EventType } from '../schema';
 import { WorkerType,Worker } from 'src/modules/worker/schema';
+import { TaskEvidenceService } from './event-task-evidence.service';
 
 @Injectable()
 export class EventTaskService {
@@ -24,7 +25,7 @@ export class EventTaskService {
     private workerTypeModel: Model<WorkerType>,
     @InjectModel(Worker.name)
     private workerModel: Model<Worker>,
-
+    private readonly taskEvidenceService: TaskEvidenceService,
   ) {}
 
   async findByStatus( status?: string): Promise<EventTask[]> {
@@ -51,7 +52,7 @@ export class EventTaskService {
     }
   }
 
-  async create(createEventTaskDto: CreateEventTaskDto): Promise<EventTask> {
+  async create(createEventTaskDto: CreateEventTaskDto, files: Express.Multer.File[] = []): Promise<EventTask> {
     try {
       const event = await this.eventModel.findById(createEventTaskDto.event_id);
       if (!event) throw new BadRequestException('Event not found');
@@ -80,12 +81,26 @@ export class EventTaskService {
         event_type: eventType._id,
         
       });
-      console.log('Creating event task:', eventTask);
-      return await eventTask.save();
+      const saved = await eventTask.save();
+
+      // si vienen archivos, crear evidencias y asociarlas
+      if (files && files.length) {
+        const createdEvidences = await this.taskEvidenceService.createFromFiles(
+          saved._id.toString(),
+          files,
+          createEventTaskDto.worker_id,
+        );
+
+        if (Array.isArray(createdEvidences) && createdEvidences.length) {
+          saved.evidences = createdEvidences.map((e: any) => e._id);
+          await saved.save();
+        }
+      }
+
+      // devolver la tarea con evidencias pobladas
+      return await this.eventTaskModel.findById(saved._id).populate({ path: 'evidences' }).exec();
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Error creating event task: ${error.message}`,
-      );
+      throw new InternalServerErrorException(`Error creating event task: ${error.message}`);
     }
   }
 

@@ -7,4 +7,5 @@ export * from './equipment-type.enum';
 export * from './incident-type.enum';
 export * from './status-reprogramings-type.enum';
 export * from './resource-type.enum';
-export * from './quotation-creator.enum'
+export * from './quotation-creator.enum';
+export * from './task-phase.enum';

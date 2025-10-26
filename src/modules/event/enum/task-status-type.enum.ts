@@ -3,4 +3,6 @@ export enum TaskStatusType {
   COMPLETADO ='Completado',
   BLOQUEADAS ='Bloqueadas',
   EN_PROGRESO ='En Progreso',
+
+  
 }
