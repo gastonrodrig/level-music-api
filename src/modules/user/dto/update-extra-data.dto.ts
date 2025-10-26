@@ -1,8 +1,14 @@
 import { IsString, IsEnum, IsNotEmpty } from 'class-validator';
 import { DocType } from '../../../core/constants/app.constants';
 import { ApiProperty } from '@nestjs/swagger';
+import { ClientType } from '../enum';
 
 export class UpdateExtraDataDto {
+  @ApiProperty({ enum: ClientType, example: ClientType.PERSONA })
+  @IsEnum(ClientType)
+  @IsNotEmpty()
+  client_type: string;
+  
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
