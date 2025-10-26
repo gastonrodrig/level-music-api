@@ -105,6 +105,7 @@ export class PaymentService {
       ...dto,
       event_id: toObjectId(event_id),
       schedule_id: toObjectId(schedule_id),
+      payment_type: PaymentType.PARCIAL,
       user_id: toObjectId(user_id),
       amount: Number(amount),
       voucher_url,
@@ -112,16 +113,16 @@ export class PaymentService {
 
     // Si el modo es "both", crear también el pago final
     if (mode === 'both') {
-      const schedules = await this.scheduleModel.find({ event: event_id });
+      const schedules = await this.scheduleModel.find({ event: toObjectId(event_id) });
       const finalSchedule = schedules.find(
-        (s) => s.payment_type === 'Final',
+        (s) => s.payment_type === PaymentType.FINAL,
       );
 
       if (finalSchedule) {
         await this.paymentModel.create({
           ...dto,
           schedule_id: finalSchedule._id,
-          payment_type: 'Final',
+          payment_type: PaymentType.FINAL,
           amount: finalSchedule.total_amount,
           voucher_url,
         });

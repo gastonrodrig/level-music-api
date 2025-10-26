@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { PaymentType, PaymentMethod } from '../enum';
+import { PaymentMethod } from '../enum';
 
 export class CreateManualPaymentDto {
   @IsMongoId()
@@ -21,10 +21,6 @@ export class CreateManualPaymentDto {
   @IsNotEmpty()
   user_id: string;
 
-  @IsEnum(PaymentType)
-  @IsNotEmpty()
-  payment_type: PaymentType;
-
   @IsEnum(PaymentMethod)
   @IsNotEmpty()
   payment_method: PaymentMethod;
@@ -35,4 +31,7 @@ export class CreateManualPaymentDto {
   @IsOptional()
   @IsString()
   transaction_number?: string;
+
+  @IsOptional()
+  voucher_url: any;
 }

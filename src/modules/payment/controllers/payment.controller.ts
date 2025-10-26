@@ -22,6 +22,7 @@ import { PaymentService } from '../services/payment.service';
 import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Public } from 'src/auth/decorators';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -46,8 +47,9 @@ export class PaymentController {
   }
 
   @Post('manual')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
+  @Public()
   @UseInterceptors(FileInterceptor('voucher'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Registrar un pago manual con comprobante adjunto' })
@@ -68,11 +70,6 @@ export class PaymentController {
         event_id: { type: 'string', example: '68fa352e038345fc4290f084' },
         schedule_id: { type: 'string', example: '68fa35d1038345fc4290f10e' },
         user_id: { type: 'string', example: '68b9c17b445a8108efdf8d43' },
-        payment_type: {
-          type: 'string',
-          enum: ['Parcial', 'Final'],
-          example: 'Parcial',
-        },
         payment_method: {
           type: 'string',
           enum: ['Yape', 'Plin', 'Transferencia', 'MercadoPago'],
