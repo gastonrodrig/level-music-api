@@ -35,7 +35,7 @@ export class EventTask {
   @Prop({ length: 255 })
   title: string;
   
-  @Prop({ type: Boolean, default: false })
+  @Prop({ type: Boolean, default: true })
   requires_evidence: boolean;
 
   @Prop({ type: String, enum: TaskPhase, default: TaskPhase.PLANIFICACION })

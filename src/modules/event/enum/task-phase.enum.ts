@@ -1,5 +1,5 @@
 export enum TaskPhase {
-PLANIFICACION = 'Planificación',
+  PLANIFICACION = 'Planificación',
   EJECUCION = 'Ejecución',
   SEGUIMIENTO = 'Seguimiento',
 }

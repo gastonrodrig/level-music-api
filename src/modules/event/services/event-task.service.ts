@@ -39,13 +39,27 @@ export class EventTaskService {
 
   async findByEventId(eventId?: string): Promise<EventTask[]> {
     try {
-      const objectId = new Types.ObjectId(eventId);
-      const query = eventId ? { event: objectId } : {};
       if (!eventId) {
         throw new BadRequestException('Event ID is required');
       }
-      const tasks = await this.eventTaskModel.find(query).lean().exec();
-      return tasks;
+      const objectId = new Types.ObjectId(eventId);
+      
+      const tasks = await this.eventTaskModel.find({ event: objectId }).lean().exec();
+      const taskIds = tasks.map(t => t._id.toString());
+
+      const evidences = await this.taskEvidenceService.findByTaskId(taskIds);
+
+      const byTask = evidences.reduce((acc: any, e: any) => {
+        const k = e.event_task_id.toString();
+        (acc[k] = acc[k] || []).push(e);
+        return acc;
+      }, {});
+
+      return tasks.map((t: any) => ({
+        ...t,
+        evidences: byTask[t._id.toString()] || [],
+        
+      }));
 
     } catch (error) {
       throw new InternalServerErrorException(`Error finding tasks for event ${eventId}: ${error.message}`);
@@ -61,7 +75,7 @@ export class EventTaskService {
       const workerType = await this.workerTypeModel.findById(createEventTaskDto.worker_type_id);
       if (!workerType) throw new BadRequestException('Worker type not found');
       workerTypeName = workerType.name;
-
+      
       let workerName: string ;
       const worker = await this.workerModel.findById(createEventTaskDto.worker_id);
       workerName = `${(worker.first_name )} ${(worker.last_name)}`.trim();
@@ -129,6 +143,16 @@ export class EventTaskService {
       if (!eventTask) {
         throw new BadRequestException('Tarea de evento no encontrado');
       }
+     
+      const worker = await this.workerModel.findById(updateEventTaskDto.worker_id).lean();
+      if (!worker) throw new BadRequestException('Trabajador no encontrado');
+      eventTask.worker = worker._id;
+      eventTask.worker_name = `${worker.first_name} ${worker.last_name}`.trim();
+      const workerType = await this.workerTypeModel.findById(worker.worker_type).lean();
+      if (!workerType) throw new BadRequestException('Tipo de trabajador no encontrado');
+      eventTask.worker_type = workerType._id;
+      eventTask.worker_type_name = workerType.name;
+      
       Object.assign(eventTask, updateEventTaskDto);
       return await eventTask.save();
     } catch (error) {

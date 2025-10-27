@@ -13,12 +13,12 @@ export class CreateEventTaskDto {
 
   @ApiProperty({ type: String, description: "EventType id (opcional si se infiere desde el event)" })
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   event_type_id?: Types.ObjectId;
 
   @ApiProperty({ type: String, description: "Worker type id (requerido para asignación de perfil de trabajador)" })
   @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   worker_type_id: string;
 
   @ApiProperty({ type: String, description: "Worker id (si ya está asignado)" })
@@ -28,7 +28,7 @@ export class CreateEventTaskDto {
 
   @ApiPropertyOptional({ description: "Título de la tarea. Si no se envía y se incluye attribute_index/attribute_name, el backend debe resolver title = attribute_name" })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   title?: string;
 
   @ApiProperty({ description: "Notas u observaciones" })

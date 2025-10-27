@@ -35,8 +35,18 @@ export class TaskEvidenceService {
       throw new InternalServerErrorException(`Error uploading evidences: ${error.message}`);
     }
   }
-  async findByTaskId(taskId: string): Promise<any[]> {
-    return this.taskEvidenceModel.find({ event_task_id: new Types.ObjectId(taskId) }).lean().exec();
+  async findByTaskId(taskIds: string[]): Promise<TaskEvidence[]> {
+    const objectIds = taskIds
+      .filter(Boolean)
+      .map(id => {
+        try { return new Types.ObjectId(id); } catch { return null; }
+      })
+      .filter(Boolean) as Types.ObjectId[];
+
+    return await this.taskEvidenceModel
+      .find({ event_task_id: { $in: objectIds } })
+      .lean()
+      .exec();
   }
 
   async removeEvidence(evidenceId: string) {

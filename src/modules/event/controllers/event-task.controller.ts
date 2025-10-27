@@ -13,7 +13,7 @@ import {
   UseGuards,
   UploadedFiles,
   UseInterceptors,
-  
+  Patch
 } from '@nestjs/common';
 
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -119,13 +119,16 @@ export class EventTaskController {
     return this.eventTaskService.findByStatus(status);
   }
 
-  @Put(':id')
+  @Patch(':id/worker')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar una tarea de evento por ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'La tarea de evento ha sido actualizada correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar la tarea de evento.' })
-  update(@Param('id') id: string, @Body() updateEventTaskDto: UpdateEventTaskDto) {
-    return this.eventTaskService.update(id, updateEventTaskDto);
+  @ApiOperation({ summary: 'Actualizar solo el trabajador asignado a una tarea de evento' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Trabajador actualizado correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el trabajador.' })
+  async updateWorker(
+    @Param('id') id: string,
+    @Body() dto: UpdateEventTaskDto,
+  ) {
+    return this.eventTaskService.update(id, dto);
   }
 }
