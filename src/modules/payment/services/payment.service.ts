@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PaymentSchedule } from '../schema/payment-schedules.schema';
@@ -84,57 +84,129 @@ export class PaymentService {
 
   async processManualPayment(
     dto: CreateManualPaymentDto,
-    file?: Express.Multer.File,
+    files: Express.Multer.File[],
     mode: 'partial' | 'both' = 'partial',
   ) {
-    const { schedule_id, event_id, user_id, amount } = dto;
+    const { event_id, user_id, payments } = dto;
 
-    // Subir comprobante
-    let voucher_url = '';
-    if (file) {
+    if (!payments?.length) {
+      throw new BadRequestException('Debe enviar al menos un pago.');
+    }
+
+    if (!files?.length || files.length !== payments.length) {
+      throw new BadRequestException(
+        'Debe enviar una imagen por cada pago, en el mismo orden.',
+      );
+    }
+
+    // 🔹 Obtener los schedules del evento
+    const schedules = await this.scheduleModel
+      .find({ event: toObjectId(event_id) })
+      .lean();
+
+    const parcialSchedule = schedules.find((s) => s.payment_type === 'Parcial');
+    const finalSchedule = schedules.find((s) => s.payment_type === 'Final');
+
+    if (!parcialSchedule && mode === 'both') {
+      throw new BadRequestException('No se encontró el schedule de pago parcial.');
+    }
+
+    if (!finalSchedule && mode === 'both') {
+      throw new BadRequestException('No se encontró el schedule de pago final.');
+    }
+
+    const createdPayments = [];
+    let restanteParcial = parcialSchedule?.total_amount || 0;
+    let restanteFinal = finalSchedule?.total_amount || 0;
+
+    for (let i = 0; i < payments.length; i++) {
+      const pay = payments[i];
+      const file = files[i];
+
+      // Subir imagen
       const upload = await this.storageService.uploadFile(
         'payments',
         file,
         String(event_id),
       );
-      voucher_url = upload.url;
-    }
+      const voucher_url = upload.url;
 
-    // Crear pago manual para el pago parcial
-    const payment = await this.paymentModel.create({
-      ...dto,
-      event_id: toObjectId(event_id),
-      schedule_id: toObjectId(schedule_id),
-      payment_type: PaymentType.PARCIAL,
-      user_id: toObjectId(user_id),
-      amount: Number(amount),
-      voucher_url,
-    });
+      // 🔹 Determinar a qué schedule aplicar el pago
+      let targetSchedule = null;
+      let paymentType = pay.payment_type;
 
-    // Si el modo es "both", crear también el pago final
-    if (mode === 'both') {
-      const schedules = await this.scheduleModel.find({ event: toObjectId(event_id) });
-      const finalSchedule = schedules.find(
-        (s) => s.payment_type === PaymentType.FINAL,
-      );
+      if (mode === 'both') {
+        // Prioriza cubrir el pago parcial primero
+        if (restanteParcial > 0) {
+          targetSchedule = parcialSchedule;
+          paymentType = PaymentType.PARCIAL;
+          restanteParcial -= pay.amount;
+          if (restanteParcial < 0) restanteParcial = 0;
+        } else {
+          targetSchedule = finalSchedule;
+          paymentType = PaymentType.FINAL;
+          restanteFinal -= pay.amount;
+          if (restanteFinal < 0) restanteFinal = 0;
+        }
+      } else {
+        // Modo parcial: se usa el schedule_id proporcionado
+        const schedule = await this.scheduleModel.findById(pay.schedule_id);
+        if (!schedule)
+          throw new BadRequestException(
+            `No se encontró el PaymentSchedule con ID ${pay.schedule_id}`,
+          );
+        targetSchedule = schedule;
+        paymentType = schedule.payment_type;
+      }
 
-      if (finalSchedule) {
-        await this.paymentModel.create({
-          ...dto,
-          schedule_id: finalSchedule._id,
-          payment_type: PaymentType.FINAL,
-          amount: finalSchedule.total_amount,
-          voucher_url,
+      if (!targetSchedule) {
+        throw new BadRequestException(
+          'No se encontró un schedule válido para aplicar el pago.',
+        );
+      }
+
+      // Crear registro del pago
+      const payment = await this.paymentModel.create({
+        payment_type: paymentType,
+        payment_method: pay.payment_method,
+        amount: pay.amount,
+        operation_number: pay.operation_number || null,
+        voucher_url,
+        status: PaymentStatus.PENDIENTE,
+        schedule: toObjectId(targetSchedule._id),
+        event: toObjectId(event_id),
+        user: toObjectId(user_id),
+      });
+
+      createdPayments.push(payment);
+
+      // 🔹 Verificar si ese schedule ya se completó
+      const totalPagado = await this.paymentModel.aggregate([
+        {
+          $match: {
+            schedule: toObjectId(targetSchedule._id),
+            status: PaymentStatus.COMPLETO,
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]);
+
+      const totalConfirmado = totalPagado[0]?.total || 0;
+      if (totalConfirmado >= (targetSchedule.total_amount || 0)) {
+        await this.scheduleModel.findByIdAndUpdate(targetSchedule._id, {
+          status: PaymentStatus.COMPLETO,
         });
       }
     }
 
     return {
+      statusCode: HttpStatus.CREATED,
       message:
         mode === 'both'
-          ? 'Pagos parcial y final registrados correctamente.'
-          : 'Pago parcial registrado correctamente.',
-      payment,
+          ? 'Pagos parcial y final registrados correctamente (priorizando el parcial).'
+          : 'Pagos manuales registrados correctamente.',
+      count: createdPayments.length,
+      payments: createdPayments,
     };
   }
 

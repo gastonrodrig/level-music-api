@@ -8,6 +8,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -21,7 +22,7 @@ import {
 import { PaymentService } from '../services/payment.service';
 import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators';
 
 @ApiTags('Payments')
@@ -47,62 +48,63 @@ export class PaymentController {
   }
 
   @Post('manual')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
   @Public()
-  @UseInterceptors(FileInterceptor('voucher'))
+  @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Registrar un pago manual con comprobante adjunto' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Pago manual registrado correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al registrar el pago manual.' })
+  @ApiOperation({ summary: 'Registrar varios pagos manuales con comprobantes (uno por método)' })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Pagos registrados correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al registrar los pagos.' })
   @ApiQuery({
     name: 'mode',
-    enum: ['partial', 'both'],
-    required: true,
-    description:
-      'Modo de pago: "partial" para solo anticipo, "both" para pagar parcial + final.',
+    required: false,
+    description: 'Modo de pago: parcial (por defecto) o ambos',
     example: 'partial',
+    schema: {
+      type: 'string',
+      enum: ['partial', 'both'],
+      default: 'partial',
+    },
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         event_id: { type: 'string', example: '68fa352e038345fc4290f084' },
-        schedule_id: { type: 'string', example: '68fa35d1038345fc4290f10e' },
         user_id: { type: 'string', example: '68b9c17b445a8108efdf8d43' },
-        payment_method: {
-          type: 'string',
-          enum: ['Yape', 'Plin', 'Transferencia', 'MercadoPago'],
-          example: 'Yape',
+        payments: {
+          type: 'array',
+          description: 'Array de pagos con su información individual',
+          items: {
+            type: 'object',
+            properties: {
+              schedule_id: { type: 'string', example: '68fa35d1038345fc4290f10e' },
+              payment_type: { type: 'string', example: 'Parcial' },
+              payment_method: {
+                type: 'string',
+                enum: ['Yape', 'Plin', 'Transferencia', 'Efectivo'],
+                example: 'Yape',
+              },
+              amount: { type: 'number', example: 300 },
+              operation_number: { type: 'string', example: 'YP123456' },
+            },
+            required: ['schedule_id', 'payment_type', 'payment_method', 'amount'],
+          },
         },
-        amount: { type: 'number', example: 600 },
-        transaction_number: {
-          type: 'string',
-          example: '9876543210',
-        },
-        voucher: {
-          type: 'string',
-          format: 'binary',
-          description: 'Imagen del comprobante de pago',
+        images: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Array de imágenes (una por cada pago, en el mismo orden)',
         },
       },
-      required: [
-        'event_id',
-        'schedule_id',
-        'user_id',
-        'payment_type',
-        'payment_method',
-        'amount',
-        'voucher',
-      ],
+      required: ['event_id', 'user_id', 'payments', 'images'],
     },
   })
   async processManualPayment(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: Express.Multer.File[],
     @Body() dto: CreateManualPaymentDto,
-    @Query('mode') mode: 'partial' | 'both',
+    @Query('mode') mode: 'partial' | 'both' = 'partial',
   ) {
-    return this.paymentService.processManualPayment(dto, file, mode);
+    return this.paymentService.processManualPayment(dto, files, mode);
   }
 
   @Post('test/mercadopago')
