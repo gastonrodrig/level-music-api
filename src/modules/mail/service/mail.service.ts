@@ -494,7 +494,7 @@ export class MailService {
     await this.transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: dto.to,
-      subject: '✅ Tu cita ha sido confirmada - Level Music Corp',
+      subject: ' Tu cita ha sido confirmada - Level Music Corp',
       html,
     });
   }
