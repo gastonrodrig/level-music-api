@@ -11,36 +11,60 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   UseGuards,
+  UploadedFiles,
+  UseInterceptors,
+  Patch
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
 import { EventTaskService } from '../services/event-task.service';
 import { CreateEventTaskDto, UpdateEventTaskDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { get } from 'mongoose';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+
 
 @Controller('event-tasks')
 @ApiTags('Event-Task')
 export class EventTaskController {
   constructor(private readonly eventTaskService: EventTaskService) {}
 
+ 
   @Post()
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear una nueva tarea de evento' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'La tarea de evento ha sido creada correctamente.',
+  @ApiOperation({ summary: 'Crear una nueva tarea de evento (acepta archivos multipart/form-data)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        event_id: { type: 'string' },
+        worker_type_id: { type: 'string' },
+        worker_id: { type: 'string' },
+        title: { type: 'string' },
+        notes: { type: 'string' },
+        status: { type: 'string' },
+        phase: { type: 'string' },
+        requires_evidence: { type: 'boolean' },
+        event_type_id: { type: 'string' },
+        // archivos: field 'files' como array de binario
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+      required: ['event_id', 'worker_type_id', 'title'],
+    },
   })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear la tarea de evento.',
-  })
-  create(@Body() createEventTaskDto: CreateEventTaskDto) {
-    return this.eventTaskService.create(createEventTaskDto);
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'files', maxCount: 10 }]))
+  create(
+    @UploadedFiles() files: { files?: Express.Multer.File[] },
+    @Body() createEventTaskDto: CreateEventTaskDto,
+  ) {
+    return this.eventTaskService.create(createEventTaskDto, files?.files ?? []);
   }
-
   @Get(':id')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -95,13 +119,16 @@ export class EventTaskController {
     return this.eventTaskService.findByStatus(status);
   }
 
-  @Put(':id')
+  @Patch(':id/worker')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar una tarea de evento por ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'La tarea de evento ha sido actualizada correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar la tarea de evento.' })
-  update(@Param('id') id: string, @Body() updateEventTaskDto: UpdateEventTaskDto) {
-    return this.eventTaskService.update(id, updateEventTaskDto);
+  @ApiOperation({ summary: 'Actualizar solo el trabajador asignado a una tarea de evento' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Trabajador actualizado correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el trabajador.' })
+  async updateWorker(
+    @Param('id') id: string,
+    @Body() dto: UpdateEventTaskDto,
+  ) {
+    return this.eventTaskService.update(id, dto);
   }
 }

@@ -10,6 +10,7 @@ import { Model,Types } from 'mongoose';
 import { SF_EVENT_TASK } from 'src/core/utils';
 import { EventTask, Event, EventType } from '../schema';
 import { WorkerType,Worker } from 'src/modules/worker/schema';
+import { TaskEvidenceService } from './event-task-evidence.service';
 
 @Injectable()
 export class EventTaskService {
@@ -24,7 +25,7 @@ export class EventTaskService {
     private workerTypeModel: Model<WorkerType>,
     @InjectModel(Worker.name)
     private workerModel: Model<Worker>,
-
+    private readonly taskEvidenceService: TaskEvidenceService,
   ) {}
 
   async findByStatus( status?: string): Promise<EventTask[]> {
@@ -38,20 +39,34 @@ export class EventTaskService {
 
   async findByEventId(eventId?: string): Promise<EventTask[]> {
     try {
-      const objectId = new Types.ObjectId(eventId);
-      const query = eventId ? { event: objectId } : {};
       if (!eventId) {
         throw new BadRequestException('Event ID is required');
       }
-      const tasks = await this.eventTaskModel.find(query).lean().exec();
-      return tasks;
+      const objectId = new Types.ObjectId(eventId);
+      
+      const tasks = await this.eventTaskModel.find({ event: objectId }).lean().exec();
+      const taskIds = tasks.map(t => t._id.toString());
+
+      const evidences = await this.taskEvidenceService.findByTaskId(taskIds);
+
+      const byTask = evidences.reduce((acc: any, e: any) => {
+        const k = e.event_task_id.toString();
+        (acc[k] = acc[k] || []).push(e);
+        return acc;
+      }, {});
+
+      return tasks.map((t: any) => ({
+        ...t,
+        evidences: byTask[t._id.toString()] || [],
+        
+      }));
 
     } catch (error) {
       throw new InternalServerErrorException(`Error finding tasks for event ${eventId}: ${error.message}`);
     }
   }
 
-  async create(createEventTaskDto: CreateEventTaskDto): Promise<EventTask> {
+  async create(createEventTaskDto: CreateEventTaskDto, files: Express.Multer.File[] = []): Promise<EventTask> {
     try {
       const event = await this.eventModel.findById(createEventTaskDto.event_id);
       if (!event) throw new BadRequestException('Event not found');
@@ -60,7 +75,7 @@ export class EventTaskService {
       const workerType = await this.workerTypeModel.findById(createEventTaskDto.worker_type_id);
       if (!workerType) throw new BadRequestException('Worker type not found');
       workerTypeName = workerType.name;
-
+      
       let workerName: string ;
       const worker = await this.workerModel.findById(createEventTaskDto.worker_id);
       workerName = `${(worker.first_name )} ${(worker.last_name)}`.trim();
@@ -80,12 +95,26 @@ export class EventTaskService {
         event_type: eventType._id,
         
       });
-      console.log('Creating event task:', eventTask);
-      return await eventTask.save();
+      const saved = await eventTask.save();
+
+      // si vienen archivos, crear evidencias y asociarlas
+      if (files && files.length) {
+        const createdEvidences = await this.taskEvidenceService.createFromFiles(
+          saved._id.toString(),
+          files,
+          createEventTaskDto.worker_id,
+        );
+
+        if (Array.isArray(createdEvidences) && createdEvidences.length) {
+          saved.evidences = createdEvidences.map((e: any) => e._id);
+          await saved.save();
+        }
+      }
+
+      // devolver la tarea con evidencias pobladas
+      return await this.eventTaskModel.findById(saved._id).populate({ path: 'evidences' }).exec();
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Error creating event task: ${error.message}`,
-      );
+      throw new InternalServerErrorException(`Error creating event task: ${error.message}`);
     }
   }
 
@@ -114,6 +143,16 @@ export class EventTaskService {
       if (!eventTask) {
         throw new BadRequestException('Tarea de evento no encontrado');
       }
+     
+      const worker = await this.workerModel.findById(updateEventTaskDto.worker_id).lean();
+      if (!worker) throw new BadRequestException('Trabajador no encontrado');
+      eventTask.worker = worker._id;
+      eventTask.worker_name = `${worker.first_name} ${worker.last_name}`.trim();
+      const workerType = await this.workerTypeModel.findById(worker.worker_type).lean();
+      if (!workerType) throw new BadRequestException('Tipo de trabajador no encontrado');
+      eventTask.worker_type = workerType._id;
+      eventTask.worker_type_name = workerType.name;
+      
       Object.assign(eventTask, updateEventTaskDto);
       return await eventTask.save();
     } catch (error) {

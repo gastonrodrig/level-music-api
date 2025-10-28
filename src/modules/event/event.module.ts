@@ -4,7 +4,8 @@ import {
   Event, 
   EventType, 
   EventTask, 
-  EventSchema, 
+  EventSchema,
+  TaskEvidenceSchema,
   EventTypeSchema, 
   EventTaskSchema, 
   FeaturedEvent,
@@ -14,7 +15,8 @@ import {
   Assignation,
   AssignationSchema,
   ReprogramingsSchema,
-  Reprogramings
+  Reprogramings,
+  TaskEvidence
 } from './schema';
 import { 
   EventService, 
@@ -24,7 +26,8 @@ import {
   IncidentService, 
   AssignationsService,
   ReprogramingsService,
-  AppointmentsService
+  AppointmentsService,
+  TaskEvidenceService
 } from './services';
 import { 
   EventController, 
@@ -73,6 +76,7 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
         { name: Event.name, schema: EventSchema },
         { name: EventType.name, schema: EventTypeSchema },
         { name: EventTask.name, schema: EventTaskSchema },
+        { name: TaskEvidence.name, schema: TaskEvidenceSchema },
         { name: WorkerType.name, schema: WorkerTypeSchema },
         { name: User.name, schema: UserSchema },
         { name: FeaturedEvent.name, schema: FeaturedEventSchema },
@@ -94,6 +98,7 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
     EventService, 
     EventTypeService, 
     EventTaskService, 
+    TaskEvidenceService,
     FeaturedEventService,
     ReprogramingsService,
     FeaturedEventService,
