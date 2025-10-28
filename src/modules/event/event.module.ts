@@ -23,7 +23,8 @@ import {
   FeaturedEventService,
   IncidentService, 
   AssignationsService,
-  ReprogramingsService
+  ReprogramingsService,
+  AppointmentsService
 } from './services';
 import { 
   EventController, 
@@ -32,7 +33,8 @@ import {
   FeaturedEventController,
   IncidentController,
   AssignationsController,
-  ReprogramingsController
+  ReprogramingsController,
+  AppointmentsController
 } from './controllers';
 import { 
   addEventHooks, 
@@ -55,6 +57,7 @@ import { WorkerModule } from '../worker/worker.module';
 import { ServiceModule } from '../service/service.module';
 import { BullModule } from '@nestjs/bullmq';
 import { AuthModule } from 'src/auth/auth.module';
+import { Appointment, AppointmentSchema } from './schema/appointment.schema';
 
 @Module({
   imports: [
@@ -78,6 +81,7 @@ import { AuthModule } from 'src/auth/auth.module';
         { name: Assignation.name, schema: AssignationSchema },
         { name: Reprogramings.name, schema: ReprogramingsSchema },
         { name: PaymentSchedule.name, schema: PaymentScheduleSchema },
+        { name: Appointment.name, schema: AppointmentSchema },
         ]);
     })(),
     FirebaseModule,
@@ -95,6 +99,7 @@ import { AuthModule } from 'src/auth/auth.module';
     FeaturedEventService,
     IncidentService, 
     AssignationsService,
+    AppointmentsService
   ],
   controllers: [
     EventController, 
@@ -104,6 +109,7 @@ import { AuthModule } from 'src/auth/auth.module';
     ReprogramingsController,
     IncidentController,
     AssignationsController,
+    AppointmentsController
   ], 
 })
 export class EventModule {}

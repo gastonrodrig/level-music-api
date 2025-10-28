@@ -1,18 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
-  IsDate,
   IsOptional,
   IsNumber,
-  IsMongoId,
-  IsEnum,
   IsNotEmpty,
   IsArray,
   ValidateNested,
-  IsBoolean,
   IsDateString,
 } from 'class-validator';
-import { StatusType, PlaceType, QuotationCreator } from '../enum';
+import { PlaceType } from '../enum';
 import { Type } from 'class-transformer';
 
 class ServiceRequestedDto {
