@@ -5,14 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Model } from 'mongoose';
+import { Queue } from 'bullmq';
 import { Appointment } from '../schema/appointment.schema';
 import {
   CreateAppointmentDto,
   UpdateAppointmentDto,
 } from '../dto';
-import { AppointmentStatus } from '../enum';
+import { AppointmentStatus, MeetingType } from '../enum';
 import { User } from 'src/modules/user/schema';
+import { ClientType } from 'src/modules/user/enum';
 import { SF_APPOINTMENTS, toObjectId } from 'src/core/utils';
 
 @Injectable()
@@ -22,6 +25,8 @@ export class AppointmentsService {
     private readonly appointmentModel: Model<Appointment>,
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+    @InjectQueue('appointment-ready')
+    private readonly appointmentReadyQueue: Queue,
   ) {}
 
   async create(dto: CreateAppointmentDto): Promise<Appointment> {
@@ -104,8 +109,30 @@ export class AppointmentsService {
         throw new NotFoundException('Cita no encontrada');
       }
 
-      if (appointment.status === AppointmentStatus.CONFIRMADA) {
-        // aqui
+      // Solo enviar correo si cambia a CONFIRMADA y no estaba confirmada antes
+      if (dto.status === AppointmentStatus.CONFIRMADA && appointment.status !== AppointmentStatus.CONFIRMADA) {
+        const clientName = appointment.client_type === ClientType.PERSONA 
+          ? `${appointment.first_name} ${appointment.last_name}`
+          : appointment.contact_person;
+
+        const formattedDate = new Date(appointment.date).toLocaleDateString('es-ES', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
+        const meetingTypeText = appointment.meeting_type === MeetingType.VIRTUAL ? 'Virtual' : 'Presencial';
+
+        // Agregar el job a la cola
+        await this.appointmentReadyQueue.add('send-appointment-confirmation', {
+          to: appointment.email,
+          clientName,
+          meetingType: meetingTypeText,
+          date: formattedDate,
+          hour: appointment.hour,
+          attendeesCount: appointment.attendees_count,
+        });
       }
 
       appointment.status = dto.status;

@@ -11,32 +11,35 @@ import { User, UserSchema } from "../user/schema";
 import { FirebaseModule } from "../firebase/firebase.module";
 import { ActivationTokenService } from "src/auth/services";
 import { ActivationToken, ActivationTokenSchema } from "src/auth/schema";
+import { AppointmentReadyProcessor } from './processor/appointment-ready.processor';
 
-  @Module({
-    imports: [
-      BullModule.registerQueue(
-        { name: 'temporal-credentials' },
-        { name: 'forgot-password' },
-        { name: 'quotation-ready' },  
-        { name: 'activation-clicks' }
-      ),
-      MongooseModule.forFeature([
-        { name: User.name, schema: UserSchema },
-        { name: Event.name, schema: EventSchema },
-        { name: Assignation.name, schema: AssignationSchema },
-        { name: ActivationToken.name, schema: ActivationTokenSchema }
-      ]),
-      FirebaseModule,
-    ],
-    providers: [
-      MailService,
-      MailProcessor,
-      ForgotPasswordProcessor,
-      QuotationReadyProcessor,
-      ActivationClickProcessor,
-      ActivationTokenService,
-    ],
-    exports: [MailService],
-    controllers: [MailController],
-  })
-  export class MailModule {}
+@Module({
+  imports: [
+    BullModule.registerQueue(
+      { name: 'temporal-credentials' },
+      { name: 'forgot-password' },
+      { name: 'quotation-ready' },  
+      { name: 'activation-clicks' },
+      { name: 'appointment-ready' }
+    ),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Event.name, schema: EventSchema },
+      { name: Assignation.name, schema: AssignationSchema },
+      { name: ActivationToken.name, schema: ActivationTokenSchema }
+    ]),
+    FirebaseModule,
+  ],
+  providers: [
+    MailService,
+    MailProcessor,
+    ForgotPasswordProcessor,
+    QuotationReadyProcessor,
+    ActivationClickProcessor,
+    ActivationTokenService,
+    AppointmentReadyProcessor,
+  ],
+  exports: [MailService],
+  controllers: [MailController],
+})
+export class MailModule {}

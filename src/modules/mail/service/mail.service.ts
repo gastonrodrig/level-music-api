@@ -399,4 +399,103 @@ export class MailService {
       html,
     });
   }
+
+  async sendAppointmentReadyMail(dto: {
+    to: string;
+    clientName: string;
+    meetingType: string;
+    date: string;
+    hour: string;
+    attendeesCount: number;
+  }) {
+    const appUrl = process.env.APP_URL;
+
+    const baseHead = `
+      <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap" rel="stylesheet">
+      <meta name="color-scheme" content="light only">
+      <meta name="supported-color-schemes" content="light">
+    `;
+
+    const html = `
+    <html>
+      <head>${baseHead}</head>
+      <body style="margin:0; padding:0; background:#DFE0E2; font-family:'Mulish', Arial, sans-serif;">
+        <div style="background:#E08438; padding:32px;">
+          <div style="max-width:520px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); padding:32px; border:1px solid #C1BFC0;">
+            <h2 style="color:#252020; font-weight:700; margin-top:0;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Tu cita ha sido confirmada
+            </h2>
+            <p style="color:#252020; font-size:16px; margin:0 0 12px 0;">Hola ${dto.clientName}</p>
+            <p style="color:#252020; font-size:16px; margin:0 0 16px 0;">
+              Tu cita ha sido confirmada exitosamente. A continuación los detalles:
+            </p>
+            
+            <div style="background:#F9F9F9; padding:16px; border-radius:6px; border:1px solid #E0E0E0; margin-top:16px;">
+              <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Tipo de Reunión:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.meetingType}</td>
+                </tr>
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M16 2v4M8 2v4M3 10h18" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Fecha:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.date}</td>
+                </tr>
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <circle cx="12" cy="12" r="10" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M12 6v6l4 2" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Hora:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.hour}</td>
+                </tr>
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Asistentes:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.attendeesCount}</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="margin-top:24px; padding:12px; border-left:4px solid #C1BFC0; background:#FBFBFB; color:#252020; border-radius:4px;">
+              Por favor, asegúrate de estar disponible en la fecha y hora indicadas. Si necesitas realizar algún cambio, contáctanos.
+            </div>
+
+            <hr style="border:none; border-top:1px solid #C1BFC0; margin:32px 0;">
+            <div style="font-size:14px; color:#252020;">
+              Este mensaje fue enviado por
+              <a href="${appUrl}" style="color:#E08438; text-decoration:none; font-weight:700;">Level Music Corp</a>.
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>`.trim();
+
+    await this.transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: dto.to,
+      subject: '✅ Tu cita ha sido confirmada - Level Music Corp',
+      html,
+    });
+  }
 }
