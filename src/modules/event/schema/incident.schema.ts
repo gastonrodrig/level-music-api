@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { Equipment } from 'src/modules/equipments/schema';
 import { Worker } from 'src/modules/worker/schema';
+import { Event } from 'src/modules/event/schema'; // agregado: referencia al Event schema
 import { EquipmentType } from '../enum';
 import { IncidentType } from '../enum';
 

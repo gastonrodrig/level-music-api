@@ -41,6 +41,13 @@ export class Worker {
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  @Prop({ type: Number, default: 1 }) 
+  season_number: number;
+
+  @Prop({ type: Date, default: Date.now }) 
+  last_price_updated_at: Date;
 }
+
 
 export const WorkerSchema = SchemaFactory.createForClass(Worker);

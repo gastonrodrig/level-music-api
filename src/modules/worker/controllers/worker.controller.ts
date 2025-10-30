@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -25,8 +24,7 @@ export class WorkerController {
   constructor(private readonly workerService: WorkerService) {}
 
   @Post()
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo trabajador' })
   @ApiResponse({
@@ -109,8 +107,7 @@ export class WorkerController {
   }
 
   @Put(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un trabajador por ID' })
   @ApiResponse({
