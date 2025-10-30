@@ -18,50 +18,43 @@ export class WorkerPriceService {
     private workerPriceModel: Model<WorkerPrice>,
   ) {}
 
-    async updateReferencePrice(dto: CreateWorkerPriceDto): Promise<WorkerPrice> {
+  async updateReferencePrice(dto: CreateWorkerPriceDto): Promise<WorkerPrice> {
     try {
-      // Verificar que el trabajador exista
       const worker = await this.workerModel.findById(dto.worker_id);
-      if (!worker) {
-        throw new NotFoundException('Trabajador no encontrado');
-      }
+      if (!worker) throw new NotFoundException('Trabajador no encontrado');
 
-      // fecha de inicio para start_date
+      // Obtener la fecha de inicio de la temporada actual
       const start_date = worker.last_price_updated_at;
 
-      // fecha actual para end_date
-      const now = new Date(); 
+      // Fecha actual para el fin de la temporada
+      const now = new Date();
 
-      // Actualizar worker
-      const updatedWorker = await this.workerModel.findByIdAndUpdate(
+      // Número de temporada actual
+      const season_number = worker.season_number ?? 1;
+
+      // Crear un nuevo registro en WorkerPrice con la temporada anterior
+      const newPrice = new this.workerPriceModel({
+        worker: worker._id,
+        reference_price: dto.reference_price,
+        start_date,
+        end_date: now,
+        season_number,
+      });
+      await newPrice.save();
+
+      // Luego sí actualizas el trabajador
+      await this.workerModel.findByIdAndUpdate(
         dto.worker_id,
         {
           $set: {
             reference_price: dto.reference_price,
             last_price_updated_at: now,
           },
-          $inc: { season_number: 1 }, // Incrementar season_number
+          $inc: { season_number: 1 }, // recién ahora se incrementa
         },
-        { new: true },
       );
 
-      if (!updatedWorker) {
-        throw new InternalServerErrorException('No se pudo actualizar el trabajador');
-      }
-
-      // season_number según la versión actualizada del trabajador
-      const season_number = updatedWorker.season_number;
-
-      // Crear nuevo registro en worker_prices
-      const newPrice = new this.workerPriceModel({
-        worker: updatedWorker._id,
-        reference_price: dto.reference_price,
-        start_date,
-        end_date: now,
-        season_number,
-      });
-
-      return await newPrice.save();
+      return newPrice;
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al actualizar el precio de referencia: ${error.message}`,
