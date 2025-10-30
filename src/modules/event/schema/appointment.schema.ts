@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { ClientType } from "src/modules/user/enum";
 import { DocType } from "src/core/constants/app.constants";
 import { AppointmentStatus, MeetingType } from "../enum";
-import { User } from "mercadopago";
+import { User } from 'src/modules/user/schema'; // reemplazado: antes venía de "mercadopago"
 import { Types } from "mongoose";
 
 @Schema({ collection: 'appointments' })

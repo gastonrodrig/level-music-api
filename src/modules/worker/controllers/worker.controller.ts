@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { WorkerService } from '../services/worker.service';
-import { CreateWorkerDto, UpdateWorkerDto } from '../dto';
+import { CreateWorkerDto, CreateWorkerPriceDto, UpdateWorkerDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { Public } from 'src/auth/decorators';
@@ -25,8 +25,7 @@ export class WorkerController {
   constructor(private readonly workerService: WorkerService) {}
 
   @Post()
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo trabajador' })
   @ApiResponse({
@@ -109,8 +108,7 @@ export class WorkerController {
   }
 
   @Put(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un trabajador por ID' })
   @ApiResponse({
@@ -123,5 +121,14 @@ export class WorkerController {
   })
   update(@Param('id') id: string, @Body() updateWorkerDto: UpdateWorkerDto) {
     return this.workerService.update(id, updateWorkerDto);
+  }
+
+  @Post('update-reference-price')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar precio de referencia y registrar temporada' })
+  @ApiResponse({ status: 200, description: 'Precio actualizado correctamente' })
+  async updateReferencePrice(@Body() dto: CreateWorkerPriceDto) {
+    return this.workerService.updateReferencePrice(dto);
   }
 }

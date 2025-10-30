@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Worker } from '../schema';
-import { CreateWorkerDto, UpdateWorkerDto } from '../dto';
+import { Worker, WorkerPrice } from '../schema';
+import { CreateWorkerDto, CreateWorkerPriceDto, UpdateWorkerDto } from '../dto';
 import { WorkerType } from '../schema';
 import { SF_WORKER } from 'src/core/utils';
 import { User } from 'src/modules/user/schema';
@@ -29,6 +29,8 @@ export class WorkerService {
     private workerTypeModel: Model<WorkerType>,
     @InjectModel(User.name)
     private userModel: Model<User>,
+    @InjectModel(WorkerPrice.name)
+    private workerPriceModel: Model<WorkerPrice>,
     @InjectQueue('temporal-credentials')
     private temporalCredentialsQueue: Queue,
     private authService: AuthService,
@@ -252,6 +254,9 @@ export class WorkerService {
 
       // Buscar trabajador
       const worker = await this.workerModel.findById(worker_id);
+      if (!worker) {
+        throw new BadRequestException('Trabajador no encontrado');
+      }
 
       // Buscar tipo de trabajador
       const workerType = await this.workerTypeModel.findById(worker.worker_type);
@@ -263,7 +268,6 @@ export class WorkerService {
       ) {
         const user = await this.userModel.findById(worker.user);
 
-        // Si no existe el usuario, lanzar excepción
         if (!user) throw new BadRequestException(`User not found`);
 
         // Actualizar usuario en Firebase
@@ -283,14 +287,13 @@ export class WorkerService {
         });
       }
 
-      // Actualizar el trabajador
+     // Actualizar el trabajador
       const updatedWorker = await this.workerModel.findOneAndUpdate(
         { _id: worker_id },
         updateWorkerDto,
         { new: true },
       );
-      
-      // Si no se encontró el trabajador, lanzar excepción
+
       if (!updatedWorker) {
         throw new BadRequestException(`Worker not found`);
       }
@@ -303,4 +306,56 @@ export class WorkerService {
       );
     }
   }
+
+   async updateReferencePrice(dto: CreateWorkerPriceDto) {
+    try {
+      // Verificar que el trabajador exista
+      const worker = await this.workerModel.findById(dto.worker_id);
+      if (!worker) {
+        throw new NotFoundException('Trabajador no encontrado');
+      }
+
+      // fecha de inicio para start_date
+      const start_date = worker.last_price_updated_at;
+
+      // fecha actual para end_date
+      const now = new Date(); 
+
+      // Actualizar worker
+      const updatedWorker = await this.workerModel.findByIdAndUpdate(
+        dto.worker_id,
+        {
+          $set: {
+            reference_price: dto.reference_price,
+            last_price_updated_at: now,
+          },
+          $inc: { season_number: 1 }, // Incrementar season_number
+        },
+        { new: true },
+      );
+
+      if (!updatedWorker) {
+        throw new InternalServerErrorException('No se pudo actualizar el trabajador');
+      }
+
+      // season_number según la versión actualizada del trabajador
+      const season_number = updatedWorker.season_number;
+
+      // Crear nuevo registro en worker_prices
+      const newPrice = new this.workerPriceModel({
+        worker: updatedWorker._id,
+        reference_price: dto.reference_price,
+        start_date,
+        end_date: now,
+        season_number,
+      });
+
+      return await newPrice.save();
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al actualizar el precio de referencia: ${error.message}`,
+      );
+    }
+  }
 }
+

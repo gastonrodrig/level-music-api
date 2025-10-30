@@ -5,6 +5,8 @@ import {
   WorkerType,
   WorkerSchema,
   WorkerTypeSchema,
+  WorkerPrice,
+  WorkerPriceSchema,
 } from './schema';
 import {
   WorkerService,
@@ -32,6 +34,7 @@ import { BullModule } from '@nestjs/bullmq';
     ),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
+      { name: WorkerPrice.name, schema: WorkerPriceSchema },
     ]),
     MongooseModule.forFeatureAsync([
       {
