@@ -306,56 +306,5 @@ export class WorkerService {
       );
     }
   }
-
-   async updateReferencePrice(dto: CreateWorkerPriceDto) {
-    try {
-      // Verificar que el trabajador exista
-      const worker = await this.workerModel.findById(dto.worker_id);
-      if (!worker) {
-        throw new NotFoundException('Trabajador no encontrado');
-      }
-
-      // fecha de inicio para start_date
-      const start_date = worker.last_price_updated_at;
-
-      // fecha actual para end_date
-      const now = new Date(); 
-
-      // Actualizar worker
-      const updatedWorker = await this.workerModel.findByIdAndUpdate(
-        dto.worker_id,
-        {
-          $set: {
-            reference_price: dto.reference_price,
-            last_price_updated_at: now,
-          },
-          $inc: { season_number: 1 }, // Incrementar season_number
-        },
-        { new: true },
-      );
-
-      if (!updatedWorker) {
-        throw new InternalServerErrorException('No se pudo actualizar el trabajador');
-      }
-
-      // season_number según la versión actualizada del trabajador
-      const season_number = updatedWorker.season_number;
-
-      // Crear nuevo registro en worker_prices
-      const newPrice = new this.workerPriceModel({
-        worker: updatedWorker._id,
-        reference_price: dto.reference_price,
-        start_date,
-        end_date: now,
-        season_number,
-      });
-
-      return await newPrice.save();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error al actualizar el precio de referencia: ${error.message}`,
-      );
-    }
-  }
 }
 

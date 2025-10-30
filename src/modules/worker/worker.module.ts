@@ -9,11 +9,13 @@ import {
   WorkerPriceSchema,
 } from './schema';
 import {
+  WorkerPriceService,
   WorkerService,
   WorkerTypeService,
 } from './services';
 import {
   WorkerController,
+  WorkerPriceController,
   WorkerTypeController,
 } from './controllers';
 import { 
@@ -57,10 +59,12 @@ import { BullModule } from '@nestjs/bullmq';
     FirebaseModule
   ],
   providers: [
+    WorkerPriceService,
     WorkerTypeService, 
     WorkerService
   ],
   controllers: [
+    WorkerPriceController,
     WorkerTypeController, 
     WorkerController
   ],
