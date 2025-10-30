@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Worker, WorkerPrice } from '../schema';
 import { CreateWorkerPriceDto } from '../dto';
+import { toObjectId } from 'src/core/utils';
 
 @Injectable()
 export class WorkerPriceService {
@@ -77,7 +78,7 @@ export class WorkerPriceService {
   ): Promise<{ total: number; items: WorkerPrice[] }> {
     try {
       const filter: any = {};
-      filter.worker = worker_id;
+      filter.worker = toObjectId(worker_id);
       
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
