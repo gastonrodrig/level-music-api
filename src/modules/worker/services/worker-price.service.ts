@@ -74,7 +74,7 @@ export class WorkerPriceService {
       filter.worker = toObjectId(worker_id);
       
       const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
+        [sortField]: sortOrder === 'desc' ? -1 : 1,
       };
 
       const [items, total] = await Promise.all([

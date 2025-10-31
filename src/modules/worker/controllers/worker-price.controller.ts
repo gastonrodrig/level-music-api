@@ -52,7 +52,7 @@ export class WorkerPriceController {
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
-    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+    @Query('sortOrder', new DefaultValuePipe('desc')) sortOrder?: 'asc' | 'desc',
     @Query('worker_id') worker_id?: string,
   ) {
     return this.workerPriceService.findPricesPaginated(
