@@ -9,7 +9,11 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Maintenance, Equipment, EquipmentAvailability } from '../schema';
-import { CreateEquipmentDto, UpdateEquipmentDto } from '../dto';
+import {
+  CreateEquipmentDto,
+  UpdateEquipmentDto,
+  CreateEquipmentPriceDto,
+} from '../dto';
 import { MaintenanceService } from '.';
 import { SF_EQUIPMENT, getCurrentDate, toObjectId } from 'src/core/utils';
 import {
@@ -19,6 +23,7 @@ import {
 } from '../enum';
 import { errorCodes } from 'src/core/common';
 import * as dayjs from 'dayjs';
+import { EquipmentPrice } from '../schema/';
 
 @Injectable()
 export class EquipmentService {
@@ -30,6 +35,8 @@ export class EquipmentService {
     private maintenanceService: MaintenanceService,
     @InjectModel(EquipmentAvailability.name)
     private equipmentAvailabilityModel: Model<EquipmentAvailability>,
+    @InjectModel(EquipmentPrice.name)
+    private equipmentPriceModel: Model<EquipmentPrice>,
   ) {}
 
   async validateEquipmentAvailability(
@@ -44,7 +51,7 @@ export class EquipmentService {
       equipment: toObjectId(equipment_id),
       date: startOfDay,
     });
-    
+
     if (conflict) {
       throw new HttpException(
         {

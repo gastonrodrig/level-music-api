@@ -39,6 +39,12 @@ export class Equipment extends Document {
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  @Prop({ type: Number, default: 1 }) 
+  season_number: number;
+
+  @Prop({ type: Date, default: Date.now }) 
+  last_price_updated_at: Date;
 }
 
 export const EquipmentSchema = SchemaFactory.createForClass(Equipment);
