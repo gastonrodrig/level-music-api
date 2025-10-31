@@ -7,16 +7,20 @@ import {
   ServiceSchema,
   ServiceTypeSchema,
   ServiceDetailSchema,
+  ServiceDetailPriceSchema,
+  ServiceDetailPrice
 } from './schema';
 import { 
   ServiceDetailService,
   ServiceService,
-  ServiceTypeService
+  ServiceTypeService,
+  ServicesDetailsPricesService
 } from './services';
 import {
   ServiceController,
   ServiceDetailController,
-  ServiceTypeController
+  ServiceTypeController,
+  ServicesDetailsPricesController
 } from './controllers';
 import { 
   addServiceHooks, 
@@ -33,7 +37,8 @@ import { Provider, ProviderSchema } from '../provider/schema';
       return MongooseModule.forFeature([
         { name: Service.name, schema: ServiceSchema },
         { name: ServiceDetail.name, schema: ServiceDetailSchema },
-        { name: Provider.name, schema: ProviderSchema }
+        { name: Provider.name, schema: ProviderSchema },
+        { name: ServiceDetailPrice.name, schema: ServiceDetailPriceSchema }
       ]);
     })(),
 
@@ -53,12 +58,14 @@ import { Provider, ProviderSchema } from '../provider/schema';
   providers: [
     ServiceService,
     ServiceTypeService,
-    ServiceDetailService
+    ServiceDetailService,
+    ServicesDetailsPricesService
   ],
   controllers: [
     ServiceController,
     ServiceTypeController,
-    ServiceDetailController
+    ServiceDetailController,
+    ServicesDetailsPricesController
   ],
   exports: [
     MongooseModule
