@@ -5,6 +5,8 @@ import {
   Equipment,
   EquipmentAvailability,
   EquipmentAvailabilitySchema,
+  EquipmentPrice,
+  EquipmentPriceSchema,
   EquipmentSchema,
   Maintenance,
   MaintenanceSchema,
@@ -14,6 +16,7 @@ import {
   MaintenanceService,
   PreventiveMaintenanceSchedulerService,
   MaintenanceNotificationSchedulerService,
+  EquipmentPriceService,
 } from "./services";
 import {
   EquipmentController,
@@ -22,6 +25,7 @@ import {
 import { addEquipmentHooks } from "./hooks";
 import { Connection } from "mongoose";
 import { WhatsAppModule } from '../whatsapp/whatsapp.module';
+import { EquipmentPriceController } from "./controllers/equipment-price.controller";
 
 
 @Module({
@@ -29,7 +33,8 @@ import { WhatsAppModule } from '../whatsapp/whatsapp.module';
     // Registramos Maintenance normalmente (no requiere hooks)
     MongooseModule.forFeature([
       { name: Maintenance.name, schema: MaintenanceSchema },
-      { name: EquipmentAvailability.name, schema: EquipmentAvailabilitySchema }
+      { name: EquipmentAvailability.name, schema: EquipmentAvailabilitySchema },
+      { name: EquipmentPrice.name, schema: EquipmentPriceSchema }
     ]),
 
     // Registramos Equipment con hooks (requiere connection)
@@ -50,12 +55,14 @@ import { WhatsAppModule } from '../whatsapp/whatsapp.module';
   ],
   providers: [
     EquipmentService,
+    EquipmentPriceService,
     MaintenanceService, 
     PreventiveMaintenanceSchedulerService,
     MaintenanceNotificationSchedulerService
   ],
   controllers: [
     EquipmentController,
+    EquipmentPriceController,
     MaintenanceController
   ],
   exports: [

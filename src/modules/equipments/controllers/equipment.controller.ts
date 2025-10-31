@@ -22,6 +22,7 @@ import {
 import { 
   CreateEquipmentDto, 
   UpdateEquipmentDto, 
+  CreateEquipmentPriceDto
 } from '../dto';
 import { EquipmentService } from '../services';
 import { Public } from '../../../auth/decorators';
@@ -82,8 +83,9 @@ export class EquipmentController {
   }
 
   @Get('paginated')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener equipos con paginación, búsqueda y orden' })
   @ApiResponse({
