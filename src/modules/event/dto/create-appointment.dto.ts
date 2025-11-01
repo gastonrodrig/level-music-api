@@ -8,7 +8,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { MeetingType } from '../enum';
+import { AppointmentShift, MeetingType } from '../enum';
 import { DocType } from 'src/core/constants/app.constants';
 import { ClientType } from 'src/modules/user/enum';
 
@@ -21,12 +21,17 @@ export class CreateAppointmentDto {
   @ApiProperty({ example: '2025-11-07', required: true })
   @IsDateString()
   @IsNotEmpty()
-  date: Date;
+  start_date: Date;
 
-  @ApiProperty({ example: '14:00', required: true })
-  @IsString()
+  @ApiProperty({ example: '2025-11-07', required: true })
+  @IsDateString()
   @IsNotEmpty()
-  hour: string;
+  end_date: Date;
+
+  @ApiProperty({ enum: AppointmentShift, required: true })
+  @IsEnum(['Tarde', 'Noche'])
+  @IsNotEmpty()
+  shift: string;
 
   @ApiProperty({ example: 5, required: true })
   @IsNumber()
@@ -77,9 +82,4 @@ export class CreateAppointmentDto {
   @IsString()
   @IsNotEmpty()
   document_number: string;
-
-  @ApiProperty({ example: '68b9c17b445a8108efdf8d43', required: false })
-  @IsOptional()
-  @IsString()
-  user_id?: string;
 }
