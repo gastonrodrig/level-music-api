@@ -14,6 +14,7 @@ import { CreateWorkerPriceDto } from '../dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { WorkerPriceService } from '../services';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { Public } from 'src/auth/decorators';
 
 @Controller('worker-prices')
 @ApiTags('Worker Prices')
@@ -31,8 +32,7 @@ export class WorkerPriceController {
   }
 
   @Get('paginated')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener precios del trabajador con paginación' })
   @ApiResponse({
