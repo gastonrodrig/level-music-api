@@ -1,3 +1,5 @@
+import e from 'express';
+
 export * from './assignations.service';
 export * from './event-task.service';
 export * from './event-type.service';
