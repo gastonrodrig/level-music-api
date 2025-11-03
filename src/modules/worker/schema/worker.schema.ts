@@ -50,7 +50,9 @@ export class Worker {
 
   @Prop({ type: Date, default: Date.now }) 
   last_price_updated_at: Date;
-}
 
+  @Prop({ type: Boolean, default: false })
+  has_account: boolean;
+}
 
 export const WorkerSchema = SchemaFactory.createForClass(Worker);

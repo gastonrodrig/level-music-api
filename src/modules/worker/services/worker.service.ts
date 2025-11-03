@@ -11,7 +11,7 @@ import { Model } from 'mongoose';
 import { Worker, WorkerPrice } from '../schema';
 import { CreateWorkerDto, CreateWorkerPriceDto, UpdateWorkerDto } from '../dto';
 import { WorkerType } from '../schema';
-import { SF_WORKER } from 'src/core/utils';
+import { SF_WORKER, toObjectId } from 'src/core/utils';
 import { User } from 'src/modules/user/schema';
 import { AuthService } from 'src/modules/firebase/services';
 import { errorCodes } from 'src/core/common';
@@ -78,10 +78,7 @@ export class WorkerService {
       }
 
       // Solo crear en Firebase si corresponde
-      if (
-        workerType.name === 'Personal Externo' ||
-        workerType.name === 'Transportista'
-      ) {
+      if (createWorkerDto.create_account) {
         // Generar contraseña aleatoria
         const password = generateRandomPassword();
 
@@ -127,7 +124,8 @@ export class WorkerService {
           worker_type: workerType._id,
           user: user._id,
           worker_type_name: workerType.name,
-          status: Estado.ACTIVO
+          status: Estado.ACTIVO,
+          has_account: true
         };
 
         const worker = new this.workerModel(workerToCreate);
@@ -138,7 +136,8 @@ export class WorkerService {
           ...createWorkerDto,
           worker_type: workerType._id,
           worker_type_name: workerType.name,
-          status: Estado.ACTIVO
+          status: Estado.ACTIVO,
+          has_account: false
         };
 
         const worker = new this.workerModel(workerToCreate);
@@ -259,13 +258,12 @@ export class WorkerService {
       }
 
       // Buscar tipo de trabajador
-      const workerType = await this.workerTypeModel.findById(worker.worker_type);
-
-      // Si es Personal Externo o Transportista, actualizar también el usuario y Firebase
-      if (
-        workerType.name === 'Personal Externo' ||
-        workerType.name === 'Transportista'
-      ) {
+      const workerType = await this.workerTypeModel.findById(
+        toObjectId(updateWorkerDto.worker_type_id)
+      );
+      
+      // Actualizar usuario en Firebase y en la BD si el trabajador tiene cuenta
+      if (worker.has_account) {
         const user = await this.userModel.findById(worker.user);
 
         if (!user) throw new BadRequestException(`User not found`);
@@ -277,6 +275,7 @@ export class WorkerService {
 
         // Actualizar usuario en la BD
         await this.userModel.findByIdAndUpdate(worker.user, {
+          worker_type: toObjectId(updateWorkerDto.worker_type_id),
           email: updateWorkerDto.email,
           phone: updateWorkerDto.phone,
           document_type: updateWorkerDto.document_type,
@@ -287,10 +286,10 @@ export class WorkerService {
         });
       }
 
-     // Actualizar el trabajador
+      // Actualizar el trabajador
       const updatedWorker = await this.workerModel.findOneAndUpdate(
         { _id: worker_id },
-        updateWorkerDto,
+        { ...updateWorkerDto, worker_type_name: workerType.name },
         { new: true },
       );
 
