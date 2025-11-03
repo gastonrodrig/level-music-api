@@ -24,20 +24,33 @@ export class WorkerPriceService {
       if (!worker) throw new NotFoundException('Trabajador no encontrado');
 
       // Obtener la fecha de inicio de la temporada actual
-      const start_date = worker.last_price_updated_at;
-
-      // Fecha actual para el fin de la temporada
-      const now = new Date();
+      const start_date =
+        worker.season_number === 1
+          ? new Date()
+          : worker.last_price_updated_at;
 
       // Número de temporada actual
       const season_number = worker.season_number ?? 1;
+
+      if (season_number !== 1) {
+        const previousPrice = await this.workerPriceModel.findOne({
+          worker: worker._id,
+          end_date: null,
+        }).sort({ created_at: -1 }).exec();
+
+        if (previousPrice) {
+          const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          previousPrice.end_date = yesterday;
+          await previousPrice.save();
+        }
+      }
 
       // Crear un nuevo registro en WorkerPrice con la temporada anterior
       const newPrice = new this.workerPriceModel({
         worker: worker._id,
         reference_price: dto.reference_price,
         start_date,
-        end_date: now,
+        end_date: null,
         season_number,
       });
       await newPrice.save();
@@ -48,7 +61,7 @@ export class WorkerPriceService {
         {
           $set: {
             reference_price: dto.reference_price,
-            last_price_updated_at: now,
+            last_price_updated_at: new Date(),
           },
           $inc: { season_number: 1 }, // recién ahora se incrementa
         },

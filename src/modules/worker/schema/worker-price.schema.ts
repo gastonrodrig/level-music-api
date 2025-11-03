@@ -16,7 +16,7 @@ export class WorkerPrice {
   @Prop({ required: true })
   start_date: Date;
 
-  @Prop({ required: true })
+  @Prop({ default: null })
   end_date: Date;
 
   @Prop({ default: Date.now })
