@@ -9,7 +9,6 @@ import { Model } from 'mongoose';
 import { Appointment } from '../schema/appointment.schema';
 import {
   CreateAppointmentDto,
-  UpdateAppointmentDto,
 } from '../dto';
 import { AppointmentStatus } from '../enum';
 import { User } from 'src/modules/user/schema';
@@ -20,21 +19,13 @@ export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name)
     private readonly appointmentModel: Model<Appointment>,
-    @InjectModel(User.name)
-    private readonly userModel: Model<User>,
   ) {}
 
   async create(dto: CreateAppointmentDto): Promise<Appointment> {
     try {
-      let user = null;
-      if (dto.user_id) {
-        user = await this.userModel.findById(dto.user_id);
-        if (!user) throw new BadRequestException('User not found');
-      }
 
       const appointment = await this.appointmentModel.create({
         ...dto,
-        user: user ? toObjectId(user._id) : null,
         status: AppointmentStatus.PENDIENTE,
       });
 
@@ -90,30 +81,6 @@ export class AppointmentsService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al listar citas: ${error.message}`,
-      );
-    }
-  }
-
-  async updateStatus(
-    appointment_id: string,
-    dto: UpdateAppointmentDto,
-  ): Promise<Appointment> {
-    try {
-      const appointment = await this.appointmentModel.findById(appointment_id);
-      if (!appointment) {
-        throw new NotFoundException('Cita no encontrada');
-      }
-
-      if (appointment.status === AppointmentStatus.CONFIRMADA) {
-        // aqui
-      }
-
-      appointment.status = dto.status;
-
-      return await appointment.save();
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error al cambiar el estado de la cita: ${error.message}`,
       );
     }
   }

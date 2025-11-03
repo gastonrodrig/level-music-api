@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AppointmentsService } from '../services';
-import { CreateAppointmentDto, UpdateAppointmentDto } from '../dto';
+import { CreateAppointmentDto } from '../dto';
 import {
   ApiTags,
   ApiOperation,
@@ -82,25 +82,5 @@ export class AppointmentsController {
       sortField,
       sortOrder,
     );
-  }
-
-  @Patch(':id/status')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar el estado de una cita' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El estado de la cita fue actualizado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar el estado de la cita.',
-  })
-  async updateStatus(
-    @Param('id') id: string,
-    @Body() updateAppointmentDto: UpdateAppointmentDto,
-  ) {
-    return this.appointmentsService.updateStatus(id, updateAppointmentDto);
   }
 }

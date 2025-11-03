@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { ClientType } from "src/modules/user/enum";
 import { DocType } from "src/core/constants/app.constants";
-import { AppointmentStatus, MeetingType } from "../enum";
+import { AppointmentShift, AppointmentStatus, MeetingType } from "../enum";
 import { User } from 'src/modules/user/schema'; // reemplazado: antes venía de "mercadopago"
 import { Types } from "mongoose";
 
@@ -38,19 +38,19 @@ export class Appointment {
   meeting_type: MeetingType;
 
   @Prop({ required: true })
-  date: Date;
+  start_date: Date;
 
   @Prop({ required: true })
-  hour: string;
+  end_date: Date;
+
+  @Prop({ enum: AppointmentShift, required: true })
+  shift: AppointmentShift;
 
   @Prop({ required: true })
   attendees_count: number;
 
   @Prop({ enum: AppointmentStatus, default: AppointmentStatus.PENDIENTE })
   status: AppointmentStatus;
-
-  @Prop({ type: Types.ObjectId, ref: User.name, required: false, default: null })
-  user?: Types.ObjectId;
 
   @Prop({ default: Date.now })
   created_at: Date;
