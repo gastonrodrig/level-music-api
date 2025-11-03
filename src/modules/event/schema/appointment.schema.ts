@@ -43,6 +43,12 @@ export class Appointment {
   @Prop({ required: true })
   end_date: Date;
 
+  @Prop({ required: true })
+  appointment_date: Date;
+
+  @Prop({ required: true})
+  hour: string;
+
   @Prop({ enum: AppointmentShift, required: true })
   shift: AppointmentShift;
 

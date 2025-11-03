@@ -13,13 +13,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AppointmentsService } from '../services';
-import { CreateAppointmentDto } from '../dto';
+import { ConfirmAppointmentDto, CreateAppointmentDto } from '../dto';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiQuery,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { Public } from 'src/auth/decorators';
@@ -81,6 +82,38 @@ export class AppointmentsController {
       search?.trim(),
       sortField,
       sortOrder,
+    );
+  }
+  
+  @Patch(':id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirmar una cita con fecha y hora específica' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'La cita fue confirmada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Cita no encontrada.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al confirmar la cita.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID de la cita a confirmar',
+    type: String,
+  })
+  async confirmAppointment(
+    @Param('id') id: string,
+    @Body() confirmAppointmentDto: ConfirmAppointmentDto,
+  ) {
+    return this.appointmentsService.confirmAppointment(
+      id,
+      confirmAppointmentDto,
     );
   }
 }

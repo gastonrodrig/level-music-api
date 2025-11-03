@@ -19,3 +19,4 @@ export * from './update-status-event.dto';
 export * from './create-appointment.dto';
 export * from './create-task-evidence.dto';
 export * from './update-task-evidence.dto';
+export * from './confirm-appointment.dto';

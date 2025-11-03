@@ -7,9 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Appointment } from '../schema/appointment.schema';
-import {
-  CreateAppointmentDto,
-} from '../dto';
+import { ConfirmAppointmentDto, CreateAppointmentDto } from '../dto';
 import { AppointmentStatus } from '../enum';
 import { User } from 'src/modules/user/schema';
 import { SF_APPOINTMENTS, toObjectId } from 'src/core/utils';
@@ -23,7 +21,6 @@ export class AppointmentsService {
 
   async create(dto: CreateAppointmentDto): Promise<Appointment> {
     try {
-
       const appointment = await this.appointmentModel.create({
         ...dto,
         status: AppointmentStatus.PENDIENTE,
@@ -81,6 +78,40 @@ export class AppointmentsService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al listar citas: ${error.message}`,
+      );
+    }
+  }
+
+  async confirmAppointment(
+    appointmentId: string,
+    dto: ConfirmAppointmentDto,
+  ): Promise<Appointment> {
+    try {
+      const appointment = await this.appointmentModel.findById(appointmentId);
+
+      if (!appointment) {
+        throw new NotFoundException('Cita no encontrada');
+      }
+
+      const updatedAppointment = await this.appointmentModel.findByIdAndUpdate(
+        appointmentId,
+        {
+          $set: {
+            appointment_date: dto.appointment_date,
+            hour: dto.hour,
+            status: AppointmentStatus.CONFIRMADA,
+          },
+        },
+        { new: true },
+      );
+
+      return updatedAppointment;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `Error al confirmar la cita: ${error.message}`,
       );
     }
   }
