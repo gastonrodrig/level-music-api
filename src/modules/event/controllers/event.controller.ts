@@ -21,16 +21,14 @@ import {
 } from '@nestjs/swagger';
 import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
-import { UpdateStatusEventDto } from '../dto';
+import { UpdateQuotationDto, UpdateStatusEventDto, CreateQuotationDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-import { CreateQuotationAdminDto } from '../dto';
-
 @Controller('events')
 @ApiTags('Events')
 export class EventController {
   constructor(private readonly eventService: EventService) {}
 
-  @Post('quotation/admin')
+  @Post('quotation')
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear cotización de evento por admin (con asignaciones)' })
@@ -42,8 +40,8 @@ export class EventController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear la cotización por admin',
   })
-  createQuotationAdmin(@Body() dto: CreateQuotationAdminDto) {
-    return this.eventService.createQuotationAdmin(dto);
+  createQuotation(@Body() dto: CreateQuotationDto) {
+    return this.eventService.createQuotation(dto);
   }
 
   @Get('paginated')
@@ -86,7 +84,7 @@ export class EventController {
     );
   }
 
-  @Patch('quotation/admin/:id')
+  @Patch('quotation/:id')
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar cotización de evento por admin (con asignaciones)' })
@@ -98,11 +96,11 @@ export class EventController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al actualizar la cotización por admin',
   })
-  updateQuotationAdmin(
+  updateQuotation(
     @Param('id') id: string,
-    @Body() dto: CreateQuotationAdminDto, 
+    @Body() dto: UpdateQuotationDto, 
   ) {
-    return this.eventService.updateQuotationAdmin(id, dto);
+    return this.eventService.updateQuotation(id, dto);
   }
 
   @Get('code/:event_code')
@@ -143,5 +141,4 @@ export class EventController {
   ) {
     return this.eventService.updateStatus(event_id, dto);
   }
-  
 }
