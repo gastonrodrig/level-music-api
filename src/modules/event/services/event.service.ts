@@ -7,8 +7,8 @@ import {
   NotFoundException 
 } from '@nestjs/common';
 import {
-  CreateQuotationAdminDto,
-  UpdateQuotationAdminDto,
+  CreateQuotationDto,
+  UpdateQuotationDto,
 } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -41,7 +41,7 @@ export class EventService {
     private assignationService: AssignationsService,
   ) {}
 
-  async createQuotationAdmin(dto: CreateQuotationAdminDto): Promise<Event> {
+  async createQuotation(dto: CreateQuotationDto): Promise<Event> {
     try {
       // 1. Buscar tipo de evento
       const eventType = await this.eventTypeModel.findById(dto.event_type_id);
@@ -69,10 +69,8 @@ export class EventService {
         ...dto,
         event_code,
         event_type: eventType._id,
-        client_info: dto.client_info,
         user: toObjectId(dto.user_id),
-        status: StatusType.PENDIENTE_CONFIGURACION,
-        estimated_price: dto.estimated_price ?? 0,
+        status: StatusType.CREADO,
         final_price: 0,
       };
 
@@ -114,13 +112,10 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: [
-          'Pendiente de Aprobación',
-          'En Espera de Registro',
-          'Pendiente de Revisión del Cliente',
-          'Rechazado',
-          'Aprobado',
+        1:[
           'Pagos Asignados',
+          'Creado',
+          'Editado',
         ],
         2: [
           'En Seguimiento', 
@@ -187,9 +182,9 @@ export class EventService {
     }
   }
 
-  async updateQuotationAdmin(
+  async updateQuotation(
     event_id: string,
-    dto: UpdateQuotationAdminDto,
+    dto: UpdateQuotationDto,
   ): Promise<Event> {
     try {
       // 1. Buscar evento existente
@@ -243,15 +238,18 @@ export class EventService {
       event.place_size = dto.place_size ?? event.place_size;
       event.estimated_price = dto.estimated_price ?? event.estimated_price;
       event.final_price = dto.final_price ?? event.final_price;
-
-      // 4. Actualizar client_info si viene
-      if (dto.client_info) {
-        event.client_info = {
-          ...event.client_info,
-          ...dto.client_info,
-        };
-      }
-
+      // cliente info 
+      event.client_type = dto.client_type;
+      event.first_name = dto.first_name;
+      event.last_name = dto.last_name;
+      event.company_name = dto.company_name;
+      event.contact_person = dto.contact_person;
+      event.email = dto.email;
+      event.phone = dto.phone;
+      event.document_type = dto.document_type;
+      event.document_number = dto.document_number;
+      event.status = StatusType.EDITADO;
+      
       // 5. Guardar cambios del evento
       const updatedEvent = await event.save();
 

@@ -7,9 +7,9 @@ import { MailService } from '../service';
 export class AppointmentReadyProcessor extends WorkerHost {
   private readonly logger = new Logger(AppointmentReadyProcessor.name);
   
+
 constructor(private readonly mailService: MailService) {
   super();
-  this.logger.log('AppointmentReadyProcessor initialized');
 }
 
   async process(job: Job<any>): Promise<void> {

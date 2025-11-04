@@ -4,14 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Model } from 'mongoose';
+import { Queue } from 'bullmq';
 import { Appointment } from '../schema/appointment.schema';
 import { ConfirmAppointmentDto, CreateAppointmentDto } from '../dto';
 import { AppointmentStatus, MeetingType } from '../enum';
 import { SF_APPOINTMENTS, toObjectId } from 'src/core/utils';
 import { ClientType } from 'src/modules/user/enum';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+
 
 @Injectable()
 export class AppointmentsService {

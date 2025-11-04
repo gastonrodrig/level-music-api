@@ -55,35 +55,36 @@ export class Event {
   @Prop({ type: Number, nullable: true })
   final_price?: number;
 
-  @Prop({ enum: StatusType, default: StatusType.PENDIENTE_CONFIGURACION })
+  @Prop({ enum: StatusType, default: StatusType.CREADO })
   status: StatusType;
 
-  @Prop({
-    _id: false,
-    type: {
-      client_type: { type: String, enum: ClientType },
-      first_name: String,
-      last_name: String,
-      company_name: String,
-      contact_person: String,
-      email: String,
-      phone: String,
-      document_type: String,
-      document_number: String,
-    },
-    required: true,
-  })
-  client_info: {
-    client_type: string;
-    first_name?: string;
-    last_name?: string;
-    company_name?: string;
-    contact_person?: string;
-    email?: string;
-    phone?: string;
-    document_type?: string;
-    document_number?: string;
-  };
+  // Reemplazado client_info por campos desnormalizados
+  @Prop({ required: true, enum: ClientType })
+  client_type: ClientType;
+
+  @Prop({ maxlength: 255, required: false })
+  first_name?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  last_name?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  company_name?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  contact_person?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  email?: string;
+
+  @Prop({ maxlength: 50, required: false })
+  phone?: string;
+
+  @Prop({ maxlength: 50, required: false })
+  document_type?: string;
+
+  @Prop({ maxlength: 50, required: false })
+  document_number?: string;
 
   @Prop({ default: Date.now })
   created_at: Date;
