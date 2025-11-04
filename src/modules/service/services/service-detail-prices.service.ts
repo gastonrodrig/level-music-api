@@ -17,6 +17,40 @@ export class ServicesDetailsPricesService {
     private readonly ServiceDetailsPricesModel: Model<ServiceDetailPrice>,
   ) {}
 
+    // Cierra los precios anteriores (end_date = ahora) para un detalle de servicio
+  async closePreviousPrices(service_detail_id: string): Promise<number> {
+    // Busca el último registro abierto (end_date: null)
+    const lastPrice = await this.ServiceDetailsPricesModel.findOne({
+      service_detail_id,
+      end_date: null,
+    }).sort({ start_date: -1 });
+    let lastDetailNumber = 1;
+    if (lastPrice) {
+      // Guardar la fecha actual como end_date
+      lastPrice.end_date = new Date();
+      await lastPrice.save();
+      lastDetailNumber = lastPrice.detail_number ?? 1;
+    }
+    return lastDetailNumber;
+  }
+    // Listar precios de un detalle de servicio y cerrar el anterior si detail_number > 1
+    async listAndClosePreviousPrices(service_detail_id: string, detail_number: number): Promise<ServiceDetailPrice[]> {
+      // Listar todos los precios de ese detalle
+      const prices = await this.ServiceDetailsPricesModel.find({ service_detail_id }).sort({ start_date: -1 }).exec();
+
+      // Si detail_number > 1, cerrar el precio anterior (end_date = fecha actual)
+      if (detail_number !== 1) {
+        const previousPrice = await this.ServiceDetailsPricesModel.findOne({
+          service_detail_id,
+          end_date: null,
+        }).sort({ start_date: -1 }).exec();
+        if (previousPrice) {
+          previousPrice.end_date = new Date();
+          await previousPrice.save();
+        }
+      }
+      return prices;
+    }
   // ✅ Crear nuevo registro de precio
   async create(
     dto: CreateServicesDetailsPricesDto,
@@ -29,21 +63,20 @@ export class ServicesDetailsPricesService {
         );
       }
 
-      // Cierra el precio anterior (si aún no tiene end_date)
-      await this.ServiceDetailsPricesModel.updateMany(
-        {
-          service_detail_id: dto.service_detail_id,
-          end_date: null,
-        },
-        { end_date: new Date() },
-      );
+      // Cierra el precio anterior
+      await this.closePreviousPrices(dto.service_detail_id);
 
-      // Crea el nuevo registro
+      // Calcula el nuevo número de temporada (detail_number) correctamente
+      const count = await this.ServiceDetailsPricesModel.countDocuments({ service_detail_id: dto.service_detail_id });
+      const newDetailNumber = count + 1;
+
+      // Crea el nuevo registro con el número de temporada incrementado
       const newPrice = await this.ServiceDetailsPricesModel.create({
         service_detail_id: dto.service_detail_id,
         reference_detail_price: dto.reference_detail_price,
         start_date: dto.start_date ?? new Date(),
-        end_date: dto.end_date ?? null,
+        end_date: dto.end_date === undefined || dto.end_date === null ? null : dto.end_date,
+        detail_number: newDetailNumber,
       });
 
       return newPrice;

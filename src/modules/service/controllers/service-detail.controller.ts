@@ -40,4 +40,16 @@ export class ServiceDetailController {
   async findAll() {
     return this.serviceDetailService.findAllActive();
   }
+
+  // PATCH: Actualizar múltiples detalles de servicio y registrar cambios de precios históricos
+  @Patch('update-details')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar detalles de servicio y registrar cambios de precios históricos.' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Detalles actualizados y precios registrados correctamente.' })
+  async updateDetails(
+    @Body() dto: UpdateServiceDto,
+  ) {
+    return this.serviceDetailService.updateServiceDetails(dto);
+  }
 }
