@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { BullModule } from '@nestjs/bullmq';
 import { MailController } from "./controller";
 import { MailService } from "./service";
-import { MailProcessor, ForgotPasswordProcessor } from "./processor";
+import { MailProcessor, ForgotPasswordProcessor, AppointmentReadyProcessor } from "./processor";
 import { MongooseModule } from "@nestjs/mongoose";
 import { EventSchema,Event, AssignationSchema, Assignation } from "../event/schema";
 import { QuotationReadyProcessor } from "./processor/quotation-ready.processor";
@@ -18,7 +18,8 @@ import { ActivationToken, ActivationTokenSchema } from "src/auth/schema";
         { name: 'temporal-credentials' },
         { name: 'forgot-password' },
         { name: 'quotation-ready' },  
-        { name: 'activation-clicks' }
+        { name: 'activation-clicks' },
+        { name: 'appointment-ready' }
       ),
       MongooseModule.forFeature([
         { name: User.name, schema: UserSchema },
@@ -34,6 +35,7 @@ import { ActivationToken, ActivationTokenSchema } from "src/auth/schema";
       ForgotPasswordProcessor,
       QuotationReadyProcessor,
       ActivationClickProcessor,
+      AppointmentReadyProcessor,
       ActivationTokenService,
     ],
     exports: [MailService],
