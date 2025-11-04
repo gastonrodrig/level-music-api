@@ -66,8 +66,22 @@ export class ServicesDetailsPricesController {
     status: HttpStatus.NOT_FOUND,
     description: 'No se encontraron precios para el detalle indicado.',
   })
-  async findByServiceDetailId(@Param('service_detail_id') id: string) {
-    return this.servicesDetailsPricesService.findByServiceDetailId(id);
+  // Listar precios y cerrar el anterior si detail_number > 1
+  @Get('by-detail/:service_detail_id/:detail_number')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Obtener todos los precios históricos de un detalle de servicio y cerrar el anterior si corresponde',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Precios obtenidos y cierre realizado correctamente.',
+  })
+  async findByServiceDetailId(
+    @Param('service_detail_id') id: string,
+    @Param('detail_number') detail_number: number,
+  ) {
+    return this.servicesDetailsPricesService.listAndClosePreviousPrices(id, Number(detail_number));
   }
 
   // ✅ Listado general con paginación

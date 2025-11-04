@@ -22,8 +22,8 @@ export class CreateServicesDetailsPricesDto {
     example: '2025-10-01T20:00:00.000Z',
     required: false,
     nullable: true,
+    default: null,
   })
-  @IsDateString()
   @IsOptional()
   end_date?: Date | null;
 
@@ -34,4 +34,9 @@ export class CreateServicesDetailsPricesDto {
   @IsMongoId()
   @IsNotEmpty()
   service_detail_id: string;
+
+  @ApiProperty({ example: 1, required: false, default: 1 })
+  @IsOptional()
+  @IsNumber()
+  detail_number?: number;
 }

@@ -12,8 +12,11 @@ export class ServiceDetailPrice extends Document {
   @Prop({ type: Date, required: true })
   start_date: Date;
 
-  @Prop({ type: Date, required: true })
-  end_date: Date;
+  @Prop({ type: Date, default: null })
+  end_date?: Date | null;
+
+  @Prop({ type: Number, default: 1 })
+  detail_number: number;
 }
 
 export const ServiceDetailPriceSchema =

@@ -44,27 +44,46 @@ export class ServiceService {
         throw new BadRequestException('serviceDetails debe contener al menos un detalle');
       }
 
-      // 2) Crear el servicio principal
+      // 2) Crear el servicio principal con fechas explícitas
+      const now = new Date();
       const service = await this.serviceModel.create({
         provider: toObjectId(provider._id),
         service_type: toObjectId(serviceType._id),
         provider_name: provider.name,
         service_type_name: serviceType.name,
         status: Estado.ACTIVO,
+        created_at: now,
+        updated_at: now,
       });
 
       const serviceDetails: Array<ServiceDetail> = [];
 
-      // 3) Crear cada detalle
+      // 3) Crear cada detalle y su historial de precio inicial
+      const pricesService = (await import('./service-detail-prices.service')).ServicesDetailsPricesService;
+      const pricesServiceInstance = new pricesService(
+        this.serviceDetailModel.db.model('ServiceDetailPrice')
+      );
       for (const d of dto.serviceDetails) {
-        const detail = await this.serviceDetailModel.create({
+        // Creamos el detalle y obtenemos el documento completo
+        const detailDoc = await this.serviceDetailModel.create({
           service_id: service._id,
           status: Estado.ACTIVO,
           ref_price: d.ref_price,
           details: parseDetailService(d.details),
+          detail_number: d.detail_number ?? 1,
         });
 
-        serviceDetails.push(detail.toObject());
+        // Usamos el _id real del detalle para el historial, incluyendo detail_number
+        await pricesServiceInstance.create({
+          reference_detail_price: d.ref_price,
+          start_date: new Date(),
+          end_date: null,
+          service_detail_id: detailDoc._id.toString(),
+          detail_number: detailDoc.detail_number ?? 1,
+        });
+
+        // Guardamos el documento completo (incluye _id)
+        serviceDetails.push(detailDoc);
       }
 
       return { service, serviceDetails };
