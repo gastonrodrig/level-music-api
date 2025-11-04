@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IntersectionType } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, Max, MaxLength, Min, ValidateNested } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, Max, MaxLength, Min, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateEventDto, ClientInfoDto } from '.';
 import { ResourceType } from '../enum';
@@ -48,6 +48,11 @@ export class CreateQuotationAdminDto extends IntersectionType(CreateEventDto) {
   @ValidateNested()
   @Type(() => ClientInfoDto)
   client_info: ClientInfoDto;
+
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  @IsNotEmpty()
+  will_add_more_resources: Boolean
 
   @ApiProperty()
   @IsNumber()

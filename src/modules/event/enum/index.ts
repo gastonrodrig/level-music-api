@@ -9,6 +9,5 @@ export * from './status-reprogramings-type.enum';
 export * from './resource-type.enum';
 export * from './appointment-status.enum';
 export * from './meeting-type.enum';
-export * from './quotation-creator.enum';
 export * from './task-phase.enum';
 export * from './appointment-shift.enum';

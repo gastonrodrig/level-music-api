@@ -4,7 +4,6 @@ import { StatusType, PlaceType } from '../enum';
 import { User } from 'src/modules/user/schema';
 import { EventType } from './event-type.schema';
 import { ClientType } from 'src/modules/user/enum';
-import { QuotationCreator } from '../enum';
 
 @Schema({ collection: 'events' })
 export class Event {
@@ -91,12 +90,6 @@ export class Event {
 
   @Prop({ default: Date.now })
   updated_at: Date;
-
-  @Prop({ enum: QuotationCreator })
-  creator: QuotationCreator;
-
-  @Prop({type:Boolean})
-  is_quotation: boolean;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

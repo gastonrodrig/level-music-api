@@ -15,7 +15,7 @@ import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Assignation, Event, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
-import { QuotationCreator, StatusType } from '../enum';
+import { StatusType } from '../enum';
 import { AssignationsService } from './assignations.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -74,7 +74,6 @@ export class EventService {
         status: StatusType.PENDIENTE_CONFIGURACION,
         estimated_price: dto.estimated_price ?? 0,
         final_price: 0,
-        creator: QuotationCreator.ADMIN,
       };
 
       // 4. Crear evento
