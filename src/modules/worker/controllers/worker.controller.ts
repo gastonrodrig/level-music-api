@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -42,7 +41,8 @@ export class WorkerController {
   }
 
   @Get('all')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener todos los trabajadores disponibles' })
   @ApiResponse({
@@ -109,8 +109,7 @@ export class WorkerController {
   }
 
   @Put(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un trabajador por ID' })
   @ApiResponse({

@@ -41,6 +41,18 @@ export class Worker {
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  @Prop({ type: Number, default: 1 }) 
+  season_number: number;
+
+  @Prop({ type: Number }) 
+  reference_price: number;
+
+  @Prop({ type: Date, default: Date.now }) 
+  last_price_updated_at: Date;
+
+  @Prop({ type: Boolean, default: false })
+  has_account: boolean;
 }
 
 export const WorkerSchema = SchemaFactory.createForClass(Worker);

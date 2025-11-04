@@ -5,4 +5,4 @@ export * from './featured-event.controller';
 export * from './assignations.controller';
 export * from './incident.controller';
 export * from './reprogramings.controller';
-export * from './appintments.controller'
+export * from './appointments.controller';

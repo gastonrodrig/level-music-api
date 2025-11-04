@@ -7,9 +7,10 @@ import { MailService } from '../service';
 export class AppointmentReadyProcessor extends WorkerHost {
   private readonly logger = new Logger(AppointmentReadyProcessor.name);
   
-  constructor(private readonly mailService: MailService) {
-    super();
-  }
+
+constructor(private readonly mailService: MailService) {
+  super();
+}
 
   async process(job: Job<any>): Promise<void> {
     const { to, clientName, meetingType, date, hour, attendeesCount } = job.data;

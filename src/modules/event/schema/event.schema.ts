@@ -3,9 +3,7 @@ import { Types } from 'mongoose';
 import { StatusType, PlaceType } from '../enum';
 import { User } from 'src/modules/user/schema';
 import { EventType } from './event-type.schema';
-import { ServiceRequested, ServiceRequestedSchema } from './service-requested.schema';
 import { ClientType } from 'src/modules/user/enum';
-import { QuotationCreator } from '../enum';
 
 @Schema({ collection: 'events' })
 export class Event {
@@ -51,16 +49,13 @@ export class Event {
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
 
-  @Prop({ type: [ServiceRequestedSchema], default: [], required: false })
-  services_requested: ServiceRequested[];
-
   @Prop({ type: Number, default: 0 })
   estimated_price?: number;
 
   @Prop({ type: Number, nullable: true })
   final_price?: number;
 
-  @Prop({ enum: StatusType, default: StatusType.PENDIENTE_APROBACION })
+  @Prop({ enum: StatusType, default: StatusType.PENDIENTE_CONFIGURACION })
   status: StatusType;
 
   @Prop({
@@ -95,12 +90,6 @@ export class Event {
 
   @Prop({ default: Date.now })
   updated_at: Date;
-
-  @Prop({ enum: QuotationCreator })
-  creator: QuotationCreator;
-
-  @Prop({type:Boolean})
-  is_quotation: boolean;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

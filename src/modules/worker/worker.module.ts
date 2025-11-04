@@ -5,13 +5,17 @@ import {
   WorkerType,
   WorkerSchema,
   WorkerTypeSchema,
+  WorkerPrice,
+  WorkerPriceSchema,
 } from './schema';
 import {
+  WorkerPriceService,
   WorkerService,
   WorkerTypeService,
 } from './services';
 import {
   WorkerController,
+  WorkerPriceController,
   WorkerTypeController,
 } from './controllers';
 import { 
@@ -32,6 +36,7 @@ import { BullModule } from '@nestjs/bullmq';
     ),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
+      { name: WorkerPrice.name, schema: WorkerPriceSchema },
     ]),
     MongooseModule.forFeatureAsync([
       {
@@ -54,10 +59,12 @@ import { BullModule } from '@nestjs/bullmq';
     FirebaseModule
   ],
   providers: [
+    WorkerPriceService,
     WorkerTypeService, 
     WorkerService
   ],
   controllers: [
+    WorkerPriceController,
     WorkerTypeController, 
     WorkerController
   ],

@@ -13,13 +13,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AppointmentsService } from '../services';
-import { CreateAppointmentDto, UpdateAppointmentDto } from '../dto';
+import { ConfirmAppointmentDto, CreateAppointmentDto } from '../dto';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiQuery,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { Public } from 'src/auth/decorators';
@@ -83,24 +84,35 @@ export class AppointmentsController {
     );
   }
 
-  @Patch(':id/status')
-  @Public()
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
+  @Patch(':id')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar el estado de una cita' })
+  @ApiOperation({ summary: 'Confirmar una cita con fecha y hora específica' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'El estado de la cita fue actualizado correctamente.',
+    description: 'La cita fue confirmada correctamente.',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Cita no encontrada.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar el estado de la cita.',
+    description: 'Error al confirmar la cita.',
   })
-  async updateStatus(
+  @ApiParam({
+    name: 'id',
+    description: 'ID de la cita a confirmar',
+    type: String,
+  })
+  async confirmAppointment(
     @Param('id') id: string,
-    @Body() updateAppointmentDto: UpdateAppointmentDto,
+    @Body() confirmAppointmentDto: ConfirmAppointmentDto,
   ) {
-    return this.appointmentsService.updateStatus(id, updateAppointmentDto);
+    return this.appointmentsService.confirmAppointment(
+      id,
+      confirmAppointmentDto,
+    );
   }
 }

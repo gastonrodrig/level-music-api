@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -9,37 +8,25 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Model } from 'mongoose';
 import { Queue } from 'bullmq';
 import { Appointment } from '../schema/appointment.schema';
-import {
-  CreateAppointmentDto,
-  UpdateAppointmentDto,
-} from '../dto';
+import { ConfirmAppointmentDto, CreateAppointmentDto } from '../dto';
 import { AppointmentStatus, MeetingType } from '../enum';
-import { User } from 'src/modules/user/schema';
-import { ClientType } from 'src/modules/user/enum';
 import { SF_APPOINTMENTS, toObjectId } from 'src/core/utils';
+import { ClientType } from 'src/modules/user/enum';
+
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name)
     private readonly appointmentModel: Model<Appointment>,
-    @InjectModel(User.name)
-    private readonly userModel: Model<User>,
     @InjectQueue('appointment-ready')
     private readonly appointmentReadyQueue: Queue,
   ) {}
 
   async create(dto: CreateAppointmentDto): Promise<Appointment> {
     try {
-      let user = null;
-      if (dto.user_id) {
-        user = await this.userModel.findById(dto.user_id);
-        if (!user) throw new BadRequestException('User not found');
-      }
-
       const appointment = await this.appointmentModel.create({
         ...dto,
-        user: user ? toObjectId(user._id) : null,
         status: AppointmentStatus.PENDIENTE,
       });
 
@@ -99,48 +86,64 @@ export class AppointmentsService {
     }
   }
 
-  async updateStatus(
-    appointment_id: string,
-    dto: UpdateAppointmentDto,
+  async confirmAppointment(
+    appointmentId: string,
+    dto: ConfirmAppointmentDto,
   ): Promise<Appointment> {
     try {
-      const appointment = await this.appointmentModel.findById(appointment_id);
+      const appointment = await this.appointmentModel.findById(appointmentId);
+
       if (!appointment) {
         throw new NotFoundException('Cita no encontrada');
       }
 
-      // Solo enviar correo si cambia a CONFIRMADA y no estaba confirmada antes
-      if (dto.status === AppointmentStatus.CONFIRMADA && appointment.status !== AppointmentStatus.CONFIRMADA) {
-        const clientName = appointment.client_type === ClientType.PERSONA 
-          ? `${appointment.first_name} ${appointment.last_name}`
-          : appointment.contact_person;
+      const updatedAppointment = await this.appointmentModel.findByIdAndUpdate(
+        appointmentId,
+        {
+          $set: {
+            appointment_date: dto.appointment_date,
+            hour: dto.hour,
+            status: AppointmentStatus.CONFIRMADA,
+          },
+        },
+        { new: true },
+      );
 
-        const formattedDate = new Date(appointment.date).toLocaleDateString('es-ES', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
+      const clientName = appointment.client_type === ClientType.PERSONA 
+        ? `${appointment.first_name} ${appointment.last_name}`
+        : appointment.contact_person;
 
-        const meetingTypeText = appointment.meeting_type === MeetingType.VIRTUAL ? 'Virtual' : 'Presencial';
+      const formattedDate = new Date(dto.appointment_date).toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
 
-        // Agregar el job a la cola
-        await this.appointmentReadyQueue.add('send-appointment-confirmation', {
-          to: appointment.email,
-          clientName,
-          meetingType: meetingTypeText,
-          date: formattedDate,
-          hour: appointment.hour,
-          attendeesCount: appointment.attendees_count,
-        });
-      }
+      const meetingTypeText = appointment.meeting_type === MeetingType.VIRTUAL ? 'Virtual' : 'Presencial';
 
-      appointment.status = dto.status;
+      // Agregar el job a la cola
+      await this.appointmentReadyQueue.add('send-appointment-confirmation', {
+        to: appointment.email,
+        clientName,
+        meetingType: meetingTypeText,
+        date: formattedDate,
+        hour: dto.hour,
+        attendeesCount: appointment.attendees_count,
+      }, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+        removeOnComplete: 1000,
+        removeOnFail: 100,
+      });
 
-      return await appointment.save();
+      return updatedAppointment;
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
-        `Error al cambiar el estado de la cita: ${error.message}`,
+        `Error al confirmar la cita: ${error.message}`,
       );
     }
   }
