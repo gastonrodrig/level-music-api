@@ -49,18 +49,18 @@ export class AssignationsController {
   @ApiOperation({ summary: 'Verificar disponibilidad de un equipo en un rango de horas' })
   @ApiQuery({ name: 'from', type: String, example: '2025-10-02T18:00:00Z' })
   @ApiQuery({ name: 'to', type: String, example: '2025-10-02T23:00:00Z' })
-  @ApiQuery({ name: 'eventId', required: false, type: String })
+  @ApiQuery({ name: 'eventCode', required: false, type: String })
   async checkEquipmentAvailability(
     @Param('id') equipment_id: string,
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('eventId') eventId?: string,
+    @Query('eventCode') eventCode?: string,
   ) {
     await this.assignationsService.validateResourceAvailability(
       equipment_id,
       new Date(from),
       new Date(to),
-      eventId
+      eventCode
     );
   }
 
@@ -71,18 +71,18 @@ export class AssignationsController {
   @ApiOperation({ summary: 'Verificar disponibilidad de un trabajador en un rango de horas' })
   @ApiQuery({ name: 'from', type: String, example: '2025-10-02T18:00:00Z' })
   @ApiQuery({ name: 'to', type: String, example: '2025-10-02T23:00:00Z' })
-  @ApiQuery({ name: 'eventId', required: false, type: String })
+  @ApiQuery({ name: 'eventCode', required: false, type: String })
   async checkWorkerAvailability(
     @Param('id') worker_id: string,
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('eventId') eventId?: string,
+    @Query('eventCode') eventCode?: string,
   ) {
     await this.assignationsService.validateResourceAvailability(
       worker_id,
       new Date(from),
       new Date(to),
-      eventId
+      eventCode
     );
   }
 
@@ -93,18 +93,18 @@ export class AssignationsController {
   @ApiOperation({ summary: 'Verificar disponibilidad de un servicio adicional en un rango de horas' })
   @ApiQuery({ name: 'from', type: String, example: '2025-10-02T18:00:00Z' })
   @ApiQuery({ name: 'to', type: String, example: '2025-10-02T23:00:00Z' })
-  @ApiQuery({ name: 'eventId', required: false, type: String })
+  @ApiQuery({ name: 'eventCode', required: false, type: String })
   async checkServiceDetailAvailability(
     @Param('id') serviceDetail_id: string,
     @Query('from') from: string,
     @Query('to') to: string,
-    @Query('eventId') eventId?: string,
+    @Query('eventCode') eventCode?: string,
   ) {
     await this.assignationsService.validateResourceAvailability(
       serviceDetail_id,
       new Date(from),
       new Date(to),
-      eventId
+      eventCode
     );
   }
 }

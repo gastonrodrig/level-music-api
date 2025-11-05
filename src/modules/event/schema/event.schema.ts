@@ -7,7 +7,13 @@ import { ClientType } from 'src/modules/user/enum';
 
 @Schema({ collection: 'events' })
 export class Event {
-  @Prop({ unique: true, sparse: true, trim: true })
+  @Prop({ type: Number, default: 1 })
+  version: number;
+
+  @Prop({ type: Boolean, default: true })
+  is_latest: boolean;
+
+  @Prop({ trim: true, index: true }) 
   event_code: string;
 
   @Prop({ maxlength: 255 })
@@ -50,7 +56,7 @@ export class Event {
   event_type_name?: string;
 
   @Prop({ type: Number, default: 0 })
-  estimated_price?: number;
+  estimated_price: number;
 
   @Prop({ type: Number, nullable: true })
   final_price?: number;

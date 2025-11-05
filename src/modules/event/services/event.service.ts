@@ -1,15 +1,12 @@
-import { 
-  BadRequestException, 
-  HttpException, 
-  HttpStatus, 
-  Injectable, 
-  InternalServerErrorException, 
-  NotFoundException 
-} from '@nestjs/common';
 import {
-  CreateQuotationDto,
-  UpdateQuotationDto,
-} from '../dto';
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { CreateQuotationDto, UpdateQuotationDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
@@ -65,13 +62,15 @@ export class EventService {
       }
 
       // 3. Construir objeto base para el evento
-      const eventToCreate: any = {
+      const eventToCreate: Partial<Event> = {
         ...dto,
         event_code,
         event_type: eventType._id,
         user: toObjectId(dto.user_id),
         status: StatusType.CREADO,
         final_price: 0,
+        version: 1,
+        is_latest: true,
       };
 
       // 4. Crear evento
@@ -82,7 +81,7 @@ export class EventService {
         for (const assign of dto.assignations) {
           await this.assignationService.create({
             ...assign,
-            event_id: event._id.toString(), 
+            event_id: event._id.toString(),
           });
         }
       }
@@ -102,7 +101,7 @@ export class EventService {
     search = '',
     sortField: string = 'created_at',
     sortOrder: 'asc' | 'desc' = 'asc',
-    caseFilter?: number
+    caseFilter?: number,
   ): Promise<{ total: number; items: any[] }> {
     try {
       const baseFilter: any = {};
@@ -112,16 +111,8 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1:[
-          'Pagos Asignados',
-          'Creado',
-          'Editado',
-        ],
-        2: [
-          'En Seguimiento', 
-          'Reprogramado', 
-          'Finalizado'
-        ]
+        1: ['Pagos Asignados', 'Creado', 'Editado'],
+        2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
       };
 
       if (caseFilter && statusCases[caseFilter]) {
@@ -182,32 +173,59 @@ export class EventService {
     }
   }
 
+  async findEventVersionsByCode(
+    event_code: string,
+  ): Promise<any[]> {
+    try {
+      // Buscar todas las versiones del evento, ordenadas descendente por versión
+      const events = await this.eventModel
+        .find({ event_code })
+        .sort({ version: -1 })
+        .lean();
+
+      // Agregar asignaciones a cada versión
+      const eventsWithAssignations = await Promise.all(
+        events.map(async (event) => {
+          const assignations = await this.assignationModel
+            .find({ event: event._id })
+            .lean();
+
+          return {
+            ...event,
+            assignations,
+          };
+        }),
+      );
+
+      return eventsWithAssignations;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al buscar versiones de la cotización: ${error.message}`,
+      );
+    }
+  }
+
   async updateQuotation(
     event_id: string,
     dto: UpdateQuotationDto,
   ): Promise<Event> {
     try {
-      // 1. Buscar evento existente
-      const event = await this.eventModel.findById(event_id);
-      if (!event) {
+      // Buscar la última versión del evento
+      const currentEvent = await this.eventModel.findById(event_id);
+      if (!currentEvent) {
         throw new NotFoundException('Evento no encontrado');
       }
 
-        // Validación de cruce de horarios
-      const start = dto.start_time ?? event.start_time;
-      const end = dto.end_time ?? event.end_time;
+      // Validar cruce de horarios
+      const start = dto.start_time ?? currentEvent.start_time;
+      const end = dto.end_time ?? currentEvent.end_time;
 
-      const cruzado = await this.eventModel.findOne({
-        _id: { $ne: event_id },
-        $or: [
-          {
-            start_time: { $lt: end },
-            end_time: { $gt: start }
-          }
-        ]
+      const conflict = await this.eventModel.findOne({
+        event_code: { $ne: currentEvent.event_code },
+        $or: [{ start_time: { $lt: end }, end_time: { $gt: start } }],
       });
 
-      if (cruzado) {
+      if (conflict) {
         throw new HttpException(
           {
             code: errorCodes.EVENT_TIME_CONFLICT,
@@ -217,56 +235,38 @@ export class EventService {
         );
       }
 
-      // 2. Si envía un tipo de evento distinto, validarlo
-      if (dto.event_type_id) {
-        const eventType = await this.eventTypeModel.findById(dto.event_type_id);
-        if (!eventType) {
-          throw new BadRequestException('Event type not found');
-        }
-        event.event_type = eventType._id;
-      }
+      // Marcar el evento actual como histórico
+      currentEvent.is_latest = false;
+      currentEvent.status = StatusType.HISTORICO;
+      await currentEvent.save();
 
-      // 3. Actualizar datos básicos del evento
-      event.name = dto.name ?? event.name;
-      event.description = dto.description ?? event.description;
-      event.start_time = dto.start_time ?? event.start_time;
-      event.end_time = dto.end_time ?? event.end_time;
-      event.attendees_count = dto.attendees_count ?? event.attendees_count;
-      event.exact_address = dto.exact_address ?? event.exact_address;
-      event.location_reference = dto.location_reference ?? event.location_reference;
-      event.place_type = dto.place_type ?? event.place_type;
-      event.place_size = dto.place_size ?? event.place_size;
-      event.estimated_price = dto.estimated_price ?? event.estimated_price;
-      event.final_price = dto.final_price ?? event.final_price;
-      // cliente info 
-      event.client_type = dto.client_type;
-      event.first_name = dto.first_name;
-      event.last_name = dto.last_name;
-      event.company_name = dto.company_name;
-      event.contact_person = dto.contact_person;
-      event.email = dto.email;
-      event.phone = dto.phone;
-      event.document_type = dto.document_type;
-      event.document_number = dto.document_number;
-      event.status = StatusType.EDITADO;
-      
-      // 5. Guardar cambios del evento
-      const updatedEvent = await event.save();
+      // Preparar la nueva versión
+      const newEventData = {
+        ...currentEvent.toObject(),
+        ...dto, 
+        _id: undefined, // Borra el _id
+        version: currentEvent.version + 1,
+        is_latest: true,
+        status: StatusType.EDITADO,
+        created_at: new Date(),
+        updated_at: new Date(),
+        event_type: dto.event_type_id ?? currentEvent.event_type,
+      };
 
-      // 6. Manejar asignaciones
-      if (dto.assignations) {
-        //  opción simple: borrar todas y recrear
-        await this.assignationService.deleteByEventId(event._id.toString());
+      const newEvent = await this.eventModel.create(newEventData);
 
+      // Manejar asignaciones (opcional)
+      if (dto.assignations?.length) {
         for (const assign of dto.assignations) {
           await this.assignationService.create({
             ...assign,
-            event_id: event._id.toString(),
+            event_id: newEvent._id.toString(),
           });
         }
       }
 
-      return updatedEvent;
+      // Retornar la nueva versión del evento
+      return newEvent;
     } catch (error) {
       throw new InternalServerErrorException(
         `Error al actualizar la cotización: ${error.message}`,
@@ -278,7 +278,9 @@ export class EventService {
     try {
       const event = await this.eventModel.findOne({ event_code });
       if (!event) {
-        throw new NotFoundException(`Evento con código ${event_code} no encontrado`);
+        throw new NotFoundException(
+          `Evento con código ${event_code} no encontrado`,
+        );
       }
       return event;
     } catch (error) {
@@ -289,7 +291,10 @@ export class EventService {
     }
   }
 
-  async updateStatus(event_id: string, dto: UpdateStatusEventDto): Promise<Event> {
+  async updateStatus(
+    event_id: string,
+    dto: UpdateStatusEventDto,
+  ): Promise<Event> {
     try {
       const event = await this.eventModel.findById(event_id);
       if (!event) {

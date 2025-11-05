@@ -84,6 +84,25 @@ export class EventController {
     );
   }
 
+  @Get('versions/:event_code')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Listar todas las versiones de una cotización por event_code con sus asignaciones' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Listado de versiones encontradas',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Cotización no encontrada',
+  })
+  async getQuotationVersionsWithAssignations(
+    @Param('event_code') event_code: string,
+  ) {
+    return this.eventService.findEventVersionsByCode(event_code);
+  }
+
   @Patch('quotation/:id')
   @Public()
   @HttpCode(HttpStatus.OK)

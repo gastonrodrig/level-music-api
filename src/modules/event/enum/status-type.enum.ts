@@ -1,4 +1,5 @@
 export enum StatusType {
+  HISTORICO = 'Histórico',
   CREADO = 'Creado',
   EDITADO = 'Editado',
   PAGOS_ASIGNADOS = 'Pagos Asignados',

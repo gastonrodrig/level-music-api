@@ -39,7 +39,7 @@ export class AssignationsService {
     resource_id: string,
     available_from: Date,
     available_to: Date,
-    eventId?: string
+    excluded_event_code?: string
   ): Promise<void> {
     const query: any ={
       resource: toObjectId(resource_id),
@@ -51,8 +51,12 @@ export class AssignationsService {
       ],
     };
 
-    if (eventId) {
-      query.event = { $ne: toObjectId(eventId) };
+    if (excluded_event_code) {
+      // Busca el listado de todos los eventos que comparten ese código, y exclúyelos
+      const eventsToExclude = await this.eventModel
+        .find({ event_code: excluded_event_code })
+        .select('_id');
+      query.event = { $nin: eventsToExclude.map((e) => e._id) };
     }
 
     const conflict = await this.assignationModel.findOne(query);
@@ -79,6 +83,7 @@ export class AssignationsService {
         dto.resource_id,
         dto.available_from,
         dto.available_to,
+        event.event_code
       );
 
       // 3. Construir objeto base
