@@ -22,6 +22,8 @@ export class Service {
 
   @Prop({ default: Date.now })
   updated_at: Date;
+
+  
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Service);

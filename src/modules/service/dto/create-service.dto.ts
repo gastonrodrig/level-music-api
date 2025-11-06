@@ -26,6 +26,11 @@ export class CreateServiceDetailInput {
   @IsOptional()
   @IsNumber()
   detail_number?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  photos_ids?: string[];
 }
 
 export class CreateServiceDto {
@@ -45,4 +50,5 @@ export class CreateServiceDto {
   @ValidateNested({ each: true })
   @Type(() => CreateServiceDetailInput)
   serviceDetails: CreateServiceDetailInput[];
+
 }

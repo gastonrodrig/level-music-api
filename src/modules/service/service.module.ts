@@ -8,13 +8,16 @@ import {
   ServiceTypeSchema,
   ServiceDetailSchema,
   ServiceDetailPriceSchema,
-  ServiceDetailPrice
+  ServiceDetailPrice,
+  ServiceMedia,
+  ServiceMediaSchema,
 } from './schema';
 import { 
   ServiceDetailService,
   ServiceService,
   ServiceTypeService,
-  ServicesDetailsPricesService
+  ServicesDetailsPricesService,
+  MediaServiceService
 } from './services';
 import {
   ServiceController,
@@ -38,7 +41,8 @@ import { Provider, ProviderSchema } from '../provider/schema';
         { name: Service.name, schema: ServiceSchema },
         { name: ServiceDetail.name, schema: ServiceDetailSchema },
         { name: Provider.name, schema: ProviderSchema },
-        { name: ServiceDetailPrice.name, schema: ServiceDetailPriceSchema }
+        { name: ServiceDetailPrice.name, schema: ServiceDetailPriceSchema },
+        { name: ServiceMedia.name, schema: ServiceMediaSchema }
       ]);
     })(),
 
@@ -59,7 +63,9 @@ import { Provider, ProviderSchema } from '../provider/schema';
     ServiceService,
     ServiceTypeService,
     ServiceDetailService,
-    ServicesDetailsPricesService
+    ServicesDetailsPricesService,
+    MediaServiceService,
+    
   ],
   controllers: [
     ServiceController,

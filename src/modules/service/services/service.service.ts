@@ -12,6 +12,8 @@ import { ServiceType } from '../schema';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { Estado } from 'src/core/constants/app.constants';
 import { parseDetailService, SF_SERVICE, toObjectId } from 'src/core/utils';
+import { ServiceMedia } from '../schema';
+import { MediaServiceService } from './service-media.service';
 
 @Injectable()
 export class ServiceService {
@@ -24,10 +26,14 @@ export class ServiceService {
     private serviceTypeModel: Model<ServiceType>,
     @InjectModel(ServiceDetail.name)
     private serviceDetailModel: Model<ServiceDetail>,
+    @InjectModel(ServiceMedia.name)
+    private serviceMediaModel: Model<ServiceMedia>,
+    private readonly mediaService: MediaServiceService,
   ) {}
 
   async create(
     dto: CreateServiceDto,
+    photos:Array<Express.Multer.File> = [],
   ): Promise<{
     service: Service;
     serviceDetails: Array<ServiceDetail>;
@@ -64,13 +70,15 @@ export class ServiceService {
         this.serviceDetailModel.db.model('ServiceDetailPrice')
       );
       for (const d of dto.serviceDetails) {
+        const detailNum = d.detail_number ?? 1;
         // Creamos el detalle y obtenemos el documento completo
         const detailDoc = await this.serviceDetailModel.create({
           service_id: service._id,
           status: Estado.ACTIVO,
           ref_price: d.ref_price,
           details: parseDetailService(d.details),
-          detail_number: d.detail_number ?? 1,
+          detail_number: detailNum,
+          photos: []
         });
 
         // Usamos el _id real del detalle para el historial, incluyendo detail_number
@@ -82,9 +90,29 @@ export class ServiceService {
           detail_number: detailDoc.detail_number ?? 1,
         });
 
+        const photosForThisDetail = photos.filter(
+          (file) => file.fieldname === `photos_${detailNum}`
+        );
+
+        if (photosForThisDetail && photosForThisDetail.length) {
+          // 5) Llamamos al servicio de media CON EL ID DEL DETALLE
+          const createdPhotos = await this.mediaService.createMediaForService(
+            detailDoc._id.toString(), // <-- ID CORREGIDO
+            photosForThisDetail,
+          );
+          
+          if (Array.isArray(createdPhotos) && createdPhotos.length) {
+            // 6) Guardamos los IDs de las fotos EN EL DETALLE
+            detailDoc.photos = createdPhotos.map((m: any) => m._id);
+            await detailDoc.save(); // Guardamos el detalle actualizado
+          }
+        }
+
         // Guardamos el documento completo (incluye _id)
         serviceDetails.push(detailDoc);
       }
+
+
 
       return { service, serviceDetails };
     } catch (error) {
