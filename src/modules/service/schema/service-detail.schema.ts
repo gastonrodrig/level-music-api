@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Types } from "mongoose";
+import { Types,Document } from "mongoose";
 import { Service } from "./service.schema";
 import { Estado } from "src/core/constants/app.constants";
 
@@ -25,6 +25,8 @@ export class ServiceDetail {
 
   @Prop({ type: [Types.ObjectId], ref: 'ServiceMedia', default: [] })
   photos: Types.ObjectId[];
+  
 }
 
 export const ServiceDetailSchema = SchemaFactory.createForClass(ServiceDetail);
+export type ServiceDetailDocument = ServiceDetail & Document;

@@ -44,6 +44,14 @@ export class UpdateServiceDetailData {
   @IsOptional()
   @IsString()
   status?: 'Activo' | 'Inactivo';
+
+  @ApiPropertyOptional({
+    description: 'Número de detalle (1, 2, 3...) para enlazar fotos',
+    example: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  detail_number?: number;
 }
 
 export class UpdateServiceDto {

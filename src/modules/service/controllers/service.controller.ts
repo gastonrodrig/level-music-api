@@ -25,7 +25,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ServiceService } from '../services';
-import { CreateServiceDto, UpdateServiceDto } from '../dto';
+import { CreateServiceDto, UpdateServiceDetailData, UpdateServiceDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { Public } from 'src/auth/decorators';
 import { FilesInterceptor } from '@nestjs/platform-express/multer/interceptors/files.interceptor';
@@ -160,28 +160,83 @@ async create(
       sortOrder,
     );
   }
-
-  @Patch(':id')
+@Patch(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
-  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar un servicio y sus detalles' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El servicio ha sido actualizado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar el servicio.',
+  @ApiOperation({ summary: 'Actualizar un servicio y sus detalles (con fotos)' })
+  @UseInterceptors(AnyFilesInterceptor()) // <-- AÑADIDO
+  @ApiConsumes('multipart/form-data')  // <-- AÑADIDO
+  @ApiBody({ // <-- AÑADIDO
+    schema: {
+      type: 'object',
+      properties: {
+        serviceDetails: {
+          type: 'string',
+          description: 'Un STRING JSON que contiene el array de UpdateServiceDetailData',
+          example: '[{"_id":"65f...abc","ref_price":150,"detail_number":1,"details":{"desc":"Detalle 1"}}]'
+        },
+        photos_to_delete: {
+          type: 'string',
+          description: '(Opcional) Un STRING JSON con un array de IDs de fotos a eliminar',
+          example: '["65f...123", "65f...456"]'
+        },
+        'photos_1': { type: 'string', format: 'binary', description: '(Opcional) Fotos NUEVAS para el detalle 1' },
+        'photos_2': { type: 'string', format: 'binary', description: '(Opcional) Fotos NUEVAS para el detalle 2' },
+        'photos_3': {
+        type: 'string',
+        format: 'binary',
+        description: '(Opcional) Fotos para el detalle con detail_number: 3'
+      },
+      'photos_4': {
+        type: 'string',
+        format: 'binary',
+        description: '(Opcional) Fotos para el detalle con detail_number: 4'
+      },
+      },
+      required: ['serviceDetails']
+    }
   })
   async updateFullService(
     @Param('id') serviceId: string,
-    @Body() dto: UpdateServiceDto,
+    @Body() body: any, // <-- CAMBIADO
+    @UploadedFiles() photos: Array<Express.Multer.File> = [] // <-- AÑADIDO
   ) {
-    return this.serviceService.updateFullService(serviceId, dto);
-  }
+    // 1. Validar y parsear 'serviceDetails' (string JSON)
+    if (!body.serviceDetails) {
+      throw new BadRequestException('Falta el campo requerido: serviceDetails.');
+    }
 
+    let parsedDetails: UpdateServiceDetailData[];
+    try {
+      parsedDetails = JSON.parse(body.serviceDetails);
+      if (!Array.isArray(parsedDetails)) {
+        throw new Error('serviceDetails debe ser un array.');
+      }
+    } catch (error) {
+      throw new BadRequestException(`El campo "serviceDetails" debe ser un string JSON válido con formato de array. Error: ${error.message}`);
+    }
+    
+    // 2. Crear el DTO
+    const dto: UpdateServiceDto = { serviceDetails: parsedDetails };
+
+    // 3. Validar y parsear 'photos_to_delete' (string JSON, opcional)
+    let photos_to_delete: string[] = [];
+    if (body.photos_to_delete) {
+      try {
+        photos_to_delete = JSON.parse(body.photos_to_delete);
+        if (!Array.isArray(photos_to_delete)) {
+          throw new Error('photos_to_delete debe ser un array de strings (IDs).');
+        }
+      } catch (error) {
+        throw new BadRequestException(`El campo "photos_to_delete" debe ser un string JSON válido con formato de array. Error: ${error.message}`);
+      }
+    }
+
+    // 4. Llamar al servicio con todos los datos
+    return this.serviceService.updateFullService(serviceId, dto, photos, photos_to_delete);
+  }
+  
   @Get(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
