@@ -22,8 +22,8 @@ export class EquipmentPriceController {
   constructor(private readonly equipmentPriceService: EquipmentPriceService) {}
 
   @Post('update-reference-price')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar precio de referencia y registrar temporada' })
@@ -33,8 +33,8 @@ export class EquipmentPriceController {
   }
 
   @Get('paginated')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener precios del equipo con paginación' })

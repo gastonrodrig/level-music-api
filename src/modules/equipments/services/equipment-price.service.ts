@@ -24,20 +24,33 @@ export class EquipmentPriceService {
       if (!equipment) throw new NotFoundException('Equipo no encontrado');
 
       // Obtener la fecha de inicio de la temporada actual
-      const start_date = equipment.last_price_updated_at;
-
-      // Fecha actual para el fin de la temporada
-      const now = new Date();
+      const start_date =
+        equipment.season_number === 1
+          ? new Date()
+          : equipment.last_price_updated_at;
 
       // Número de temporada actual
       const season_number = equipment.season_number ?? 1;
+
+      if (season_number !== 1) {
+        const previousPrice = await this.equipmentPriceModel.findOne({
+          equipment: equipment._id,
+          end_date: null,
+        }).sort({ created_at: -1 }).exec();
+
+        if (previousPrice) {
+          const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          previousPrice.end_date = yesterday;
+          await previousPrice.save();
+        }
+      }
 
       // Crear un nuevo registro en EquipmentPrice con la temporada anterior
       const newPrice = new this.equipmentPriceModel({
         equipment: equipment._id,
         reference_price: dto.reference_price,
         start_date,
-        end_date: now,
+        end_date: null,
         season_number,
       });
       await newPrice.save();
@@ -48,7 +61,7 @@ export class EquipmentPriceService {
         {
           $set: {
             reference_price: dto.reference_price,
-            last_price_updated_at: now,
+            last_price_updated_at: new Date(),
           },
           $inc: { season_number: 1 }, // recién ahora se incrementa
         },
@@ -74,7 +87,7 @@ export class EquipmentPriceService {
       filter.equipment = toObjectId(equipment_id);
       
       const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
+        [sortField]: sortOrder === 'desc' ? -1 : 1,
       };
 
       const [items, total] = await Promise.all([
