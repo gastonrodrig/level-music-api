@@ -10,6 +10,7 @@ import { Model } from 'mongoose';
 import { Provider } from '../../provider/schema';
 import { ServiceType } from '../schema';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
+import { ServicesDetailsPricesService } from './service-detail-prices.service';
 import { Estado } from 'src/core/constants/app.constants';
 import { parseDetailService, SF_SERVICE, toObjectId } from 'src/core/utils';
 
@@ -24,6 +25,7 @@ export class ServiceService {
     private serviceTypeModel: Model<ServiceType>,
     @InjectModel(ServiceDetail.name)
     private serviceDetailModel: Model<ServiceDetail>,
+  private readonly servicesDetailsPricesService: ServicesDetailsPricesService,
   ) {}
 
   async create(
@@ -58,11 +60,8 @@ export class ServiceService {
 
       const serviceDetails: Array<ServiceDetail> = [];
 
+
       // 3) Crear cada detalle y su historial de precio inicial
-      const pricesService = (await import('./service-detail-prices.service')).ServicesDetailsPricesService;
-      const pricesServiceInstance = new pricesService(
-        this.serviceDetailModel.db.model('ServiceDetailPrice')
-      );
       for (const d of dto.serviceDetails) {
         // Creamos el detalle y obtenemos el documento completo
         const detailDoc = await this.serviceDetailModel.create({
@@ -74,7 +73,7 @@ export class ServiceService {
         });
 
         // Usamos el _id real del detalle para el historial, incluyendo detail_number
-        await pricesServiceInstance.create({
+        await this.servicesDetailsPricesService.create({
           reference_detail_price: d.ref_price,
           start_date: new Date(),
           end_date: null,
@@ -171,55 +170,72 @@ export class ServiceService {
     service: Service;
     serviceDetails: Array<ServiceDetail>;
   }> {
+
     try {
       const service = await this.serviceModel.findById(serviceId);
       if (!service) {
         throw new NotFoundException(`Service with ID ${serviceId} not found`);
       }
 
-      // ================================
-      // Procesar y actualizar cada detalle
-      // ================================
+
       for (const detailDto of dto.serviceDetails) {
-        //si tengo un id, es porque ya existe y lo actualizo
         if (detailDto._id) {
-        const detail = await this.serviceDetailModel.findById(detailDto._id);
-        if (!detail) {
-          throw new NotFoundException(
-            `Service Detail with ID ${detailDto._id} not found`,
-          );
-        }
+          const detail = await this.serviceDetailModel.findById(detailDto._id);
+          if (!detail) {
+            throw new NotFoundException(
+              `Service Detail with ID ${detailDto._id} not found`,
+            );
+          }
 
-        // 3.1 Actualizar estado (Activo/Inactivo)
-        if (detailDto.status) {
-          detail.status = detailDto.status;
-        }
+          let priceChanged = false;
+          if (
+            detailDto.ref_price !== undefined &&
+            detailDto.ref_price !== null &&
+            detail.ref_price !== detailDto.ref_price
+          ) {
+            detail.ref_price = detailDto.ref_price;
+            detail.last_price_update = new Date();
+            priceChanged = true;
+          }
+          if (detailDto.details) {
+            detail.details = detailDto.details;
+          }
+          if (detailDto.status) {
+            detail.status = detailDto.status;
+          }
+          await detail.save();
 
-        // 3.2 Actualizar atributos dinámicos
-        if (detailDto.details) {
-          detail.details = detailDto.details;
+          // Si el precio cambió, cerrar el anterior y registrar el nuevo en service-detail-prices
+          if (priceChanged) {
+            await this.servicesDetailsPricesService.closePreviousPrices(detail._id.toString());
+            await this.servicesDetailsPricesService.create({
+              reference_detail_price: detailDto.ref_price!,
+              start_date: new Date(),
+              end_date: null,
+              service_detail_id: detail._id.toString(),
+            });
+          }
+        } else {
+          // Nuevo detalle
+          const newDetail = await this.serviceDetailModel.create({
+            service_id: service._id,
+            status: detailDto.status ?? Estado.ACTIVO,
+            ref_price: detailDto.ref_price,
+            details: detailDto.details,
+          });
+          // Registrar precio inicial si corresponde
+          if (detailDto.ref_price !== undefined) {
+            await this.servicesDetailsPricesService.create({
+              reference_detail_price: detailDto.ref_price,
+              start_date: new Date(),
+              end_date: null,
+              service_detail_id: newDetail._id.toString(),
+            });
+          }
         }
-
-        // 3.3 Actualizar precio
-        if (typeof detailDto.ref_price !== 'undefined') {
-          detail.ref_price = detailDto.ref_price;
-        }
-
-        await detail.save();
-      } else {
-        // 3.4 Si no tiene ID, es un nuevo detalle, así que lo creo
-         await this.serviceDetailModel.create({
-          service_id: service._id,
-          status: detailDto.status ?? Estado.ACTIVO,
-          ref_price: detailDto.ref_price,
-          details: detailDto.details,
-        });
       }
-    }
 
-      // ================================
-      // 4. Retornar servicio actualizado con sus detalles
-      // ================================
+      // Retornar servicio actualizado con sus detalles
       const updatedDetails = await this.serviceDetailModel
         .find({ service_id: service._id })
         .lean();
