@@ -1,136 +1,102 @@
 import {
   Injectable,
   InternalServerErrorException,
-  NotFoundException,
-  HttpException,
-  HttpStatus,
+  NotFoundException
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ServiceDetailPrice } from '../schema';
-import { CreateServicesDetailsPricesDto } from '../dto';
+import { ServiceDetail, ServiceDetailPrice } from '../schema';
+import { toObjectId } from 'src/core/utils/mongo-utils';
 
 @Injectable()
 export class ServicesDetailsPricesService {
   constructor(
+    @InjectModel(ServiceDetail.name)
+    private serviceDetailModel: Model<ServiceDetail>,
     @InjectModel(ServiceDetailPrice.name)
-    private readonly ServiceDetailsPricesModel: Model<ServiceDetailPrice>,
+    private serviceDetailPricesModel: Model<ServiceDetailPrice>,
   ) {}
 
-    // Cierra los precios anteriores (end_date = ahora) para un detalle de servicio
-  async closePreviousPrices(service_detail_id: string): Promise<number> {
-    // Busca el último registro abierto (end_date: null)
-    const lastPrice = await this.ServiceDetailsPricesModel.findOne({
-      service_detail_id,
-      end_date: null,
-    }).sort({ start_date: -1 });
-    let lastDetailNumber = 1;
-    if (lastPrice) {
-      // Guardar la fecha actual como end_date
-      lastPrice.end_date = new Date();
-      await lastPrice.save();
-      lastDetailNumber = lastPrice.detail_number ?? 1;
-    }
-    return lastDetailNumber;
-  }
-    // Listar precios de un detalle de servicio y cerrar el anterior si detail_number > 1
-    async listAndClosePreviousPrices(service_detail_id: string, detail_number: number): Promise<ServiceDetailPrice[]> {
-      // Listar todos los precios de ese detalle
-      const prices = await this.ServiceDetailsPricesModel.find({ service_detail_id }).sort({ start_date: -1 }).exec();
+  async saveReferencePrice(service_detail_id: any, reference_detail_price: number): Promise<ServiceDetailPrice> {
+    try {
+      const serviceDetail = await this.serviceDetailModel.findById(service_detail_id);
+      if (!serviceDetail) throw new NotFoundException('Detalle de servicio no encontrado');
 
-      // Si detail_number > 1, cerrar el precio anterior (end_date = fecha actual)
-      if (detail_number !== 1) {
-        const previousPrice = await this.ServiceDetailsPricesModel.findOne({
-          service_detail_id,
+      // Obtener la fecha de inicio de la temporada actual
+      const start_date =
+        serviceDetail.season_number === 1
+          ? new Date()
+          : serviceDetail.last_price_updated_at;
+
+      // Número de temporada actual
+      const season_number = serviceDetail.season_number ?? 1;
+
+      if (season_number !== 1) {
+        const previousPrice = await this.serviceDetailPricesModel.findOne({
+          service_detail_id: serviceDetail._id,
           end_date: null,
-        }).sort({ start_date: -1 }).exec();
+        }).sort({ created_at: -1 }).exec();
+
         if (previousPrice) {
-          previousPrice.end_date = new Date();
+          const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          previousPrice.end_date = yesterday;
           await previousPrice.save();
         }
       }
-      return prices;
-    }
-  // ✅ Crear nuevo registro de precio
-  async create(
-    dto: CreateServicesDetailsPricesDto,
-  ): Promise<ServiceDetailPrice> {
-    try {
-      if (!dto.service_detail_id) {
-        throw new HttpException(
-          { message: 'Debe especificar el ID del detalle de servicio.' },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
 
-      // Cierra el precio anterior
-      await this.closePreviousPrices(dto.service_detail_id);
-
-      // Calcula el nuevo número de temporada (detail_number) correctamente
-      const count = await this.ServiceDetailsPricesModel.countDocuments({ service_detail_id: dto.service_detail_id });
-      const newDetailNumber = count + 1;
-
-      // Crea el nuevo registro con el número de temporada incrementado
-      const newPrice = await this.ServiceDetailsPricesModel.create({
-        service_detail_id: dto.service_detail_id,
-        reference_detail_price: dto.reference_detail_price,
-        start_date: dto.start_date ?? new Date(),
-        end_date: dto.end_date === undefined || dto.end_date === null ? null : dto.end_date,
-        detail_number: newDetailNumber,
+      // Crear un nuevo registro en ServiceDetailPrice con la temporada anterior
+      const newPrice = new this.serviceDetailPricesModel({
+        service_detail_id: serviceDetail._id,
+        reference_price: reference_detail_price,
+        start_date,
+        end_date: null,
+        season_number,
       });
+      await newPrice.save();
+
+      // Luego sí actualizas el detalle de servicio
+      await this.serviceDetailModel.findByIdAndUpdate(
+        service_detail_id,
+        {
+          $set: {
+            ref_price: reference_detail_price,
+            last_price_updated_at: new Date(),
+          },
+        },
+      );
 
       return newPrice;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
       throw new InternalServerErrorException(
-        `Error al registrar el precio del servicio: ${error.message}`,
-      );
-    }
-  }
-  // ✅ Obtener precios por detalle de servicio
-  async findByServiceDetailId(
-    service_detail_id: string,
-  ): Promise<ServiceDetailPrice[]> {
-    try {
-      const prices = await this.ServiceDetailsPricesModel.find({
-        service_detail_id,
-      });
-
-      if (!prices || prices.length === 0) {
-        throw new NotFoundException(
-          `No se encontraron precios para el detalle de servicio con ID ${service_detail_id}`,
-        );
-      }
-
-      return prices;
-    } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException(
-        `Error al obtener los precios por detalle de servicio: ${error.message}`,
+        `Error al actualizar el precio de referencia: ${error.message}`,
       );
     }
   }
 
-  // ✅ Paginación general (por si se lista todo)
   async findAllPaginated(
     limit = 5,
     offset = 0,
     sortField = 'start_date',
     sortOrder: 'asc' | 'desc' = 'desc',
+    service_detail_id?: string,
   ): Promise<{ total: number; items: ServiceDetailPrice[] }> {
     try {
+      const filter: any = {};
+      filter.service_detail_id = toObjectId(service_detail_id);
+
       const sortObj: Record<string, 1 | -1> = {
-        [sortField]: sortOrder === 'asc' ? 1 : -1,
+        [sortField]: sortOrder === 'desc' ? -1 : 1,
       };
 
       const [items, total] = await Promise.all([
-        this.ServiceDetailsPricesModel.find()
+        this.serviceDetailPricesModel.find()
+          .find(filter)
           .collation({ locale: 'es', strength: 1 })
           .sort(sortObj)
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.ServiceDetailsPricesModel.countDocuments().exec(),
+        this.serviceDetailPricesModel.countDocuments().exec(),
       ]);
 
       return { total, items };

@@ -30,8 +30,9 @@ export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
   @Post()
-  @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
+  @UseGuards(FirebaseAuthGuard)
+  @Public()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Crear un nuevo servicio con múltiples detalles' })
   @ApiResponse({
@@ -59,8 +60,9 @@ export class ServiceController {
   }
 
   @Get('paginated')
-  @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')
+  @UseGuards(FirebaseAuthGuard)
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Obtener servicios con paginación, búsqueda y orden' })
   @ApiResponse({
@@ -93,9 +95,8 @@ export class ServiceController {
   }
 
   @Patch(':id')
+  @ApiBearerAuth('firebase-auth')
   @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Actualizar un servicio y sus detalles' })
   @ApiResponse({
@@ -111,21 +112,5 @@ export class ServiceController {
     @Body() dto: UpdateServiceDto,
   ) {
     return this.serviceService.updateFullService(serviceId, dto);
-  }
-
-  @Get(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @ApiOperation({ summary: 'Obtener un servicio por ID con sus detalles' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Servicio obtenido correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Servicio no encontrado.',
-  })
-  async findOneWithDetails(@Param('id') serviceId: string) {
-    return this.serviceService.findOneWithDetails(serviceId);
   }
 }

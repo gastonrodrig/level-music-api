@@ -7,7 +7,7 @@ export class ServiceDetailPrice extends Document {
   service_detail_id: Types.ObjectId;
 
   @Prop({ type: Number, required: true })
-  reference_detail_price: number;
+  reference_price: number;
 
   @Prop({ type: Date, required: true })
   start_date: Date;
@@ -16,7 +16,7 @@ export class ServiceDetailPrice extends Document {
   end_date?: Date | null;
 
   @Prop({ type: Number, default: 1 })
-  detail_number: number;
+  season_number: number;
 }
 
 export const ServiceDetailPriceSchema =

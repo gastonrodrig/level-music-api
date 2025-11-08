@@ -25,7 +25,7 @@ export class ServiceService {
     private serviceTypeModel: Model<ServiceType>,
     @InjectModel(ServiceDetail.name)
     private serviceDetailModel: Model<ServiceDetail>,
-  private readonly servicesDetailsPricesService: ServicesDetailsPricesService,
+    private serviceDetailPricesService: ServicesDetailsPricesService,
   ) {}
 
   async create(
@@ -46,43 +46,29 @@ export class ServiceService {
         throw new BadRequestException('serviceDetails debe contener al menos un detalle');
       }
 
-      // 2) Crear el servicio principal con fechas explícitas
-      const now = new Date();
+      // 2) Crear el servicio principal
       const service = await this.serviceModel.create({
         provider: toObjectId(provider._id),
         service_type: toObjectId(serviceType._id),
         provider_name: provider.name,
         service_type_name: serviceType.name,
         status: Estado.ACTIVO,
-        created_at: now,
-        updated_at: now,
       });
 
       const serviceDetails: Array<ServiceDetail> = [];
 
-
-      // 3) Crear cada detalle y su historial de precio inicial
+      // 3) Crear cada detalle
       for (const d of dto.serviceDetails) {
-        // Creamos el detalle y obtenemos el documento completo
-        const detailDoc = await this.serviceDetailModel.create({
+        const detail = await this.serviceDetailModel.create({
           service_id: service._id,
           status: Estado.ACTIVO,
           ref_price: d.ref_price,
           details: parseDetailService(d.details),
-          detail_number: d.detail_number ?? 1,
         });
 
-        // Usamos el _id real del detalle para el historial, incluyendo detail_number
-        await this.servicesDetailsPricesService.create({
-          reference_detail_price: d.ref_price,
-          start_date: new Date(),
-          end_date: null,
-          service_detail_id: detailDoc._id.toString(),
-          detail_number: detailDoc.detail_number ?? 1,
-        });
+        serviceDetails.push(detail.toObject());
 
-        // Guardamos el documento completo (incluye _id)
-        serviceDetails.push(detailDoc);
+        this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
       }
 
       return { service, serviceDetails };
@@ -93,6 +79,7 @@ export class ServiceService {
       );
     }
   }
+
 
   async findAll(): Promise<Service[]> {
     try {
@@ -170,15 +157,15 @@ export class ServiceService {
     service: Service;
     serviceDetails: Array<ServiceDetail>;
   }> {
-
     try {
       const service = await this.serviceModel.findById(serviceId);
       if (!service) {
         throw new NotFoundException(`Service with ID ${serviceId} not found`);
       }
 
-
+      // Procesar y actualizar cada detalle
       for (const detailDto of dto.serviceDetails) {
+        // si tengo un id, es porque ya existe y lo actualizo
         if (detailDto._id) {
           const detail = await this.serviceDetailModel.findById(detailDto._id);
           if (!detail) {
@@ -187,51 +174,38 @@ export class ServiceService {
             );
           }
 
-          let priceChanged = false;
-          if (
-            detailDto.ref_price !== undefined &&
-            detailDto.ref_price !== null &&
-            detail.ref_price !== detailDto.ref_price
-          ) {
-            detail.ref_price = detailDto.ref_price;
-            detail.last_price_update = new Date();
-            priceChanged = true;
-          }
-          if (detailDto.details) {
-            detail.details = detailDto.details;
-          }
+          // Actualizar estado (Activo/Inactivo)
           if (detailDto.status) {
             detail.status = detailDto.status;
           }
+
+          // Actualizar atributos dinámicos
+          if (detailDto.details) {
+            detail.details = detailDto.details;
+          }
+
+          // Actualizar precio
+          if (typeof detailDto.ref_price !== 'undefined') {
+            detail.ref_price = detailDto.ref_price;
+          }
+
+          detail.season_number += 1;
+
+          detail.last_price_updated_at = new Date();
+
           await detail.save();
 
-          // Si el precio cambió, cerrar el anterior y registrar el nuevo en service-detail-prices
-          if (priceChanged) {
-            await this.servicesDetailsPricesService.closePreviousPrices(detail._id.toString());
-            await this.servicesDetailsPricesService.create({
-              reference_detail_price: detailDto.ref_price!,
-              start_date: new Date(),
-              end_date: null,
-              service_detail_id: detail._id.toString(),
-            });
-          }
+          await this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
         } else {
-          // Nuevo detalle
-          const newDetail = await this.serviceDetailModel.create({
+          // Si no tiene ID, es un nuevo detalle, así que lo creo
+          const detail = await this.serviceDetailModel.create({
             service_id: service._id,
             status: detailDto.status ?? Estado.ACTIVO,
             ref_price: detailDto.ref_price,
             details: detailDto.details,
           });
-          // Registrar precio inicial si corresponde
-          if (detailDto.ref_price !== undefined) {
-            await this.servicesDetailsPricesService.create({
-              reference_detail_price: detailDto.ref_price,
-              start_date: new Date(),
-              end_date: null,
-              service_detail_id: newDetail._id.toString(),
-            });
-          }
+
+          await this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
         }
       }
 
@@ -250,20 +224,4 @@ export class ServiceService {
       );
     }
   }
-
-
-async findOneWithDetails(serviceId: string): 
-Promise<{ service: Service; serviceDetails: Array<ServiceDetail> }> {
-  try {
-    const service = await this.serviceModel.findById(serviceId).lean();
-    if (!service) throw new NotFoundException(`Service with ID ${serviceId} not found`);
-
-    const serviceDetails = await this.serviceDetailModel.find({ service_id: serviceId }).lean();
-
-    return { service, serviceDetails };
-  } catch (error) {
-    throw new InternalServerErrorException(`Error fetching service: ${error.message}`);
-  }
-}
-
 }

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
+  IsDateString,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
@@ -21,11 +22,6 @@ export class CreateServiceDetailInput {
   @IsNumber()
   @Type(() => Number)
   ref_price: number;
-
-  @ApiProperty({ example: 1, required: false, default: 1 })
-  @IsOptional()
-  @IsNumber()
-  detail_number?: number;
 }
 
 export class CreateServiceDto {

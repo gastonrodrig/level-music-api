@@ -1,9 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
   Query,
   HttpCode,
   HttpStatus,
@@ -21,7 +18,6 @@ import {
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { Public } from 'src/auth/decorators';
 import { ServicesDetailsPricesService } from '../services';
-import { CreateServicesDetailsPricesDto } from '../dto';
 
 @ApiTags('Service Details Prices')
 @Controller('service-details-prices')
@@ -30,63 +26,9 @@ export class ServicesDetailsPricesController {
     private readonly servicesDetailsPricesService: ServicesDetailsPricesService,
   ) {}
 
-  // ✅ Crear un nuevo registro de precio
-  @Public()
-  @Post()
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Registrar un nuevo precio asociado a un detalle de servicio',
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Precio registrado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al registrar el precio.',
-  })
-  async create(@Body() dto: CreateServicesDetailsPricesDto) {
-    return this.servicesDetailsPricesService.create(dto);
-  }
-
-  // ✅ Obtener precios por ID de detalle de servicio
-  @Public()
-  @Get('by-detail/:service_detail_id')
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Obtener todos los precios históricos de un detalle de servicio',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Precios obtenidos correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'No se encontraron precios para el detalle indicado.',
-  })
-  // Listar precios y cerrar el anterior si detail_number > 1
-  @Get('by-detail/:service_detail_id/:detail_number')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Obtener todos los precios históricos de un detalle de servicio y cerrar el anterior si corresponde',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Precios obtenidos y cierre realizado correctamente.',
-  })
-  async findByServiceDetailId(
-    @Param('service_detail_id') id: string,
-    @Param('detail_number') detail_number: number,
-  ) {
-    return this.servicesDetailsPricesService.listAndClosePreviousPrices(id, Number(detail_number));
-  }
-
-  // ✅ Listado general con paginación
   @Get('paginated')
-  @Public()
+  @ApiBearerAuth('firebase-auth')
+  @UseGuards(FirebaseAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Listar todos los precios con paginación (uso administrativo)',
@@ -123,14 +65,15 @@ export class ServicesDetailsPricesController {
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
     @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('sortField', new DefaultValuePipe('start_date')) sortField: string,
-    @Query('sortOrder', new DefaultValuePipe('desc'))
-    sortOrder: 'asc' | 'desc',
+    @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
+    @Query('serviceDetailId') serviceDetailId?: string,
   ) {
     return this.servicesDetailsPricesService.findAllPaginated(
       limit,
       offset,
       sortField,
       sortOrder,
+      serviceDetailId,
     );
   }
 }
