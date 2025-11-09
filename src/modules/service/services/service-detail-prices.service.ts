@@ -17,58 +17,59 @@ export class ServicesDetailsPricesService {
     private serviceDetailPricesModel: Model<ServiceDetailPrice>,
   ) {}
 
-  async saveReferencePrice(service_detail_id: any, reference_detail_price: number): Promise<ServiceDetailPrice> {
+  async saveReferencePrice(
+    service_detail_id: any,
+    reference_detail_price: number
+  ): Promise<ServiceDetailPrice | null> {
     try {
       const serviceDetail = await this.serviceDetailModel.findById(service_detail_id);
       if (!serviceDetail) throw new NotFoundException('Detalle de servicio no encontrado');
 
-      // Obtener la fecha de inicio de la temporada actual
-      const start_date =
-        serviceDetail.season_number === 1
-          ? new Date()
-          : serviceDetail.last_price_updated_at;
+      // Buscar el último precio registrado para este detalle
+      const lastPrice = await this.serviceDetailPricesModel
+        .findOne({ service_detail_id: serviceDetail._id })
+        .sort({ start_date: -1 })
+        .exec();
 
-      // Número de temporada actual
-      const season_number = serviceDetail.season_number ?? 1;
+      // Si no hay precios previos, es la primera temporada
+      const season_number = lastPrice ? lastPrice.season_number + 1 : 1;
 
-      if (season_number !== 1) {
-        const previousPrice = await this.serviceDetailPricesModel.findOne({
-          service_detail_id: serviceDetail._id,
-          end_date: null,
-        }).sort({ created_at: -1 }).exec();
-
-        if (previousPrice) {
-          const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-          previousPrice.end_date = yesterday;
-          await previousPrice.save();
-        }
+      // Verificar si el precio cambió
+      if (lastPrice && lastPrice.reference_price === reference_detail_price) {
+        // No se crea nuevo registro si el precio es igual
+        return null;
       }
 
-      // Crear un nuevo registro en ServiceDetailPrice con la temporada anterior
+      // Si había un precio anterior activo, cerrarlo
+      if (lastPrice && !lastPrice.end_date) {
+        lastPrice.end_date = new Date(Date.now() - 24 * 60 * 60 * 1000); // ayer
+        await lastPrice.save();
+      }
+
+      // Crear el nuevo registro solo si el precio cambió
       const newPrice = new this.serviceDetailPricesModel({
         service_detail_id: serviceDetail._id,
         reference_price: reference_detail_price,
-        start_date,
+        start_date: new Date(),
         end_date: null,
         season_number,
       });
+
       await newPrice.save();
 
-      // Luego sí actualizas el detalle de servicio
-      await this.serviceDetailModel.findByIdAndUpdate(
-        service_detail_id,
-        {
-          $set: {
-            ref_price: reference_detail_price,
-            last_price_updated_at: new Date(),
-          },
+      // Actualizar los campos del detalle de servicio
+      await this.serviceDetailModel.findByIdAndUpdate(service_detail_id, {
+        $set: {
+          ref_price: reference_detail_price,
+          last_price_updated_at: new Date(),
+          season_number,
         },
-      );
+      });
 
       return newPrice;
     } catch (error) {
       throw new InternalServerErrorException(
-        `Error al actualizar el precio de referencia: ${error.message}`,
+        `Error al guardar el precio de referencia: ${error.message}`,
       );
     }
   }
@@ -96,7 +97,7 @@ export class ServicesDetailsPricesService {
           .skip(offset)
           .limit(limit)
           .exec(),
-        this.serviceDetailPricesModel.countDocuments().exec(),
+        this.serviceDetailPricesModel.countDocuments(filter).exec(),
       ]);
 
       return { total, items };
