@@ -7,13 +7,16 @@ export class ServiceDetailPrice extends Document {
   service_detail_id: Types.ObjectId;
 
   @Prop({ type: Number, required: true })
-  reference_detail_price: number;
+  reference_price: number;
 
   @Prop({ type: Date, required: true })
   start_date: Date;
 
-  @Prop({ type: Date, required: true })
-  end_date: Date;
+  @Prop({ type: Date, default: null })
+  end_date?: Date | null;
+
+  @Prop({ type: Number, default: 1 })
+  season_number: number;
 }
 
 export const ServiceDetailPriceSchema =

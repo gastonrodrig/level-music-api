@@ -10,8 +10,10 @@ import { Model } from 'mongoose';
 import { Provider } from '../../provider/schema';
 import { ServiceType } from '../schema';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
+import { ServicesDetailsPricesService } from './service-detail-prices.service';
 import { Estado } from 'src/core/constants/app.constants';
 import { parseDetailService, SF_SERVICE, toObjectId } from 'src/core/utils';
+import { ServiceMediaService } from './service-media.service';
 
 @Injectable()
 export class ServiceService {
@@ -24,10 +26,13 @@ export class ServiceService {
     private serviceTypeModel: Model<ServiceType>,
     @InjectModel(ServiceDetail.name)
     private serviceDetailModel: Model<ServiceDetail>,
+    private serviceMediaService: ServiceMediaService,
+    private serviceDetailPricesService: ServicesDetailsPricesService,
   ) {}
 
   async create(
     dto: CreateServiceDto,
+    photos: Array<Express.Multer.File> = [],
   ): Promise<{
     service: Service;
     serviceDetails: Array<ServiceDetail>;
@@ -44,11 +49,14 @@ export class ServiceService {
         throw new BadRequestException('serviceDetails debe contener al menos un detalle');
       }
 
+      console.log(photos, dto)
+
       // 2) Crear el servicio principal
       const service = await this.serviceModel.create({
         provider: toObjectId(provider._id),
         service_type: toObjectId(serviceType._id),
         provider_name: provider.name,
+        provider_email: provider.email,
         service_type_name: serviceType.name,
         status: Estado.ACTIVO,
       });
@@ -62,9 +70,25 @@ export class ServiceService {
           status: Estado.ACTIVO,
           ref_price: d.ref_price,
           details: parseDetailService(d.details),
+          photos: []
         });
 
         serviceDetails.push(detail.toObject());
+
+        this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
+        
+        const photosForThisDetail = photos.filter(
+          (file) => file.fieldname === `photos_${detail._id}`
+        );
+
+        const createdPhotos = await this.serviceMediaService.createMediaForService(
+          detail._id.toString(),
+          photosForThisDetail,
+        );
+        
+        detail.photos = createdPhotos.map((m: any) => m._id);
+        
+        await detail.save();
       }
 
       return { service, serviceDetails };
@@ -128,6 +152,7 @@ export class ServiceService {
         services.map(async (service) => {
           const details = await this.serviceDetailModel
             .find({ service_id: service._id })
+            .populate('photos')
             .lean();
 
           return {
@@ -148,6 +173,8 @@ export class ServiceService {
   async updateFullService(
     serviceId: string,
     dto: UpdateServiceDto,
+    photos: Express.Multer.File[] = [],
+    photos_to_delete: string[] = [],
   ): Promise<{
     service: Service;
     serviceDetails: Array<ServiceDetail>;
@@ -158,51 +185,93 @@ export class ServiceService {
         throw new NotFoundException(`Service with ID ${serviceId} not found`);
       }
 
-      // ================================
-      // Procesar y actualizar cada detalle
-      // ================================
-      for (const detailDto of dto.serviceDetails) {
-        //si tengo un id, es porque ya existe y lo actualizo
-        if (detailDto._id) {
-        const detail = await this.serviceDetailModel.findById(detailDto._id);
-        if (!detail) {
-          throw new NotFoundException(
-            `Service Detail with ID ${detailDto._id} not found`,
-          );
-        }
+      const filesByField: Record<string, Express.Multer.File[]> = (photos || []).reduce((acc, f) => {
+        const k = f.fieldname || 'photos';
+        acc[k] = acc[k] || [];
+        acc[k].push(f);
+        return acc;
+      }, {} as Record<string, Express.Multer.File[]>);
 
-        // 3.1 Actualizar estado (Activo/Inactivo)
-        if (detailDto.status) {
-          detail.status = detailDto.status;
-        }
-
-        // 3.2 Actualizar atributos dinámicos
-        if (detailDto.details) {
-          detail.details = detailDto.details;
-        }
-
-        // 3.3 Actualizar precio
-        if (typeof detailDto.ref_price !== 'undefined') {
-          detail.ref_price = detailDto.ref_price;
-        }
-
-        await detail.save();
-      } else {
-        // 3.4 Si no tiene ID, es un nuevo detalle, así que lo creo
-         await this.serviceDetailModel.create({
-          service_id: service._id,
-          status: detailDto.status ?? Estado.ACTIVO,
-          ref_price: detailDto.ref_price,
-          details: detailDto.details,
-        });
+      // Borrar imagenes si es necesario
+      if (photos_to_delete.length > 0) {
+        await this.serviceMediaService.deleteMedia(photos_to_delete); 
       }
-    }
 
-      // ================================
-      // 4. Retornar servicio actualizado con sus detalles
-      // ================================
+      // Procesar y actualizar cada detalle
+      for (const detailDto of dto.serviceDetails) {
+        let detail;
+
+        // si tengo un id, es porque ya existe y lo actualizo
+        if (detailDto._id) {
+          detail = await this.serviceDetailModel.findById(detailDto._id);
+          if (!detail) {
+            throw new NotFoundException(
+              `Service Detail with ID ${detailDto._id} not found`,
+            );
+          }
+
+          // Actualizar estado (Activo/Inactivo)
+          if (detailDto.status) {
+            detail.status = detailDto.status;
+          }
+
+          // Actualizar atributos dinámicos
+          if (detailDto.details) {
+            detail.details = detailDto.details;
+          }
+
+          // Actualizar precio
+          if (typeof detailDto.ref_price !== 'undefined') {
+            detail.ref_price = detailDto.ref_price;
+          }
+
+          detail.season_number += 1;
+
+          detail.last_price_updated_at = new Date();
+
+          await detail.save();
+
+          await this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
+        } else {
+          // Si no tiene ID, es un nuevo detalle, así que lo creo
+          detail = await this.serviceDetailModel.create({
+            service_id: service._id,
+            status: detailDto.status ?? Estado.ACTIVO,
+            ref_price: detailDto.ref_price,
+            details: detailDto.details,
+          });
+
+          await this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
+        }
+
+        // Procesar archivos subidos para este detalle
+        const key = `photos_${detailDto._id ?? 'new'}`;
+        const filesForDetail = filesByField[key] || [];
+        
+        if (filesForDetail.length) {
+          const created = await this.serviceMediaService.createMediaForService(
+            detail._id.toString(), 
+            filesForDetail
+          );
+
+          if (created.length) {
+            // Unimos las fotos existentes con las nuevas y evitamos duplicados
+            const existingPhotoIds = detail.photos.map(String);
+            const newPhotoIds = created.map((c: any) => String(c._id));
+            detail.photos = Array.from(new Set([...existingPhotoIds, ...newPhotoIds]));
+          }
+        }
+
+        await detail.save(); 
+      }
+
+      service.updated_at = new Date();
+      await service.save();
+
+      // Retornar servicio actualizado con sus detalles
       const updatedDetails = await this.serviceDetailModel
         .find({ service_id: service._id })
+        .populate('photos')
         .lean();
 
       return {
@@ -210,25 +279,8 @@ export class ServiceService {
         serviceDetails: updatedDetails,
       };
     } catch (error) {
-      throw new InternalServerErrorException(
-        `Error updating service: ${error.message}`,
-      );
+      console.error('Error en updateFullService:', error);
+      throw new InternalServerErrorException(`Error updating service: ${error.message}`);
     }
   }
-
-
-async findOneWithDetails(serviceId: string): 
-Promise<{ service: Service; serviceDetails: Array<ServiceDetail> }> {
-  try {
-    const service = await this.serviceModel.findById(serviceId).lean();
-    if (!service) throw new NotFoundException(`Service with ID ${serviceId} not found`);
-
-    const serviceDetails = await this.serviceDetailModel.find({ service_id: serviceId }).lean();
-
-    return { service, serviceDetails };
-  } catch (error) {
-    throw new InternalServerErrorException(`Error fetching service: ${error.message}`);
-  }
-}
-
 }

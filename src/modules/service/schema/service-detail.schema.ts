@@ -17,11 +17,14 @@ export class ServiceDetail {
   @Prop({ type: Number })
   ref_price: number;
 
-  @Prop({ type: Number , default: 1 })
-  detail_number: number;
+  @Prop({ type: Number, default: 1 }) 
+  season_number: number;
 
-  @Prop({ type: Date, default: Date.now })
-  last_price_update: Date;
+  @Prop({ type: Date, default: Date.now }) 
+  last_price_updated_at: Date;
+
+  @Prop({ type: [Types.ObjectId], ref: 'ServiceMedia', default: [] })
+  photos: Types.ObjectId[];
 }
 
 export const ServiceDetailSchema = SchemaFactory.createForClass(ServiceDetail);

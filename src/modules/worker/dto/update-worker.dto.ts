@@ -1,8 +1,13 @@
-import { IsNotEmpty, IsString, IsEnum, IsOptional, IsEmail } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsOptional, IsEmail, IsMongoId } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Estado, DocType } from 'src/core/constants/app.constants';
 
 export class UpdateWorkerDto {
+  @ApiProperty({ example: '682ea84cab5653217969d597', required: true })
+  @IsMongoId()
+  @IsNotEmpty()
+  worker_type_id: string;
+
   @ApiProperty({ required: true })
   @IsEmail()
   @IsNotEmpty()

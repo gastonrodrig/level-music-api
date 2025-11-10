@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsMongoId, IsNumber, IsDateString, IsNotEmpty } from 'class-validator';
+import { IsMongoId, IsNumber, IsDateString, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateEquipmentPriceDto {
   @ApiProperty({
@@ -13,7 +13,7 @@ export class CreateEquipmentPriceDto {
     example: 120.5,
     description: 'Precio de referencia por hora/día',
   })
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
   reference_price: number;
 }

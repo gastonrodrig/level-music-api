@@ -1,12 +1,15 @@
 import {
   Injectable,
   InternalServerErrorException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Service, ServiceDetail } from '../schema';
 import { Model } from 'mongoose';
 import { Estado } from 'src/core/constants/app.constants';
-import { toObjectId } from 'src/core/utils';
+import { ServicesDetailsPricesService } from './service-detail-prices.service';
+import { UpdateServiceDto } from '../dto/update-service.dto';
 
 @Injectable()
 export class ServiceDetailService {

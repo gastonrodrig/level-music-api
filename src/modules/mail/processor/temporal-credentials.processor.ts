@@ -6,7 +6,6 @@ import { MailService } from '../service';
 @Processor('temporal-credentials')
 export class MailProcessor extends WorkerHost {
   private readonly logger = new Logger(MailProcessor.name);
-
   constructor(private readonly mailService: MailService) {
     super();
   }

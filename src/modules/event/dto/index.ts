@@ -1,4 +1,3 @@
-export * from './client-info.dto';
 export * from './create-event.dto';
 export * from './update-event.dto';
 export * from './create-event-type.dto';
@@ -11,10 +10,8 @@ export * from './create-assignations.dto';
 export * from './create-incident.dto';
 export * from './update-incident.dto';
 export * from './create-reprogramings.dto';
-export * from './create-quotation-landing.dto';
-export * from './create-quotation-admin.dto';
-export * from './assign-resources.dto';
-export * from './update-quotation-admin.dto';
+export * from './create-quotation.dto';
+export * from './update-quotation.dto';
 export * from './update-status-event.dto';
 export * from './create-appointment.dto';
 export * from './create-task-evidence.dto';

@@ -15,6 +15,9 @@ export class Service {
   provider_name: string;
 
   @Prop({ type: String })
+  provider_email: string;
+
+  @Prop({ type: String })
   service_type_name: string;
 
   @Prop({ default: Date.now })

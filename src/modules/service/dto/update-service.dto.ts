@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class UpdateServiceDetailData {
+class UpdateServiceDetailData {
   @ApiProperty({
     description: 'ID del detalle de servicio que se actualiza',
     example: '64f1c7e1234567890abcd124',
@@ -44,6 +44,14 @@ export class UpdateServiceDetailData {
   @IsOptional()
   @IsString()
   status?: 'Activo' | 'Inactivo';
+
+  @ApiPropertyOptional({
+    description: 'Número de detalle (1, 2, 3...) para enlazar fotos',
+    example: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  detail_number?: number;
 }
 
 export class UpdateServiceDto {

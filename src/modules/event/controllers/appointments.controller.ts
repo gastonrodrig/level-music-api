@@ -47,8 +47,7 @@ export class AppointmentsController {
   }
 
   @Get('paginated')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Obtener citas con paginación, búsqueda y orden',
@@ -84,7 +83,7 @@ export class AppointmentsController {
       sortOrder,
     );
   }
-  
+
   @Patch(':id')
   @UseGuards(FirebaseAuthGuard)
   @ApiBearerAuth('firebase-auth')

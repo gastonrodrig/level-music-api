@@ -1,6 +1,5 @@
-import { IsNotEmpty, IsMongoId, IsString, IsOptional, IsEmail, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsMongoId, IsString, IsOptional, IsEmail, IsEnum, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 import { DocType } from 'src/core/constants/app.constants';
 
 export class CreateWorkerDto {
@@ -38,4 +37,9 @@ export class CreateWorkerDto {
   @IsOptional()
   @IsString()
   last_name?: string;
+
+  @ApiProperty({ example: true, required: true })
+  @IsBoolean()
+  @IsOptional()
+  create_account?: boolean;
 }

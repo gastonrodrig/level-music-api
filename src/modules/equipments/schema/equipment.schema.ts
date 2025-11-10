@@ -43,6 +43,9 @@ export class Equipment extends Document {
   @Prop({ type: Number, default: 1 }) 
   season_number: number;
 
+  @Prop({ type: Number }) 
+  reference_price: number;
+
   @Prop({ type: Date, default: Date.now }) 
   last_price_updated_at: Date;
 }

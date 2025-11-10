@@ -8,21 +8,14 @@ import {
   CreateTemporalCredentialMailDto,
   CreatePasswordResetLinkMailDto,
   CreateContactMailDto,
-  CreateGmailPdfDto,
 } from '../dto';
-import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class MailService {
   private oauth2Client;
   private transporter;
 
-  constructor(
-    @InjectModel(Event.name)
-    private eventModel: Model<Event>,
-    @InjectModel(Assignation.name)
-    private assignationModel: Model<Assignation>,
-  ) {
+  constructor() {
     this.oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -191,134 +184,20 @@ export class MailService {
     }
   }
 
-  async generateQuotationPdf(quotation: any): Promise<Buffer> {
-    console.log('Generating PDF for quotation:', quotation);
-    // 1. Define el HTML de la cotización (puedes personalizarlo)
-    const html = `
-    <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 32px; }
-          h2 { color: #E08438; }
-          .section { margin-bottom: 16px; }
-          .table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          .table th, .table td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-          .table th { background: #f5f5f5; }
-        </style>
-      </head>
-      <body>
-        <h2>Cotización de Evento</h2>
-        <div class="section">
-          <strong>Cliente:</strong> ${quotation.client_info?.first_name || ''} ${quotation.client_info?.last_name || ''}
-        </div>
-        <div class="section">
-          <strong>Evento:</strong> ${quotation.event_type_name || ''} <br/>
-          <strong>Fecha:</strong> ${quotation.event_date ? new Date(quotation.event_date).toLocaleDateString() : ''}
-        </div>
-        <div class="section">
-          <strong>Servicios:</strong> ${(quotation.services_requested || []).map((s) => s.name).join(', ')}
-        </div>
-        <div class="section">
-          <strong>Asignaciones:</strong>
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Nombre</th>
-                <th>Horas</th>
-                <th>Tarifa</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${(quotation.assignations || [])
-                .map(
-                  (a) => `
-                <tr>
-                  <td>${a.resource_type || '-'}</td>
-                  <td>${a.service_provider_name || a.equipment_name || a.worker_role || '-'}</td>
-                  <td>${a.hours ?? '-'}</td>
-                  <td>S/. ${a.hourly_rate ?? '-'}</td>
-                </tr>
-              `,
-                )
-                .join('')}
-            </tbody>
-          </table>
-        </div>
-        <div class="section">
-          <strong>Total:</strong> S/. ${(quotation.assignations || [])
-            .reduce(
-              (acc, a) =>
-                acc + (Number(a.hourly_rate) || 0) * (Number(a.hours) || 0),
-              0,
-            )
-            .toFixed(2)}
-        </div>
-      </body>
-    </html>
-  `;
-
-    // 2. Usa Puppeteer para generar el PDF
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfBufferRaw = await page.pdf({ format: 'A4' });
-    const pdfBuffer = Buffer.from(pdfBufferRaw);
-    await browser.close();
-    return pdfBuffer;
-  }
-
-  async sendEmailWithQuotationPdf(quotationId: string, dto: CreateGmailPdfDto) {
-    // 1. Busca la cotización en la base de datos
-    const quotation = await this.eventModel.findById(quotationId).lean();
-    if (!quotation) throw new BadRequestException('Cotización no encontrada.');
-
-    const assignations = await this.assignationModel
-      .find({ event: quotation._id })
-      .lean();
-    const quotationForPdf = { ...quotation, assignations };
-
-    // 2. Genera el PDF con Puppeteer (adapta el HTML para la cotización)
-    const pdfBuffer = await this.generateQuotationPdf(quotationForPdf);
-
-    // 3. Envía el correo con el PDF adjunto
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
-      to: dto.to,
-      subject: dto.subject,
-      text: 'Adjunto PDF de cotización.',
-      attachments: [
-        {
-          filename: `COTIZACION_${quotation.event_code}.pdf`,
-          content: pdfBuffer,
-        },
-      ],
-    };
-    await this.transporter.sendMail(mailOptions);
-  }
-
   async sendQuotationReadyMail(dto: {
     to: string;
     clientName?: string;
-    hasAccount: boolean;
-    activationUrl?: string | null;
   }) {
     const appUrl = process.env.APP_URL;
     const loginUrl = `${appUrl}/auth/login`;
 
-    const baseHead = `
-      <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap" rel="stylesheet">
-      <meta name="color-scheme" content="light only">
-      <meta name="supported-color-schemes" content="light">
-    `;
-
-    // ---------- Plantilla (B) Cliente CON cuenta ----------
-    const htmlHasAccount = `
+    const html = `
     <html>
-      <head>${baseHead}</head>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap" rel="stylesheet">
+        <meta name="color-scheme" content="light only">
+        <meta name="supported-color-schemes" content="light">
+      </head>
       <body style="margin:0; padding:0; background:#DFE0E2; font-family:'Mulish', Arial, sans-serif;">
         <div style="background:#E08438; padding:32px;">
           <div style="max-width:520px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); padding:32px; border:1px solid #C1BFC0;">
@@ -343,39 +222,97 @@ export class MailService {
       </body>
     </html>`.trim();
 
-    // ---------- Plantilla (A) Cliente SIN cuenta (activar temporal) ----------
-    if (!dto.hasAccount && !dto.activationUrl) {
-      throw new Error('activationUrl es obligatorio cuando hasAccount=false');
-    }
+    const subject = 'Tu cotización está lista — Inicia sesión para revisarla'
 
-    const htmlNoAccount = `
+    await this.transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: dto.to,
+      subject,
+      html,
+    });
+  }
+
+  async sendAppointmentReadyMail(dto: {
+    to: string;
+    clientName: string;
+    meetingType: string;
+    date: string;
+    hour: string;
+    attendeesCount: number;
+  }) {
+    const appUrl = process.env.APP_URL;
+
+    const baseHead = `
+      <link href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap" rel="stylesheet">
+      <meta name="color-scheme" content="light only">
+      <meta name="supported-color-schemes" content="light">
+    `;
+
+    const html = `
     <html>
       <head>${baseHead}</head>
       <body style="margin:0; padding:0; background:#DFE0E2; font-family:'Mulish', Arial, sans-serif;">
         <div style="background:#E08438; padding:32px;">
           <div style="max-width:520px; margin:auto; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); padding:32px; border:1px solid #C1BFC0;">
-            <h2 style="color:#252020; font-weight:700; margin-top:0;">Tu cotización te espera</h2>
+            <h2 style="color:#252020; font-weight:700; margin-top:0;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Tu cita ha sido confirmada
+            </h2>
             <p style="color:#252020; font-size:16px; margin:0 0 12px 0;">Hola ${dto.clientName}</p>
             <p style="color:#252020; font-size:16px; margin:0 0 16px 0;">
-              Para verla y continuar con el proceso, por favor <strong>activa tu cuenta temporal</strong> haciendo clic en el siguiente botón:
+              Tu cita ha sido confirmada exitosamente. A continuación los detalles:
             </p>
-            <div style="text-align:center; margin:24px 0;">
-              <a href="${dto.activationUrl}"
-                style="display:inline-block; background:#E08438; color:#fff; padding:12px 24px; border-radius:6px; text-decoration:none; font-weight:700; font-family:'Mulish', Arial, sans-serif;">
-                Activar mi cuenta
-              </a>
-            </div>
+            
             <div style="background:#F9F9F9; padding:16px; border-radius:6px; border:1px solid #E0E0E0; margin-top:16px;">
-              <p style="margin:0 0 8px 0; color:#252020; font-size:16px;"><strong>Una vez que ingreses, podrás:</strong></p>
-              <ul style="margin:0; padding-left:18px; color:#252020; font-size:16px;">
-                <li>Revisar los detalles de tu cotización.</li>
-                <li>Consultar servicios y recursos asignados.</li>
-                <li>Aceptar o solicitar ajustes antes de la aprobación final.</li>
-              </ul>
+              <table style="width:100%; border-collapse:collapse;">
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Tipo de Reunión:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.meetingType}</td>
+                </tr>
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M16 2v4M8 2v4M3 10h18" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Fecha:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.date}</td>
+                </tr>
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <circle cx="12" cy="12" r="10" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M12 6v6l4 2" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Hora:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.hour}</td>
+                </tr>
+                <tr>
+                  <td style="color:#252020; font-size:16px; padding:8px 0; font-weight:600;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="vertical-align:middle; margin-right:8px;">
+                      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="#E08438" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Asistentes:
+                  </td>
+                  <td style="color:#252020; font-size:16px; padding:8px 0;">${dto.attendeesCount}</td>
+                </tr>
+              </table>
             </div>
+
             <div style="margin-top:24px; padding:12px; border-left:4px solid #C1BFC0; background:#FBFBFB; color:#252020; border-radius:4px;">
-              Si ya tienes una cuenta con nosotros, simplemente inicia sesión y encontrarás tu cotización disponible.
+              Por favor, asegúrate de estar disponible en la fecha y hora indicadas. Si necesitas realizar algún cambio, contáctanos.
             </div>
+
             <hr style="border:none; border-top:1px solid #C1BFC0; margin:32px 0;">
             <div style="font-size:14px; color:#252020;">
               Este mensaje fue enviado por
@@ -386,17 +323,129 @@ export class MailService {
       </body>
     </html>`.trim();
 
-    const subject = dto.hasAccount
-      ? 'Tu cotización está lista — Inicia sesión para revisarla'
-      : 'Tu cotización está lista — Activa tu cuenta';
-
-    const html = dto.hasAccount ? htmlHasAccount : htmlNoAccount;
-
     await this.transporter.sendMail({
       from: process.env.GMAIL_USER,
       to: dto.to,
-      subject,
+      subject: ' Tu cita ha sido confirmada - Level Music Corp',
       html,
+    });
+  }
+
+  async generatePurchaseOrderPdf(data: {
+    event: any;
+    providerName: string;
+    providerCompany: string;
+    clientName: string;
+    assignations: any[];
+  }): Promise<Buffer> {
+    const { event, providerName, providerCompany, clientName, assignations } = data;
+
+    const mergedDetails: string[] = [];
+    assignations.forEach((a) => {
+      const details = a.service_detail || {};
+      for (const [key, value] of Object.entries(details)) {
+        mergedDetails.push(`${key}: ${value}`);
+      }
+    });
+
+    const html = `
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 40px; }
+            h1 { color: #A05C25; margin-bottom: 12px; }
+            .section { margin-bottom: 20px; }
+            .label { font-weight: bold; color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ddd; padding: 10px; font-size: 14px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+        </head>
+        <body>
+          <h1>ORDEN DE COMPRA</h1>
+
+          <div class="section">
+            <div><span class="label">Proveedor:</span> ${providerCompany}</div>
+            <div><span class="label">Responsable:</span> ${providerName}</div>
+            <div><span class="label">Evento:</span> ${event.name || event.event_type_name || '-'}</div>
+            <div><span class="label">Fecha del Evento:</span> ${event.event_date ? new Date(event.event_date).toLocaleDateString() : '-'}</div>
+            <div><span class="label">Código del Evento:</span> ${event.event_code}</div>
+            <div><span class="label">Cliente:</span> ${clientName}</div>
+          </div>
+
+          <div class="section">
+            <span class="label">Requerimientos:</span>
+            <table>
+              <thead>
+                <tr>
+                  <th>Detalles Solicitados</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${
+                  mergedDetails.length > 0
+                    ? mergedDetails.map((line) => `<tr><td>${line}</td></tr>`).join('')
+                    : `<tr><td>—</td></tr>`
+                }
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdfBufferRaw = await page.pdf({ format: 'A4' });
+    const pdfBuffer = Buffer.from(pdfBufferRaw);
+
+    await browser.close();
+    return pdfBuffer;
+  }
+
+  async sendPurchaseOrderPdf(dto: {
+    to: string;
+    providerName: string;
+    providerCompany: string;
+    event: any;
+    assignations: any[];
+  }) {
+    const { to, providerName, providerCompany, event, assignations } = dto;
+
+    const clientName = `${event.first_name || ''} ${event.last_name || ''}`.trim();
+
+    const pdf = await this.generatePurchaseOrderPdf({
+      event,
+      providerName,
+      providerCompany,
+      clientName,
+      assignations,
+    });
+
+    const message = `
+      <p>Hola <strong>${providerName}</strong>,</p>
+      <p>Te enviamos tu orden de compra con los requerimientos asignados para el evento <strong>${event.name}</strong>.</p>
+      <p>Por favor revisa el documento adjunto y confirma la recepción.</p>
+      <p>Saludos cordiales,<br/><strong>Level Music Corp</strong></p>
+    `;
+
+    await this.transporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to,
+      subject: `Orden de Compra - Level Music Corp - ${new Date().toLocaleDateString()}`,
+      html: message,
+      attachments: [
+        {
+          filename: `ORDEN_${event.event_code}_${providerCompany}.pdf`,
+          content: pdf,
+        },
+      ],
     });
   }
 }

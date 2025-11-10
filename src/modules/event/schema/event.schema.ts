@@ -3,13 +3,17 @@ import { Types } from 'mongoose';
 import { StatusType, PlaceType } from '../enum';
 import { User } from 'src/modules/user/schema';
 import { EventType } from './event-type.schema';
-import { ServiceRequested, ServiceRequestedSchema } from './service-requested.schema';
 import { ClientType } from 'src/modules/user/enum';
-import { QuotationCreator } from '../enum';
 
 @Schema({ collection: 'events' })
 export class Event {
-  @Prop({ unique: true, sparse: true, trim: true })
+  @Prop({ type: Number, default: 1 })
+  version: number;
+
+  @Prop({ type: Boolean, default: true })
+  is_latest: boolean;
+
+  @Prop({ trim: true, index: true }) 
   event_code: string;
 
   @Prop({ maxlength: 255 })
@@ -51,56 +55,48 @@ export class Event {
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
 
-  @Prop({ type: [ServiceRequestedSchema], default: [], required: false })
-  services_requested: ServiceRequested[];
-
   @Prop({ type: Number, default: 0 })
-  estimated_price?: number;
+  estimated_price: number;
 
   @Prop({ type: Number, nullable: true })
   final_price?: number;
 
-  @Prop({ enum: StatusType, default: StatusType.PENDIENTE_APROBACION })
+  @Prop({ enum: StatusType, default: StatusType.CREADO })
   status: StatusType;
 
-  @Prop({
-    _id: false,
-    type: {
-      client_type: { type: String, enum: ClientType },
-      first_name: String,
-      last_name: String,
-      company_name: String,
-      contact_person: String,
-      email: String,
-      phone: String,
-      document_type: String,
-      document_number: String,
-    },
-    required: true,
-  })
-  client_info: {
-    client_type: string;
-    first_name?: string;
-    last_name?: string;
-    company_name?: string;
-    contact_person?: string;
-    email?: string;
-    phone?: string;
-    document_type?: string;
-    document_number?: string;
-  };
+  // Reemplazado client_info por campos desnormalizados
+  @Prop({ required: true, enum: ClientType })
+  client_type: ClientType;
+
+  @Prop({ maxlength: 255, required: false })
+  first_name?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  last_name?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  company_name?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  contact_person?: string;
+
+  @Prop({ maxlength: 255, required: false })
+  email?: string;
+
+  @Prop({ maxlength: 50, required: false })
+  phone?: string;
+
+  @Prop({ maxlength: 50, required: false })
+  document_type?: string;
+
+  @Prop({ maxlength: 50, required: false })
+  document_number?: string;
 
   @Prop({ default: Date.now })
   created_at: Date;
 
   @Prop({ default: Date.now })
   updated_at: Date;
-
-  @Prop({ enum: QuotationCreator })
-  creator: QuotationCreator;
-
-  @Prop({type:Boolean})
-  is_quotation: boolean;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

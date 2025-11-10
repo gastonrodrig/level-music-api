@@ -101,7 +101,7 @@ export class CreateEventDto {
 
   @ApiProperty({ example: 1500.5, required: false, nullable: true })
   @IsNumber()
-  @IsOptional()
+  @IsNotEmpty()
   estimated_price?: number | null;
 
   @ApiProperty({ example: 1500.5, required: false, nullable: true })
