@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
-  IsDateString,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
@@ -22,6 +21,11 @@ export class CreateServiceDetailInput {
   @IsNumber()
   @Type(() => Number)
   ref_price: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  photos_ids?: string[];
 }
 
 export class CreateServiceDto {
@@ -40,5 +44,6 @@ export class CreateServiceDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateServiceDetailInput)
+  @IsNotEmpty()
   serviceDetails: CreateServiceDetailInput[];
 }

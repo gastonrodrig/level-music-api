@@ -28,6 +28,9 @@ export class Assignation {
   service_ref_price?: number;
 
   @Prop({ type: String })
+  service_provider_email?: string;
+
+  @Prop({ type: String })
   service_provider_name?: string;
 
   @Prop({ type: String })

@@ -134,6 +134,7 @@ export class AssignationsService {
 
         assignationToCreate.service_detail = serviceDetail.details;
         assignationToCreate.service_ref_price = serviceDetail.ref_price;
+        assignationToCreate.service_provider_email = service.provider_email;
         assignationToCreate.service_provider_name = service.provider_name;
         assignationToCreate.service_type_name = service.service_type_name;
         assignationToCreate.service_status = serviceDetail.status;
@@ -149,14 +150,4 @@ export class AssignationsService {
       );
     }
   }
-  async deleteByEventId(eventId: string): Promise<void> {
-  try {
-    await this.assignationModel.deleteMany({ event: toObjectId(eventId) }).exec();
-  } catch (error) {
-    throw new InternalServerErrorException(
-      `Error al eliminar asignaciones del evento: ${error.message}`,
-    );
-  }
-}
-
 }

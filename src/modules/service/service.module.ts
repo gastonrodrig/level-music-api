@@ -8,13 +8,14 @@ import {
   ServiceTypeSchema,
   ServiceDetailSchema,
   ServiceDetailPriceSchema,
-  ServiceDetailPrice
+  ServiceDetailPrice,
 } from './schema';
 import { 
   ServiceDetailService,
+  ServiceMediaService,
   ServiceService,
   ServiceTypeService,
-  ServicesDetailsPricesService
+  ServicesDetailsPricesService,
 } from './services';
 import {
   ServiceController,
@@ -29,6 +30,7 @@ import {
 import { FirebaseModule } from '../firebase/firebase.module';
 import { Connection } from 'mongoose';
 import { Provider, ProviderSchema } from '../provider/schema';
+import { ServiceMedia, ServiceMediaSchema } from '../uploads';
 
 @Module({
   imports: [
@@ -38,7 +40,8 @@ import { Provider, ProviderSchema } from '../provider/schema';
         { name: Service.name, schema: ServiceSchema },
         { name: ServiceDetail.name, schema: ServiceDetailSchema },
         { name: Provider.name, schema: ProviderSchema },
-        { name: ServiceDetailPrice.name, schema: ServiceDetailPriceSchema }
+        { name: ServiceDetailPrice.name, schema: ServiceDetailPriceSchema },
+        { name: ServiceMedia.name, schema: ServiceMediaSchema }
       ]);
     })(),
 
@@ -59,7 +62,8 @@ import { Provider, ProviderSchema } from '../provider/schema';
     ServiceService,
     ServiceTypeService,
     ServiceDetailService,
-    ServicesDetailsPricesService
+    ServicesDetailsPricesService,
+    ServiceMediaService,
   ],
   controllers: [
     ServiceController,

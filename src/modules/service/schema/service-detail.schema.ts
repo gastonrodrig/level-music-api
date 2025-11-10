@@ -22,6 +22,9 @@ export class ServiceDetail {
 
   @Prop({ type: Date, default: Date.now }) 
   last_price_updated_at: Date;
+
+  @Prop({ type: [Types.ObjectId], ref: 'ServiceMedia', default: [] })
+  photos: Types.ObjectId[];
 }
 
 export const ServiceDetailSchema = SchemaFactory.createForClass(ServiceDetail);

@@ -11,6 +11,8 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,11 +20,14 @@ import {
   ApiQuery,
   ApiResponse,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { ServiceService } from '../services';
 import { CreateServiceDto, UpdateServiceDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { Public } from 'src/auth/decorators';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Services')
 @Controller('services')
@@ -30,21 +35,43 @@ export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
   @Post()
-  @ApiBearerAuth('firebase-auth')
   @UseGuards(FirebaseAuthGuard)
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear un nuevo servicio con múltiples detalles' })
+  @ApiBearerAuth('firebase-auth')
+  @UseInterceptors(AnyFilesInterceptor()) // Permite campos tipo photos_1, photos_2, etc.
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Crear un nuevo servicio con múltiples detalles y fotos' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'El servicio ha sido creado correctamente.',
+    description: 'Servicio creado correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al crear el servicio.',
   })
-  create(@Body() dto: CreateServiceDto) {
-    return this.serviceService.create(dto);
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        provider_id: { type: 'string' },
+        service_type_id: { type: 'string' },
+        serviceDetails: {
+          type: 'string',
+          example: JSON.stringify([
+            { ref_price: 100, details: { desc: 'Decoración floral' } },
+            { ref_price: 200, details: { desc: 'Iluminación ambiental' } },
+          ]),
+        },
+        photos_1: { type: 'string', format: 'binary', description: 'Fotos del detalle 1' },
+        photos_2: { type: 'string', format: 'binary', description: 'Fotos del detalle 2' },
+      },
+      required: ['provider_id', 'service_type_id', 'serviceDetails'],
+    },
+  })
+  async create(
+    @UploadedFiles() photos: Array<Express.Multer.File>,
+    @Body() dto: CreateServiceDto
+  ) {
+    return this.serviceService.create(dto, photos);
   }
 
   @Get('all')
@@ -95,22 +122,42 @@ export class ServiceController {
   }
 
   @Patch(':id')
-  @ApiBearerAuth('firebase-auth')
   @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar un servicio y sus detalles' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El servicio ha sido actualizado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar el servicio.',
+  @UseInterceptors(AnyFilesInterceptor()) // Permite subir fotos dinámicas tipo photos_1, photos_2...
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Actualizar un servicio y sus detalles (con fotos opcionales)' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Servicio actualizado correctamente.' })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el servicio.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        serviceDetails: {
+          type: 'string',
+          description: 'Cadena JSON con el array de detalles a actualizar.',
+          example: JSON.stringify([
+            { _id: '65f123...', ref_price: 150, detail_number: 1, details: { desc: 'Detalle 1' } },
+            { ref_price: 200, detail_number: 2, details: { desc: 'Detalle nuevo' } },
+          ]),
+        },
+        photos_to_delete: {
+          type: 'string',
+          description: 'Cadena JSON opcional con IDs de fotos a eliminar.',
+          example: JSON.stringify(['65fabc...', '65fdef...']),
+        },
+        photos_1: { type: 'string', format: 'binary', description: 'Fotos nuevas para el detalle 1' },
+        photos_2: { type: 'string', format: 'binary', description: 'Fotos nuevas para el detalle 2' },
+      },
+      required: ['serviceDetails'],
+    },
   })
   async updateFullService(
     @Param('id') serviceId: string,
-    @Body() dto: UpdateServiceDto,
+    @UploadedFiles() photos: Array<Express.Multer.File> = [],
+    @Body() dto: UpdateServiceDto
   ) {
-    return this.serviceService.updateFullService(serviceId, dto);
+    return this.serviceService.updateFullService(serviceId, dto, photos);
   }
 }
