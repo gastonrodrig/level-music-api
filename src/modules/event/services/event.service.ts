@@ -36,6 +36,8 @@ export class EventService {
     @InjectQueue('quotation-ready')
     private quotationReadyQueue: Queue,
     private assignationService: AssignationsService,
+    @InjectQueue('purchase-order')
+    private purchaseOrderQueue: Queue,
   ) {}
 
   async createQuotation(dto: CreateQuotationDto): Promise<Event> {
@@ -312,4 +314,46 @@ export class EventService {
       );
     }
   }
+  
+  async sendPurchaseOrdersToProviders(event_id: string) {
+    const event = await this.eventModel.findById(event_id).lean();
+    if (!event) throw new NotFoundException('Evento no encontrado');
+
+    const assignations = await this.assignationModel.find({ event: event._id }).lean();
+    if (!assignations.length) throw new BadRequestException('No hay asignaciones para este evento');
+
+    const grouped = new Map<string, any[]>();
+
+    for (const a of assignations) {
+      const key = `${a.service_provider_email}||${a.service_provider_name}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(a);
+    }
+
+    for (const [key, providerAssignations] of grouped.entries()) {
+      const [to, providerName] = key.split('||');
+
+      await this.purchaseOrderQueue.add(
+        'sendPurchaseOrderToProvider',
+        {
+          to,
+          providerName,
+          event,
+          assignations: providerAssignations,
+        },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: 1000,
+          removeOnFail: 100,
+        },
+      );
+    }
+
+    return {
+      message: 'Se han encolado los correos para los proveedores.',
+      total: grouped.size,
+    };
+  }
+
 }

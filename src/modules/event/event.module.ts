@@ -67,6 +67,7 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
      BullModule.registerQueue(
       { name: 'quotation-ready' },
       { name: 'appointment-ready' },
+      { name: 'purchase-order' }
     ),
     (() => {
       addEventHooks(EventSchema);

@@ -160,4 +160,25 @@ export class EventController {
   ) {
     return this.eventService.updateStatus(event_id, dto);
   }
+
+  @Get(':event_id/send-provider-mails')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Enviar órdenes de compra en PDF por correo a los proveedores del evento',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Correos encolados correctamente para envío',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al procesar el envío de correos a proveedores',
+  })
+  async sendPurchaseOrdersToProviders(
+    @Param('event_id') event_id: string,
+  ) {
+    return this.eventService.sendPurchaseOrdersToProviders(event_id);
+  }
+
 }

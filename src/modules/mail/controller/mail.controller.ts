@@ -5,7 +5,6 @@ import { Public } from 'src/auth/decorators';
 import { 
   CreateTemporalCredentialMailDto, 
   CreateContactMailDto,
-  CreateGmailPdfDto, 
 } from '../dto';
 
 @ApiTags('Mail - Gmail Api')
@@ -29,16 +28,6 @@ export class MailController {
   ) {
     const result = await this.mailService.sendContactMail(createContactMailDto);
     return { message: `Correo de contacto enviado satisfactoriamente`, result };
-  }
-
-  @Patch('send-quotation/:quotationId')
-  @Public()
-  async sendQuotationPdf(
-    @Param('quotationId') quotationId: string,
-    @Body() createGmailPdfDto: CreateGmailPdfDto,
-  ) {
-    await this.mailService.sendEmailWithQuotationPdf(quotationId, createGmailPdfDto,);
-    return { message: 'Correo con PDF de cotización enviado satisfactoriamente' };
   }
 }
 
