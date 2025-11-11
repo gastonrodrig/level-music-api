@@ -158,6 +158,6 @@ export class ServiceController {
     @UploadedFiles() photos: Array<Express.Multer.File> = [],
     @Body() dto: UpdateServiceDto
   ) {
-    return this.serviceService.updateFullService(serviceId, dto, photos);
+    return this.serviceService.updateFullService(serviceId, dto, photos, dto.photos_to_delete);
   }
 }

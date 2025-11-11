@@ -19,7 +19,7 @@ export class ServicesDetailsPricesService {
 
   async saveReferencePrice(
     service_detail_id: any,
-    reference_detail_price: number
+    reference_detail_price: any
   ): Promise<ServiceDetailPrice | null> {
     try {
       const serviceDetail = await this.serviceDetailModel.findById(service_detail_id);

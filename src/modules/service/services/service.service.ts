@@ -49,8 +49,6 @@ export class ServiceService {
         throw new BadRequestException('serviceDetails debe contener al menos un detalle');
       }
 
-      console.log(photos, dto)
-
       // 2) Crear el servicio principal
       const service = await this.serviceModel.create({
         provider: toObjectId(provider._id),
@@ -62,6 +60,7 @@ export class ServiceService {
       });
 
       const serviceDetails: Array<ServiceDetail> = [];
+      let count = 1;
 
       // 3) Crear cada detalle
       for (const d of dto.serviceDetails) {
@@ -73,22 +72,24 @@ export class ServiceService {
           photos: []
         });
 
-        serviceDetails.push(detail.toObject());
+        await this.serviceDetailPricesService.saveReferencePrice(
+          detail._id, 
+          detail.ref_price
+        );
 
-        this.serviceDetailPricesService.saveReferencePrice(detail._id, detail.ref_price);
-        
         const photosForThisDetail = photos.filter(
-          (file) => file.fieldname === `photos_${detail._id}`
+          (file) => file.fieldname === `photo_${count}`,
         );
 
         const createdPhotos = await this.serviceMediaService.createMediaForService(
           detail._id.toString(),
           photosForThisDetail,
         );
-        
+
         detail.photos = createdPhotos.map((m: any) => m._id);
-        
         await detail.save();
+
+        serviceDetails.push(detail.toObject());
       }
 
       return { service, serviceDetails };
@@ -180,6 +181,10 @@ export class ServiceService {
     serviceDetails: Array<ServiceDetail>;
   }> {
     try {
+      console.log(serviceId)
+      console.log(dto)
+      console.log(photos)
+      console.log(photos_to_delete)
       const service = await this.serviceModel.findById(serviceId);
       if (!service) {
         throw new NotFoundException(`Service with ID ${serviceId} not found`);
@@ -245,7 +250,7 @@ export class ServiceService {
         }
 
         // Procesar archivos subidos para este detalle
-        const key = `photos_${detailDto._id ?? 'new'}`;
+        const key = `photo_${dto.serviceDetails.indexOf(detailDto) + 1}`;
         const filesForDetail = filesByField[key] || [];
         
         if (filesForDetail.length) {

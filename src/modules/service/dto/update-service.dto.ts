@@ -2,13 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsMongoId,
-  IsNotEmpty,
   IsOptional,
   IsNumber,
-  IsString,
   ValidateNested,
+  IsEnum
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
+import { Estado } from 'src/core/constants/app.constants';
 
 class UpdateServiceDetailData {
   @ApiProperty({
@@ -32,7 +32,7 @@ class UpdateServiceDetailData {
     description: 'Precio de referencia del detalle',
     example: 500,
   })
-  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   ref_price?: number;
 
@@ -42,16 +42,8 @@ class UpdateServiceDetailData {
     example: 'Activo',
   })
   @IsOptional()
-  @IsString()
-  status?: 'Activo' | 'Inactivo';
-
-  @ApiPropertyOptional({
-    description: 'Número de detalle (1, 2, 3...) para enlazar fotos',
-    example: 1,
-  })
-  @IsOptional()
-  @IsNumber()
-  detail_number?: number;
+  @IsEnum(Estado)
+  status?: Estado;
 }
 
 export class UpdateServiceDto {
@@ -63,4 +55,23 @@ export class UpdateServiceDto {
   @ValidateNested({ each: true })
   @Type(() => UpdateServiceDetailData)
   serviceDetails: UpdateServiceDetailData[];
+
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return [];
+      }
+    }
+    return value;
+  })
+  @ApiPropertyOptional({
+    description: 'IDs de fotos a eliminar del detalle',
+    type: [String],
+    example: ['654f3e2f...', '654f3e99...'],
+  })
+  @IsOptional()
+  @IsArray()
+  photos_to_delete?: string[];
 }

@@ -18,8 +18,8 @@ export class CreateServiceDetailInput {
   details: any;
 
   @ApiProperty({ example: 500 })
-  @IsNumber()
   @Type(() => Number)
+  @IsNumber()
   ref_price: number;
 
   @IsOptional()
