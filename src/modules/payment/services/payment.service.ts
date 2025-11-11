@@ -40,6 +40,42 @@ export class PaymentService {
     this.mp_payment = new MP_Payment(client);
   }
 
+  // Obtener todos los pagos por usuario con filtros y paginación
+  async getPaymentsByUser(
+    userId: string,
+    options?: { status?: string; page?: number; limit?: number },
+  ) {
+    const page = options?.page && options.page > 0 ? options.page : 1;
+    const limit = options?.limit && options.limit > 0 ? options.limit : 20;
+    const skip = (page - 1) * limit;
+
+    const filter: any = { user: toObjectId(userId) };
+    if (options?.status) {
+      filter.status = options.status;
+    }
+
+    const [data, total] = await Promise.all([
+      this.paymentModel
+        .find(filter)
+        // el esquema usa `created_at`, no `createdAt`
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('schedule')
+        .populate('event')
+        .lean(),
+      this.paymentModel.countDocuments(filter),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit) || 1,
+    };
+  }
+
   // Crear schedules de pago (Parcial y Final)
   async createPaymentSchedules(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
     const {
@@ -90,7 +126,7 @@ export class PaymentService {
     files: Express.Multer.File[],
     mode: 'partial' | 'both' = 'partial',
   ) {
-    const { event_id, user_id, payments } = dto;
+  const { event_id, user_id, payments, payment_type } = dto;
 
     if (!payments?.length) {
       throw new BadRequestException('Debe enviar al menos un pago.');
@@ -124,11 +160,11 @@ export class PaymentService {
       const upload = await this.storageService.uploadFile('payments', file, String(event_id));
       const voucher_url = upload.url;
 
-      let paymentType = pay.payment_type;
+      let paymentType = payment_type;
       let targetSchedule = null;
 
-      // Caso 1: Si el pago es tipo AMBOS
-      if (pay.payment_type === PaymentType.AMBOS) {
+      // Caso 1: Si el pago es tipo AMBOS (el tipo viene en el DTO raíz)
+      if (payment_type === PaymentType.AMBOS) {
         paymentType = PaymentType.AMBOS;
 
         // Marcar ambos schedules como completos
@@ -137,7 +173,7 @@ export class PaymentService {
           { status: PaymentStatus.COMPLETO },
         );
 
-        // Registrar el pago sin asociarlo a un schedule específico
+        // Registrar el pago (no asociado a schedule) y continuar
         const payment = await this.paymentModel.create({
           payment_type: PaymentType.AMBOS,
           payment_method: pay.payment_method,
@@ -173,15 +209,22 @@ export class PaymentService {
           targetSchedule = finalSchedule;
         }
       } else {
-        // Caso 3: Modo parcial normal
-        const schedule = await this.scheduleModel.findById(pay.schedule_id);
-        if (!schedule) {
-          throw new BadRequestException(
-            `No se encontró el PaymentSchedule con ID ${pay.schedule_id}`,
-          );
+        // Caso 3: Modo parcial normal -> asignar schedule en base al tipo raíz
+        if (payment_type === PaymentType.PARCIAL) {
+          if (!parcialSchedule) {
+            throw new BadRequestException('No se encontró el schedule parcial.');
+          }
+          targetSchedule = parcialSchedule;
+          paymentType = PaymentType.PARCIAL;
+        } else if (payment_type === PaymentType.FINAL) {
+          if (!finalSchedule) {
+            throw new BadRequestException('No se encontró el schedule final.');
+          }
+          targetSchedule = finalSchedule;
+          paymentType = PaymentType.FINAL;
+        } else {
+          throw new BadRequestException('Tipo de pago inválido para asignar schedule.');
         }
-        targetSchedule = schedule;
-        paymentType = schedule.payment_type;
       }
 
       if (!targetSchedule) {
