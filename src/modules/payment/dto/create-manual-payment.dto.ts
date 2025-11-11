@@ -12,13 +12,6 @@ import { Type } from 'class-transformer';
 import { PaymentType, PaymentMethod } from '../enum';
 
 export class ManualPaymentItemDto {
-  @IsMongoId()
-  @IsNotEmpty()
-  schedule_id: string;
-
-  @IsEnum(PaymentType)
-  @IsNotEmpty()
-  payment_type: PaymentType;
 
   @IsEnum(PaymentMethod)
   @IsNotEmpty()
@@ -31,9 +24,16 @@ export class ManualPaymentItemDto {
   @IsOptional()
   @IsString()
   operation_number?: string;
+
+  @IsOptional()
+  voucher?: any;
 }
 
 export class CreateManualPaymentDto {
+  @IsEnum(PaymentType)
+  @IsNotEmpty()
+  payment_type: PaymentType;
+
   @IsMongoId()
   @IsNotEmpty()
   event_id: string;
