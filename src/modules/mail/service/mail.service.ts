@@ -9,6 +9,7 @@ import {
   CreatePasswordResetLinkMailDto,
   CreateContactMailDto,
 } from '../dto';
+import { formatLatamDate, formatLatamDateTime } from '../../../core/utils/format-latam-date';
 
 @Injectable()
 export class MailService {
@@ -184,10 +185,7 @@ export class MailService {
     }
   }
 
-  async sendQuotationReadyMail(dto: {
-    to: string;
-    clientName?: string;
-  }) {
+  async sendQuotationReadyMail(dto: { to: string; clientName?: string }) {
     const appUrl = process.env.APP_URL;
     const loginUrl = `${appUrl}/auth/login`;
 
@@ -222,7 +220,7 @@ export class MailService {
       </body>
     </html>`.trim();
 
-    const subject = 'Tu cotización está lista — Inicia sesión para revisarla'
+    const subject = 'Tu cotización está lista — Inicia sesión para revisarla';
 
     await this.transporter.sendMail({
       from: process.env.GMAIL_USER,
@@ -331,14 +329,13 @@ export class MailService {
     });
   }
 
+  // PDF Generation for Purchase Order
   async generatePurchaseOrderPdf(data: {
     event: any;
-    providerName: string;
-    providerCompany: string;
-    clientName: string;
     assignations: any[];
   }): Promise<Buffer> {
-    const { event, providerName, providerCompany, clientName, assignations } = data;
+    const { event, assignations } =
+      data;
 
     const mergedDetails: string[] = [];
     assignations.forEach((a) => {
@@ -349,49 +346,168 @@ export class MailService {
     });
 
     const html = `
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
-            h1 { color: #A05C25; margin-bottom: 12px; }
-            .section { margin-bottom: 20px; }
-            .label { font-weight: bold; color: #333; }
-            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-            th, td { border: 1px solid #ddd; padding: 10px; font-size: 14px; text-align: left; }
-            th { background-color: #f2f2f2; }
-          </style>
-        </head>
-        <body>
-          <h1>ORDEN DE COMPRA</h1>
+      <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #ffffff; color: #2c3e50;">
 
-          <div class="section">
-            <div><span class="label">Proveedor:</span> ${providerCompany}</div>
-            <div><span class="label">Responsable:</span> ${providerName}</div>
-            <div><span class="label">Evento:</span> ${event.name || event.event_type_name || '-'}</div>
-            <div><span class="label">Fecha del Evento:</span> ${event.event_date ? new Date(event.event_date).toLocaleDateString() : '-'}</div>
-            <div><span class="label">Código del Evento:</span> ${event.event_code}</div>
-            <div><span class="label">Cliente:</span> ${clientName}</div>
+  <div style="page-break-after: always; min-height: 297mm; position: relative; padding: 60px 50px 80px 50px; box-sizing: border-box;">
+    <div style="background: linear-gradient(135deg, #1a1a1a 0%, #3d3d3d 100%); padding: 30px 40px; margin: -60px -50px 40px -50px; color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative;">
+      <h1 style="font-size: 36px; font-weight: 300; letter-spacing: 3px; margin: 0 0 5px 0;">ORDEN DE COMPRA</h1>
+      <p style="font-size: 13px; opacity: 0.8; font-weight: 300; margin: 0;">Código: ${event.event_code}</p>
+
+      <!-- LOGO -->
+      <img src="https://i.postimg.cc/tCyBxPJ9/logo.png"
+        alt="Logo empresa"
+        style="position: absolute; right: 40px; top: 25px; height: 60px; object-fit: contain;">
+    </div>
+
+    <table style="width: 100%; margin-bottom: 35px; border-collapse: collapse;">
+      <tr>
+        <td style="width: 50%; vertical-align: top; padding-right: 20px;">
+        <div style="background: #fafafa; padding: 20px; border-radius: 6px; border-top: 3px solid #A05C25;">
+          <h2 style="font-size: 13px; text-transform: uppercase; color: #A05C25; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">PROVEEDOR</h2>
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong style="display: inline-block; width: 100px; color: #555;">Empresa:</strong>
+            <span style="color: #2c3e50;">LEVEL MUSIC CORP S.A.C.</span>
           </div>
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong style="display: inline-block; width: 100px; color: #555;">Responsable:</strong>
+            <span style="color: #2c3e50;">Renzo Rodriguez</span>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong style="display: inline-block; width: 100px; color: #555;">Contacto:</strong>
+            <span style="color: #2c3e50;">+51 989 160 593</span>
+          </div>
+        </div>
+      </td>
 
-          <div class="section">
-            <span class="label">Requerimientos:</span>
-            <table>
+      <td style="width: 50%; vertical-align: top; padding-left: 20px;">
+        <div style="background: #fafafa; padding: 20px; border-radius: 6px; border-top: 3px solid #A05C25;">
+          <h2 style="font-size: 13px; text-transform: uppercase; color: #A05C25; font-weight: 600; margin: 0 0 15px 0; letter-spacing: 0.5px;">INFORMACIÓN DEL EVENTO</h2>
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong style="display: inline-block; width: 140px; color: #555; vertical-align: top;">Evento:</strong>
+            <span style="color: #2c3e50; display: inline-block; width: calc(100% - 145px);">${event.name || event.event_type_name || '-'}</span>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong style="display: inline-block; width: 140px; color: #555; vertical-align: top;">Fecha y hora de inicio:</strong>
+            <span style="color: #2c3e50; display: inline-block; width: calc(100% - 145px);">
+              ${event.start_time ? new Date(event.start_time).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
+            </span>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 13px;">
+            <strong style="display: inline-block; width: 140px; color: #555; vertical-align: top;">Fecha y hora de fin:</strong>
+            <span style="color: #2c3e50; display: inline-block; width: calc(100% - 145px);">
+              ${event.end_time ? new Date(event.end_time).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
+            </span>
+          </div>
+        </div>
+      </td>
+      </tr>
+    </table>
+
+    <div style="height: 2px; background: linear-gradient(to right, #A05C25, transparent); margin: 30px 0;"></div>
+
+    <h2 style="font-size: 18px; color: #2c3e50; font-weight: 600; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 3px solid #A05C25;">
+      Requerimientos del Servicio
+    </h2>
+
+    <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden; margin-bottom: 30px;">
+      <thead>
+        <tr>
+          <th style="background: #A05C25; color: white; padding: 15px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">Descripción de los Servicios Requeridos</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${
+          mergedDetails.length > 0
+            ? mergedDetails
+                .slice(0, 8)
+                .map(
+                  (line, index) =>
+                    `<tr style="background: ${index % 2 === 1 ? '#f8f9fa' : '#ffffff'};"><td style="padding: 14px 18px; font-size: 13px; color: #444; border-bottom: 1px solid #e9ecef;">${line}</td></tr>`,
+                )
+                .join('')
+            : `<tr><td style="padding: 14px 18px; font-size: 13px; color: #444;">—</td></tr>`
+        }
+      </tbody>
+    </table>
+
+    <div style="position: absolute; bottom: 30px; right: 50px; left: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: right;">
+      <p style="font-size: 11px; color: #666; margin: 0 0 5px 0;"><strong>Fecha de emisión:</strong> ${new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+      <p style="font-size: 11px; color: #888; margin: 0;">Documento generado automáticamente</p>
+    </div>
+  </div>
+
+  <!-- Páginas adicionales si hay más de 8 items -->
+  ${
+    mergedDetails.length > 8
+      ? `
+    ${(() => {
+      const remainingItems = mergedDetails.slice(8);
+      const itemsPerPage = 20;
+      const totalPages = Math.ceil(remainingItems.length / itemsPerPage);
+      let html = '';
+
+      for (let i = 0; i < totalPages; i++) {
+        const start = i * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageItems = remainingItems.slice(start, end);
+
+        html += `
+          <div style="page-break-after: ${i < totalPages - 1 ? 'always' : 'auto'}; min-height: 297mm; position: relative; padding: 60px 50px 80px 50px; box-sizing: border-box;">
+            <div style="background: linear-gradient(135deg, #1a1a1a 0%, #3d3d3d 100%); padding: 30px 40px; margin: -60px -50px 40px -50px; color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; position: relative;">
+              <h1 style="font-size: 36px; font-weight: 300; letter-spacing: 3px; margin: 0 0 5px 0;">ORDEN DE COMPRA</h1>
+              <p style="font-size: 13px; opacity: 0.8; font-weight: 300; margin: 0;">Código: ${event.event_code} - Página ${i + 2}</p>
+
+              <!-- LOGO -->
+              <img src="https://i.postimg.cc/tCyBxPJ9/logo.png"
+                alt="Logo empresa"
+                style="position: absolute; right: 40px; top: 25px; height: 60px; object-fit: contain;">
+            </div>
+
+            <h2 style="font-size: 18px; color: #2c3e50; font-weight: 600; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 3px solid #A05C25;">
+              Requerimientos del Servicio (continuación)
+            </h2>
+
+            <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden; margin-bottom: 30px;">
               <thead>
                 <tr>
-                  <th>Detalles Solicitados</th>
+                  <th style="background: #A05C25; color: white; padding: 15px 18px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                    Descripción de los Servicios Requeridos
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                ${
-                  mergedDetails.length > 0
-                    ? mergedDetails.map((line) => `<tr><td>${line}</td></tr>`).join('')
-                    : `<tr><td>—</td></tr>`
-                }
+                ${pageItems
+                  .map(
+                    (line, index) =>
+                      `<tr style="background: ${index % 2 === 1 ? '#f8f9fa' : '#ffffff'};"><td style="padding: 14px 18px; font-size: 13px; color: #444; border-bottom: 1px solid #e9ecef;">${line}</td></tr>`,
+                  )
+                  .join('')}
               </tbody>
             </table>
+
+            <div style="position: absolute; bottom: 30px; right: 50px; left: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: right;">
+              <p style="font-size: 11px; color: #666; margin: 0 0 5px 0;"><strong>Fecha de emisión:</strong> ${new Date().toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+              <p style="font-size: 11px; color: #888; margin: 0;">Documento generado automáticamente</p>
+            </div>
           </div>
-        </body>
-      </html>
+        `;
+      }
+
+      return html;
+    })()}
+  `
+      : ''
+  }
+
+</body>
+</html>
+
     `;
 
     const browser = await puppeteer.launch({
@@ -418,13 +534,11 @@ export class MailService {
   }) {
     const { to, providerName, providerCompany, event, assignations } = dto;
 
-    const clientName = `${event.first_name || ''} ${event.last_name || ''}`.trim();
+    const clientName =
+      `${event.first_name || ''} ${event.last_name || ''}`.trim();
 
     const pdf = await this.generatePurchaseOrderPdf({
       event,
-      providerName,
-      providerCompany,
-      clientName,
       assignations,
     });
 
@@ -435,10 +549,12 @@ export class MailService {
       <p>Saludos cordiales,<br/><strong>Level Music Corp</strong></p>
     `;
 
+    const todayPE = formatLatamDate(new Date(), 'America/Lima');
+
     await this.transporter.sendMail({
       from: process.env.GMAIL_USER,
       to,
-      subject: `Orden de Compra - Level Music Corp - ${new Date().toLocaleDateString()}`,
+      subject: `Orden de Compra - Level Music Corp - ${todayPE}`,
       html: message,
       attachments: [
         {
