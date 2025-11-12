@@ -181,10 +181,6 @@ export class ServiceService {
     serviceDetails: Array<ServiceDetail>;
   }> {
     try {
-      console.log(serviceId)
-      console.log(dto)
-      console.log(photos)
-      console.log(photos_to_delete)
       const service = await this.serviceModel.findById(serviceId);
       if (!service) {
         throw new NotFoundException(`Service with ID ${serviceId} not found`);
