@@ -41,40 +41,40 @@ export class PaymentService {
   }
 
   // Obtener todos los pagos por usuario con filtros y paginación
-  async getPaymentsByUser(
-    userId: string,
-    options?: { status?: string; page?: number; limit?: number },
-  ) {
-    const page = options?.page && options.page > 0 ? options.page : 1;
-    const limit = options?.limit && options.limit > 0 ? options.limit : 20;
-    const skip = (page - 1) * limit;
+  // async getPaymentsByUser(
+  //   userId: string,
+  //   options?: { status?: string; page?: number; limit?: number },
+  // ) {
+  //   const page = options?.page && options.page > 0 ? options.page : 1;
+  //   const limit = options?.limit && options.limit > 0 ? options.limit : 20;
+  //   const skip = (page - 1) * limit;
 
-    const filter: any = { user: toObjectId(userId) };
-    if (options?.status) {
-      filter.status = options.status;
-    }
+  //   const filter: any = { user: toObjectId(userId) };
+  //   if (options?.status) {
+  //     filter.status = options.status;
+  //   }
 
-    const [data, total] = await Promise.all([
-      this.paymentModel
-        .find(filter)
-        // el esquema usa `created_at`, no `createdAt`
-        .sort({ created_at: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('schedule')
-        .populate('event')
-        .lean(),
-      this.paymentModel.countDocuments(filter),
-    ]);
+  //   const [data, total] = await Promise.all([
+  //     this.paymentModel
+  //       .find(filter)
+  //       // el esquema usa `created_at`, no `createdAt`
+  //       .sort({ created_at: -1 })
+  //       .skip(skip)
+  //       .limit(limit)
+  //       .populate('schedule')
+  //       .populate('event')
+  //       .lean(),
+  //     this.paymentModel.countDocuments(filter),
+  //   ]);
 
-    return {
-      data,
-      total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit) || 1,
-    };
-  }
+  //   return {
+  //     data,
+  //     total,
+  //     page,
+  //     limit,
+  //     pages: Math.ceil(total / limit) || 1,
+  //   };
+  // }
 
   // Crear schedules de pago (Parcial y Final)
   async createPaymentSchedules(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
@@ -126,17 +126,7 @@ export class PaymentService {
     files: Express.Multer.File[],
     mode: 'partial' | 'both' = 'partial',
   ) {
-  const { event_id, user_id, payments, payment_type } = dto;
-
-    if (!payments?.length) {
-      throw new BadRequestException('Debe enviar al menos un pago.');
-    }
-
-    if (!files?.length || files.length !== payments.length) {
-      throw new BadRequestException(
-        'Debe enviar una imagen por cada pago, en el mismo orden.',
-      );
-    }
+    const { payment_type, event_id, user_id, payments } = dto;
 
     const schedules = await this.scheduleModel
       .find({ event: toObjectId(event_id) })
@@ -144,10 +134,6 @@ export class PaymentService {
 
     const parcialSchedule = schedules.find((s) => s.payment_type === PaymentType.PARCIAL);
     const finalSchedule = schedules.find((s) => s.payment_type === PaymentType.FINAL);
-
-    if (mode === 'both' && (!parcialSchedule || !finalSchedule)) {
-      throw new BadRequestException('No se encontraron los schedules de pago parcial y final.');
-    }
 
     const createdPayments = [];
 

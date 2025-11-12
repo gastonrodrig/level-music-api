@@ -11,13 +11,10 @@ import { Type, Transform } from 'class-transformer';
 import { Estado } from 'src/core/constants/app.constants';
 
 class UpdateServiceDetailData {
-  @ApiProperty({
-    description: 'ID del detalle de servicio que se actualiza',
-    example: '64f1c7e1234567890abcd124',
-  })
-  @IsMongoId()
+  @ApiPropertyOptional({ description: 'ID del detalle (solo si ya existe)' })
   @IsOptional()
-  _id: string;
+  @IsMongoId()
+  _id?: string;
 
   @ApiPropertyOptional({
     description: 'Atributos dinámicos específicos de este detalle',

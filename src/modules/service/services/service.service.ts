@@ -202,9 +202,10 @@ export class ServiceService {
         await this.serviceMediaService.deleteMedia(photos_to_delete); 
       }
 
+      let index = 1;
+      let detail = null;
       // Procesar y actualizar cada detalle
       for (const detailDto of dto.serviceDetails) {
-        let detail;
 
         // si tengo un id, es porque ya existe y lo actualizo
         if (detailDto._id) {
@@ -250,7 +251,7 @@ export class ServiceService {
         }
 
         // Procesar archivos subidos para este detalle
-        const key = `photo_${dto.serviceDetails.indexOf(detailDto) + 1}`;
+        const key = `photos_${index++}`;
         const filesForDetail = filesByField[key] || [];
         
         if (filesForDetail.length) {

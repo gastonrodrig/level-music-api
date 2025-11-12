@@ -12,7 +12,6 @@ import { Type } from 'class-transformer';
 import { PaymentType, PaymentMethod } from '../enum';
 
 export class ManualPaymentItemDto {
-
   @IsEnum(PaymentMethod)
   @IsNotEmpty()
   payment_method: PaymentMethod;

@@ -24,6 +24,7 @@ export class ServiceDetailService {
     try {
       const serviceDetails = await this.serviceDetailModel
         .find({ status: Estado.ACTIVO })
+        .populate('photos')
         .lean()
         .exec();
 
