@@ -21,3 +21,6 @@ export * from './create-task-evidence.dto';
 export * from './update-task-evidence.dto';
 export * from './create-subtask.dto';
 export * from './confirm-appointment.dto';
+export * from './create-event-task.dto';
+export * from './create-multiple-tasks.dto';
+export * from './update-multiple-tasks.dto';

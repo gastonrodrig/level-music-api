@@ -7,7 +7,6 @@ import {
   IsNumber,
   IsMongoId,
   IsBoolean,
-  ArrayMinSize,
   IsEnum,
 } from 'class-validator';
 import { TaskPhase } from '../enum';
@@ -40,18 +39,16 @@ export class CreateSubtaskDto {
   @IsNumber()
   price?: number;
 
-  @ApiProperty({
-    example: ['672fab3299336b9d0c34e912'],
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsMongoId({ each: true })
-  worker: string[];
+  @ApiProperty({ example: '672fab3299336b9d0c34e912' })
+  @IsMongoId()
+  @IsNotEmpty()
+  worker_id: string;
 
   @ApiPropertyOptional({
     example: true,
   })
-  @IsOptional()
+  @IsBoolean()
+  @IsNotEmpty()
   requires_evidence?: boolean;
 
   @ApiPropertyOptional({

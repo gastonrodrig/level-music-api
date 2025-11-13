@@ -23,9 +23,6 @@ export class ManualPaymentItemDto {
   @IsOptional()
   @IsString()
   operation_number?: string;
-
-  @IsOptional()
-  voucher?: any;
 }
 
 export class CreateManualPaymentDto {

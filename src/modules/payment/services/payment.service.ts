@@ -76,7 +76,6 @@ export class PaymentService {
   //   };
   // }
 
-  // Crear schedules de pago (Parcial y Final)
   async createPaymentSchedules(createPaymentSchedulesDto: CreatePaymentSchedulesDto) {
     const {
       partial_payment_date,

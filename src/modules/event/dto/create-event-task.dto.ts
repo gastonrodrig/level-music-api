@@ -41,7 +41,7 @@ export class CreateEventTaskDto {
         subtask_name: 'Salida de equipos del almacén',
         phase: TaskPhase.PLANIFICACION,
         price: 450,
-        worker: ['672fab3299336b9d0c34e912'],
+        worker_id: '672fab3299336b9d0c34e912',
         requires_evidence: true,
         storehouse_movement_type: StoreMovementType.SALIDA_ALMACEN,
         storehouse_code: 'ALM-001',

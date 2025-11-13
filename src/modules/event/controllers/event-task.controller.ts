@@ -19,7 +19,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
 import { EventTaskService } from '../services/event-task.service';
-import { CreateEventTaskDto, UpdateEventTaskDto } from '../dto';
+import { CreateMultipleTasksDto, UpdateMultipleTasksDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 
@@ -30,42 +30,37 @@ export class EventTaskController {
   constructor(private readonly eventTaskService: EventTaskService) {}
 
   @Post()
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear actividad padre y sus subactividades' })
+  @ApiOperation({ summary: 'Crear múltiples actividades padre y sus subactividades' })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'La actividad ha sido creada correctamente.',
+    description: 'Las actividades han sido creadas correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear la actividad.',
+    description: 'Error al crear las actividades.',
   })
-  create(@Body() dto: CreateEventTaskDto) {
-    return this.eventTaskService.create(dto);
+  create(@Body() dto: CreateMultipleTasksDto) {
+    return this.eventTaskService.createMany(dto);
   }
 
-  @Put(':id')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
+  @Put('bulk')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar actividad padre y todas sus subactividades' })
+  @ApiOperation({ summary: 'Actualizar múltiples actividades padre y sus subactividades' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'La actividad ha sido actualizada correctamente.',
+    description: 'Las actividades han sido actualizadas correctamente.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Error al actualizar la actividad.',
+    description: 'Error al actualizar las actividades.',
   })
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateEventTaskDto,
+  updateMany(
+    @Body() dto: UpdateMultipleTasksDto,
   ) {
-    return this.eventTaskService.update(id, dto);
+    return this.eventTaskService.updateMany(dto);
   }
 
  
@@ -144,16 +139,16 @@ export class EventTaskController {
     return this.eventTaskService.findByStatus(status);
   }
 
-  @Patch(':id/worker')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Actualizar solo el trabajador asignado a una tarea de evento' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Trabajador actualizado correctamente.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el trabajador.' })
-  async updateWorker(
-    @Param('id') id: string,
-    @Body() dto: UpdateEventTaskDto,
-  ) {
-    return this.eventTaskService.update(id, dto);
-  }
+  // @Patch(':id/worker')
+  // @Public()
+  // @HttpCode(HttpStatus.OK)
+  // @ApiOperation({ summary: 'Actualizar solo el trabajador asignado a una tarea de evento' })
+  // @ApiResponse({ status: HttpStatus.OK, description: 'Trabajador actualizado correctamente.' })
+  // @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al actualizar el trabajador.' })
+  // async updateWorker(
+  //   @Param('id') id: string,
+  //   @Body() dto: UpdateEventTaskDto,
+  // ) {
+  //   return this.eventTaskService.update(id, dto);
+  // }
 }

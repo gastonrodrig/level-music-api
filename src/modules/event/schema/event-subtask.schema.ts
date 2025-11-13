@@ -20,13 +20,12 @@ export class EventSubtask extends Document {
 
   @Prop({ type: Number, required: false })
   price?: number;
-
-  @Prop({ type: Boolean, default: true })
-  needs_evidence?: boolean;
-
-  // === Asignación de trabajador ===
+  
   @Prop({ type: Types.ObjectId, ref: Worker.name, required: false })
   worker?: Types.ObjectId; 
+
+  @Prop({ type: String, required: false })
+  worker_name?: string;
 
   @Prop({ type: Types.ObjectId, ref: WorkerType.name, required: false })
   worker_type?: Types.ObjectId; 
@@ -34,7 +33,6 @@ export class EventSubtask extends Document {
   @Prop({ type: String, required: false })
   worker_type_name?: string;
 
-  // === Campos de almacén ===
   @Prop({ type: String, required: false })
   storehouse_code?: string;
 

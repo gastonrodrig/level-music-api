@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   ArrayMinSize,
   IsArray,
+  IsMongoId,
   IsNotEmpty,
   IsString,
   ValidateNested,
@@ -12,6 +13,14 @@ import { StoreMovementType } from 'src/modules/storehouse/enum';
 import { TaskPhase } from '../enum';
 
 export class UpdateEventTaskDto {
+  @ApiProperty({
+    example: '691631fdb9e6951eba20b624',
+    description: 'ID de la actividad padre a actualizar',
+  })
+  @IsMongoId()
+  @IsNotEmpty()
+  event_task_id: string;
+
   @ApiProperty({
     example: 'Preparación logística actualizada',
   })
@@ -33,7 +42,7 @@ export class UpdateEventTaskDto {
         subtask_name: 'Recepción en evento',
         phase: TaskPhase.EJECUCION,
         price: 200,
-        worker: ['672fab3299336b9d0c34e912'],
+        worker: '672fab3299336b9d0c34e912',
         requires_evidence: true,
         storehouse_movement_type: StoreMovementType.RECEPCION_EVENTO,
         storehouse_code: 'ALM-020',
@@ -43,7 +52,7 @@ export class UpdateEventTaskDto {
         subtask_name: 'Toma de evidencias finales',
         phase: TaskPhase.SEGUIMIENTO,
         price: 150,
-        worker: ['672fab3299336b9d0c34e917'],
+        worker: '672fab3299336b9d0c34e912',
         requires_evidence: false,
         storehouse_movement_type: null,
         storehouse_code: null,

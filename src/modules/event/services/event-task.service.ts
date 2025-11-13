@@ -10,6 +10,9 @@ import { Model,Types } from 'mongoose';
 import { EventTask, Event, EventType, EventSubtask } from '../schema';
 import { TaskEvidenceService } from './event-task-evidence.service';
 import { TaskStatusType } from '../enum';
+import { Worker, WorkerType } from 'src/modules/worker/schema';
+import { CreateMultipleTasksDto } from '../dto/create-multiple-tasks.dto';
+import { UpdateMultipleTasksDto } from '../dto/update-multiple-tasks.dto';
 
 @Injectable()
 export class EventTaskService {
@@ -20,6 +23,10 @@ export class EventTaskService {
     private eventSubtaskModel: Model<EventSubtask>,
     @InjectModel(Event.name)
     private eventModel: Model<Event>,
+    @InjectModel(Worker.name)
+    private workerModel: Model<Worker>,
+    @InjectModel(WorkerType.name)
+    private workerTypeModel: Model<WorkerType>,
     @InjectModel(EventType.name)
     private readonly taskEvidenceService: TaskEvidenceService,
   ) {}
@@ -62,7 +69,21 @@ export class EventTaskService {
   //   }
   // }
 
-  async create(dto: CreateEventTaskDto): Promise<{
+  async createMany(dto: CreateMultipleTasksDto) {
+    const createdTasks = [];
+
+    for (const taskDto of dto.tasks) {
+      const created = await this.createSingleTask(taskDto);
+      createdTasks.push(created);
+    }
+
+    return {
+      count: createdTasks.length,
+      tasks: createdTasks,
+    };
+  }
+
+  async createSingleTask(dto: CreateEventTaskDto): Promise<{
     event_task: EventTask;
     subtasks: EventSubtask[];
   }> {
@@ -83,12 +104,21 @@ export class EventTaskService {
 
       // 2. Crear subactividades
       for (const sub of dto.subtasks) {
+        const worker = await this.workerModel.findById(sub.worker_id);
+        if (!worker) throw new BadRequestException('Trabajador no encontrado para la subactividad');
+
+        const worker_type = await this.workerTypeModel.findById(worker.worker_type);
+        if (!worker_type) throw new BadRequestException('Tipo de trabajador no encontrado para la subactividad');
+
         const newSubtask = await new this.eventSubtaskModel({
           parent_task: eventTask._id,
           is_for_storehouse: sub.is_for_storehouse,
           name: sub.subtask_name,
           price: sub.price ?? null,
-          worker: sub.worker, // Puede venir 1 o varios workers
+          worker: worker._id,
+          worker_name: `${worker.first_name} ${worker.last_name}`,
+          worker_type: worker_type._id,
+          worker_type_name: worker_type.name,
           requires_evidence: sub.requires_evidence,
           storehouse_movement_type: sub.storehouse_movement_type ?? null,
           storehouse_code: sub.storehouse_code ?? null,
@@ -120,8 +150,21 @@ export class EventTaskService {
     }
   }
 
-  async update(
-    eventTaskId: string,
+  async updateMany(dto: UpdateMultipleTasksDto) {
+    const updatedTasks = [];
+
+    for (const task of dto.tasks) {
+      const updated = await this.updateSingleTask(task);
+      updatedTasks.push(updated);
+    }
+
+    return {
+      count: updatedTasks.length,
+      tasks: updatedTasks,
+    };
+  }
+
+  async updateSingleTask(
     dto: UpdateEventTaskDto
   ): Promise<{
     event_task: EventTask;
@@ -129,7 +172,7 @@ export class EventTaskService {
   }> {
     try {
       // 1. Obtener el task padre
-      const eventTask = await this.eventTaskModel.findById(eventTaskId);
+      const eventTask = await this.eventTaskModel.findById(dto.event_task_id);
       if (!eventTask) throw new NotFoundException('Event task not found');
 
       // 2. Eliminar subtasks actuales relacionados
@@ -142,12 +185,21 @@ export class EventTaskService {
 
       // 3. Crear subtareas nuevas
       for (const sub of dto.subtasks) {
+        const worker = await this.workerModel.findById(sub.worker_id);
+        if (!worker) throw new BadRequestException('Trabajador no encontrado para la subactividad');
+
+        const worker_type = await this.workerTypeModel.findById(worker.worker_type);
+        if (!worker_type) throw new BadRequestException('Tipo de trabajador no encontrado para la subactividad');
+
         const newSubtask = await new this.eventSubtaskModel({
           parent_task: eventTask._id,
           is_for_storehouse: sub.is_for_storehouse,
           name: sub.subtask_name,
           price: sub.price ?? null,
-          worker: sub.worker, // Puede venir 1 o varios workers
+          worker: worker._id,
+          worker_name: `${worker.first_name} ${worker.last_name}`,
+          worker_type: worker_type._id,
+          worker_type_name: worker_type.name,
           requires_evidence: sub.requires_evidence,
           storehouse_movement_type: sub.storehouse_movement_type ?? null,
           storehouse_code: sub.storehouse_code ?? null,
