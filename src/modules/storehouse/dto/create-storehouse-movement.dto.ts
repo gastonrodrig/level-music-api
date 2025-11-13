@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
-import { MovementType } from '../enum';
+import { StoreMovementType } from '../enum';
 
 export class CreateStorehouseMovementDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
@@ -14,10 +14,10 @@ export class CreateStorehouseMovementDto {
   @IsNotEmpty()
   event_id: Types.ObjectId;
 
-  @ApiProperty({ enum: MovementType, required: false })
-  @IsEnum(MovementType)
+  @ApiProperty({ enum: StoreMovementType, required: false })
+  @IsEnum(StoreMovementType)
   @IsNotEmpty()
-  movement_type: MovementType;
+  movement_type: StoreMovementType;
 
   @ApiProperty({ example: new Date().toISOString() })
   @IsString()

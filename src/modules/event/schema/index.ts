@@ -1,5 +1,6 @@
 export * from './assignations.schema';
 export * from './event-task.schema';
+export * from './event-subtask.schema';
 export * from './event-type.schema';
 export * from './event.schema';
 export * from './event-type-custom-field.schema';
@@ -7,5 +8,5 @@ export * from './featured-event.schema';
 export * from './featured-event-custom-field.schema';
 export * from './incident.schema';
 export * from './reprogramings.schema';
-export * from './event-task-evidence.schema';
+export * from './event-subtask-evidence.schema';
 export * from './appointment.schema';

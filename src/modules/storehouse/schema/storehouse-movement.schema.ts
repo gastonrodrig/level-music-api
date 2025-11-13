@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { MovementType } from "../enum";
+import { StoreMovementType } from "../enum";
 import { Types } from "mongoose";
 import { Equipment } from "src/modules/equipments/schema/equipment.schema";
 import { Event } from "src/modules/event/schema/event.schema";
@@ -12,8 +12,8 @@ export class StorehouseMovement {
   @Prop({ type: Types.ObjectId, ref: Event.name, required: true })
   event: string;
 
-  @Prop({ enum: MovementType, nullable: true })
-  movement_type: MovementType;
+  @Prop({ enum: StoreMovementType, nullable: true })
+  movement_type: StoreMovementType;
 
   @Prop({ default: Date.now })
   movement_date: Date;

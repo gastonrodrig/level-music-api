@@ -5,7 +5,10 @@ import {
   EventType, 
   EventTask, 
   EventSchema,
-  TaskEvidenceSchema,
+  EventSubtask,
+  EventSubtaskSchema,
+  EventSubtaskEvidence,
+  EventSubtaskEvidenceSchema,
   EventTypeSchema, 
   EventTaskSchema, 
   FeaturedEvent,
@@ -16,7 +19,6 @@ import {
   AssignationSchema,
   ReprogramingsSchema,
   Reprogramings,
-  TaskEvidence
 } from './schema';
 import { 
   EventService, 
@@ -78,7 +80,8 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
         { name: Event.name, schema: EventSchema },
         { name: EventType.name, schema: EventTypeSchema },
         { name: EventTask.name, schema: EventTaskSchema },
-        { name: TaskEvidence.name, schema: TaskEvidenceSchema },
+        { name: EventSubtask.name, schema: EventSubtaskSchema },
+        { name: EventSubtaskEvidence.name, schema: EventSubtaskEvidenceSchema },
         { name: WorkerType.name, schema: WorkerTypeSchema },
         { name: User.name, schema: UserSchema },
         { name: FeaturedEvent.name, schema: FeaturedEventSchema },

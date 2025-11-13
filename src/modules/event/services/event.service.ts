@@ -10,7 +10,7 @@ import { CreateQuotationDto, UpdateQuotationDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
-import { Assignation, Event, EventType } from '../schema';
+import { Assignation, Event, EventSubtask, EventTask, EventType } from '../schema';
 import { User } from 'src/modules/user/schema';
 import { StatusType } from '../enum';
 import { AssignationsService } from './assignations.service';
@@ -33,6 +33,10 @@ export class EventService {
     private assignationModel: Model<Assignation>,
     @InjectModel(PaymentSchedule.name)
     private paymentScheduleModel: Model<PaymentSchedule>,
+    @InjectModel(EventTask.name)
+    private eventTaskModel: Model<EventTask>,
+    @InjectModel(EventSubtask.name)
+    private eventSubtaskModel: Model<EventSubtask>,
     @InjectQueue('quotation-ready')
     private quotationReadyQueue: Queue,
     private assignationService: AssignationsService,
@@ -69,7 +73,7 @@ export class EventService {
         event_code,
         event_type: eventType._id,
         user: toObjectId(dto.user_id),
-        status: StatusType.CREADO,
+        status: StatusType.BORRADOR,
         final_price: 0,
         version: 1,
         is_latest: true,
@@ -113,7 +117,7 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: ['Pagos Asignados', 'Creado', 'Editado'],
+        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Confirmado'],
         2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
       };
 
@@ -148,21 +152,37 @@ export class EventService {
         this.eventModel.countDocuments(filter).exec(),
       ]);
 
-      // Obtener asignaciones y pagos
+      // Obtener asignaciones, pagos y tareas del evento
       const items = await Promise.all(
         events.map(async (event) => {
-          const [assignations, payment_schedules] = await Promise.all([
+          const [assignations, payment_schedules, event_tasks] = await Promise.all([
             this.assignationModel.find({ event: event._id }).lean(),
             this.paymentScheduleModel
               .find({ event: event._id })
               .sort({ due_date: 1 })
               .lean(),
+            this.eventTaskModel.find({ event: event._id }).lean(),
           ]);
+
+          // Incrustar subtareas dentro de cada tarea
+          const tasksWithSubtasks = await Promise.all(
+            event_tasks.map(async (task) => {
+              const subtasks = await this.eventSubtaskModel
+                .find({ parent_task: task._id })
+                .lean();
+
+              return {
+                ...task,
+                subtasks,
+              };
+            }),
+          );
 
           return {
             ...event,
             assignations,
             payment_schedules,
+            tasks: tasksWithSubtasks,
           };
         }),
       );
@@ -249,7 +269,7 @@ export class EventService {
         _id: undefined, // Borra el _id
         version: currentEvent.version + 1,
         is_latest: true,
-        status: StatusType.EDITADO,
+        status: StatusType.EN_REVISION,
         created_at: new Date(),
         updated_at: new Date(),
         event_type: dto.event_type_id ?? currentEvent.event_type,

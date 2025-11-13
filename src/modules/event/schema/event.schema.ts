@@ -61,7 +61,7 @@ export class Event {
   @Prop({ type: Number, nullable: true })
   final_price?: number;
 
-  @Prop({ enum: StatusType, default: StatusType.CREADO })
+  @Prop({ enum: StatusType, default: StatusType.BORRADOR })
   status: StatusType;
 
   // Reemplazado client_info por campos desnormalizados

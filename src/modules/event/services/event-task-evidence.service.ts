@@ -2,20 +2,21 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UploadResult } from 'src/core/interfaces';
-import { TaskEvidence } from '../schema/event-task-evidence.schema'; 
+import { EventSubtaskEvidence } from '../schema'; 
 import { StorageService } from 'src/modules/firebase/services';
 import { CreateTaskEvidenceDto } from '../dto';
+
 @Injectable()
 export class TaskEvidenceService {
   constructor(
-    @InjectModel(TaskEvidence.name)
-    private taskEvidenceModel: Model<TaskEvidence>,
+    @InjectModel(EventSubtaskEvidence.name)
+    private taskEvidenceModel: Model<EventSubtaskEvidence>,
     private readonly storageService: StorageService,
   ) {}
 
   async createFromFiles(taskId: string, 
     files: Express.Multer.File[], 
-    workerId?: string): Promise<TaskEvidence[]> {
+    workerId?: string): Promise<EventSubtaskEvidence[]> {
     try {
       if (!files || !files.length) return [];
       const filesEvidence = files;
@@ -35,7 +36,8 @@ export class TaskEvidenceService {
       throw new InternalServerErrorException(`Error uploading evidences: ${error.message}`);
     }
   }
-  async findByTaskId(taskIds: string[]): Promise<TaskEvidence[]> {
+
+  async findByTaskId(taskIds: string[]): Promise<EventSubtaskEvidence[]> {
     const objectIds = taskIds
       .filter(Boolean)
       .map(id => {

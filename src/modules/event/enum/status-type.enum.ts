@@ -1,7 +1,8 @@
 export enum StatusType {
   HISTORICO = 'Histórico',
-  CREADO = 'Creado',
-  EDITADO = 'Editado',
+  BORRADOR = 'Borrador',
+  EN_REVISION = 'En Revisión',
+  CONFIRMADO = 'Confirmado',
   PAGOS_ASIGNADOS = 'Pagos Asignados',
   EN_SEGUIMIENTO = 'En Seguimiento',
   FINALIZADO = 'Finalizado',
