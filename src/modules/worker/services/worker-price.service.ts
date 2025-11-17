@@ -24,10 +24,7 @@ export class WorkerPriceService {
       if (!worker) throw new NotFoundException('Trabajador no encontrado');
 
       // Obtener la fecha de inicio de la temporada actual
-      const start_date =
-        worker.season_number === 1
-          ? new Date()
-          : worker.last_price_updated_at;
+      const start_date = new Date();
 
       // Número de temporada actual
       const season_number = worker.season_number ?? 1;

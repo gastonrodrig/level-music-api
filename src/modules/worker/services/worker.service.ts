@@ -39,12 +39,21 @@ export class WorkerService {
   async create(createWorkerDto: CreateWorkerDto): Promise<Worker> {
     try {
       // Validar email y documento únicos; y tipo de trabajador existente
-      const [workerType, existingEmail, existingDoc] = await Promise.all([
+      const [
+        workerType, 
+        userByEmail, 
+        userByDoc, 
+        workerByEmail, 
+        workerByDoc 
+      ] = await Promise.all([
         this.workerTypeModel.findById(createWorkerDto.worker_type_id),
+
+        // Validaciones User
         this.userModel.findOne({ email: createWorkerDto.email }),
-        this.userModel.findOne({
-          document_number: createWorkerDto.document_number,
-        }), 
+        this.userModel.findOne({ document_number: createWorkerDto.document_number }),
+        // Validaciones Worker
+        this.workerModel.findOne({ email: createWorkerDto.email }),
+        this.workerModel.findOne({ document_number: createWorkerDto.document_number }),
       ]);
 
       if (!workerType) {
@@ -57,7 +66,7 @@ export class WorkerService {
         );
       }
 
-      if (existingEmail) {
+      if (userByEmail || workerByEmail) {
         throw new HttpException(
           {
             code: errorCodes.EMAIL_ALREADY_EXISTS,
@@ -67,7 +76,7 @@ export class WorkerService {
         );
       }
 
-      if (existingDoc) {
+      if (userByDoc || workerByDoc) {
         throw new HttpException(
           {
             code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
@@ -204,34 +213,22 @@ export class WorkerService {
     }
   }
 
-  async findOne(worker_id: string): Promise<Worker> {
-    try {
-      const worker = await this.workerModel.findOne({ _id: worker_id });
-      if (!worker) {
-        throw new BadRequestException('Trabajador no encontrado');
-      }
-      return worker;
-    } catch (error) {
-      if (error instanceof NotFoundException) throw error;
-      throw new InternalServerErrorException(`Error finding worker: ${error.message}`);
-    }
-  }
-
   async update(worker_id: string, updateWorkerDto: UpdateWorkerDto) {
     try {
       // Validar email y documento únicos
-      const [existingEmail, existingDocumentNumber] = await Promise.all([
-        this.workerModel.findOne({ 
-          email: updateWorkerDto.email,
-          _id: { $ne: worker_id },
-        }),
-        this.workerModel.findOne({
-          document_number: updateWorkerDto.document_number,
-          _id: { $ne: worker_id },
-        }),
-      ])
+      const [
+        userByEmail, 
+        userByDoc, 
+        workerByEmail, 
+        workerByDoc 
+      ] = await Promise.all([
+        this.userModel.findOne({ email: updateWorkerDto.email, _id: { $ne: worker_id }, }),
+        this.userModel.findOne({ document_number: updateWorkerDto.document_number, _id: { $ne: worker_id }, }),
+        this.workerModel.findOne({ email: updateWorkerDto.email, _id: { $ne: worker_id }, }),
+        this.workerModel.findOne({ document_number: updateWorkerDto.document_number, _id: { $ne: worker_id }, }),
+      ]);
 
-      if (existingEmail) {
+      if (userByEmail || workerByEmail) {
         throw new HttpException(
           {
             code: errorCodes.EMAIL_ALREADY_EXISTS,
@@ -241,7 +238,7 @@ export class WorkerService {
         );
       }
 
-      if (existingDocumentNumber) {
+      if (userByDoc || workerByDoc) {
         throw new HttpException(
           {
             code: errorCodes.DOCUMENT_NUMBER_ALREADY_EXISTS,
@@ -275,7 +272,7 @@ export class WorkerService {
 
         // Actualizar usuario en la BD
         await this.userModel.findByIdAndUpdate(worker.user, {
-          worker_type: toObjectId(updateWorkerDto.worker_type_id),
+          worker_type: workerType._id,
           email: updateWorkerDto.email,
           phone: updateWorkerDto.phone,
           document_type: updateWorkerDto.document_type,

@@ -91,23 +91,6 @@ export class WorkerController {
     );
   }
 
-  @Get(':id')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener un trabajador por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Trabajador encontrado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener el trabajador.',
-  })
-  findOne(@Param('id') id: string) {
-    return this.workerService.findOne(id);
-  }
-
   @Put(':id')
   @Public()
   @HttpCode(HttpStatus.OK)

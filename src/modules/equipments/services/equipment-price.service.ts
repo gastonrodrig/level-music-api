@@ -24,10 +24,7 @@ export class EquipmentPriceService {
       if (!equipment) throw new NotFoundException('Equipo no encontrado');
 
       // Obtener la fecha de inicio de la temporada actual
-      const start_date =
-        equipment.season_number === 1
-          ? new Date()
-          : equipment.last_price_updated_at;
+      const start_date = new Date();
 
       // Número de temporada actual
       const season_number = equipment.season_number ?? 1;
