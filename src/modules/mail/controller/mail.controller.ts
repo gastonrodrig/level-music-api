@@ -1,10 +1,10 @@
-import { Controller, Body, Post, Patch, Param } from '@nestjs/common';
+import { Controller, Body, Post } from '@nestjs/common';
 import { MailService } from '../service';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
 import { 
   CreateTemporalCredentialMailDto, 
-  CreateContactMailDto,
+  SendQuotationReadyMailDto,
 } from '../dto';
 
 @ApiTags('Mail - Gmail Api')
@@ -17,17 +17,24 @@ export class MailController {
   async sendTemporalCredentials(
     @Body() createTemporalCredentialDto: CreateTemporalCredentialMailDto,
   ) {
-    const result = await this.mailService.sendTemporalCredentials(createTemporalCredentialDto);
-    return { message: `Correo de credenciales temporales enviado satisfactoriamente`, result };
+    const result = await this.mailService.sendTemporalCredentials(
+      createTemporalCredentialDto
+    );
+    return {
+      message: `Correo de credenciales temporales enviado satisfactoriamente`,
+      result,
+    };
   }
 
-  @Post('contact')
+  @Post('send-quotation-ready')
   @Public()
-  async sendContactMail(
-    @Body() createContactMailDto: CreateContactMailDto
+  async sendQuotationReadyMail(
+    @Body() dto: SendQuotationReadyMailDto,
   ) {
-    const result = await this.mailService.sendContactMail(createContactMailDto);
-    return { message: `Correo de contacto enviado satisfactoriamente`, result };
+    const result = await this.mailService.sendQuotationReadyMail(dto);
+    return {
+      message: `Correo de cotización lista enviado satisfactoriamente`,
+      result,
+    };
   }
 }
-

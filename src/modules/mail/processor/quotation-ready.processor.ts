@@ -9,11 +9,11 @@ export class QuotationReadyProcessor extends WorkerHost {
   }
 
   async process(job: Job<any>): Promise<void> {
-    const { to, clientName } = job.data;
+    const { to, user_id } = job.data;
 
     await this.mailService.sendQuotationReadyMail({
       to,
-      clientName,
+      user_id,
     });
   }
 }

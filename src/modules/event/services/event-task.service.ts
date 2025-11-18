@@ -104,24 +104,41 @@ export class EventTaskService {
 
       // 2. Crear subactividades
       for (const sub of dto.subtasks) {
-        const worker = await this.workerModel.findById(sub.worker_id);
-        if (!worker) throw new BadRequestException('Trabajador no encontrado para la subactividad');
+        let worker = null;
+        let worker_type = null;
 
-        const worker_type = await this.workerTypeModel.findById(worker.worker_type);
-        if (!worker_type) throw new BadRequestException('Tipo de trabajador no encontrado para la subactividad');
+        // SOLO buscar trabajador si viene worker_id
+        if (sub.worker_id) {
+          worker = await this.workerModel.findById(sub.worker_id);
+          if (!worker) {
+            throw new BadRequestException('Trabajador no encontrado para la subactividad');
+          }
+
+          worker_type = await this.workerTypeModel.findById(worker.worker_type);
+          if (!worker_type) {
+            throw new BadRequestException('Tipo de trabajador no encontrado para la subactividad');
+          }
+        }
 
         const newSubtask = await new this.eventSubtaskModel({
           parent_task: eventTask._id,
+
           is_for_storehouse: sub.is_for_storehouse,
           name: sub.subtask_name,
           price: sub.price ?? null,
-          worker: worker._id,
-          worker_name: `${worker.first_name} ${worker.last_name}`,
-          worker_type: worker_type._id,
-          worker_type_name: worker_type.name,
+
+          // Si no hay trabajador, que sea null
+          worker: worker ? worker._id : null,
+          worker_name: worker ? `${worker.first_name} ${worker.last_name}` : null,
+
+          worker_type: worker_type ? worker_type._id : null,
+          worker_type_name: worker_type ? worker_type.name : null,
+
           requires_evidence: sub.requires_evidence,
-          storehouse_movement_type: sub.storehouse_movement_type ?? null,
-          storehouse_code: sub.storehouse_code ?? null,
+
+          storehouse_movement_type: sub.storehouse_movement_type || null,
+          storehouse_code: sub.storehouse_code || null,
+
           phase: sub.phase,
           status: TaskStatusType.PENDIENTE,
           evidences: [],

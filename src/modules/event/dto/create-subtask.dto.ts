@@ -40,8 +40,7 @@ export class CreateSubtaskDto {
   price?: number;
 
   @ApiProperty({ example: '672fab3299336b9d0c34e912' })
-  @IsMongoId()
-  @IsNotEmpty()
+  @IsOptional()
   worker_id: string;
 
   @ApiPropertyOptional({

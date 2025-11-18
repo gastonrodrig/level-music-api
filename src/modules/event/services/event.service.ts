@@ -27,8 +27,6 @@ export class EventService {
     private eventModel: Model<Event>,
     @InjectModel(EventType.name)
     private eventTypeModel: Model<EventType>,
-    @InjectModel(User.name)
-    private userModel: Model<User>,
     @InjectModel(Assignation.name)
     private assignationModel: Model<Assignation>,
     @InjectModel(PaymentSchedule.name)
@@ -37,8 +35,6 @@ export class EventService {
     private eventTaskModel: Model<EventTask>,
     @InjectModel(EventSubtask.name)
     private eventSubtaskModel: Model<EventSubtask>,
-    @InjectQueue('quotation-ready')
-    private quotationReadyQueue: Queue,
     private assignationService: AssignationsService,
     @InjectQueue('purchase-order')
     private purchaseOrderQueue: Queue,
@@ -232,6 +228,7 @@ export class EventService {
     dto: UpdateQuotationDto,
   ): Promise<Event> {
     try {
+      console.log(dto)
       // Buscar la última versión del evento
       const currentEvent = await this.eventModel.findById(event_id);
       if (!currentEvent) {
@@ -266,6 +263,7 @@ export class EventService {
       const newEventData = {
         ...currentEvent.toObject(),
         ...dto, 
+        user: toObjectId(dto.user_id),
         _id: undefined, // Borra el _id
         version: currentEvent.version + 1,
         is_latest: true,
