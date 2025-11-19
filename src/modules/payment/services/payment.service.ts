@@ -123,33 +123,39 @@ export class PaymentService {
     files: Express.Multer.File[],
   ) {
     try {
+      // Validar que haya la misma cantidad de archivos que pagos
+      if (files.length !== dto.payments.length) {
+        throw new BadRequestException(
+          `Se esperaban ${dto.payments.length} imágenes pero se recibieron ${files.length}. Deben coincidir en cantidad y orden.`
+        );
+      }
+
       const createdPayments = [];
 
-      for (const [index, pay] of dto.payments.entries()) {
-        const file = files[index];
+      // Procesar cada pago con su imagen correspondiente por índice
+      for (let i = 0; i < dto.payments.length; i++) {
+        const paymentItem = dto.payments[i];
+        const file = files[i]; // La imagen en el mismo índice
 
-        // Subir comprobante
+        if (!file) {
+          throw new BadRequestException(
+            `No se encontró la imagen para el pago en la posición ${i + 1}`
+          );
+        }
+
+        // Subir comprobante a Firebase Storage
         const upload = await this.storageService.uploadFile(
           'payments',
           file,
-          String(dto.event_id),
+          dto.event_id,
         );
 
-        // Validar tipo de pago
-        if (
-          dto.payment_type !== PaymentType.PARCIAL &&
-          dto.payment_type !== PaymentType.FINAL &&
-          dto.payment_type !== PaymentType.AMBOS
-        ) {
-          throw new BadRequestException('Tipo de pago inválido.');
-        }
-
-        // Crear pago simple (mapear DIRECTAMENTE los campos del DTO)
+        // Crear el registro de pago
         const payment = await this.paymentModel.create({
           payment_type: dto.payment_type,
-          payment_method: pay.payment_method,
-          amount: pay.amount,
-          operation_number: pay.operation_number ? pay.operation_number : null,
+          payment_method: paymentItem.payment_method,
+          amount: paymentItem.amount,
+          operation_number: paymentItem.operation_number || null,
           voucher_url: upload.url,
           status: PaymentStatus.PENDIENTE,
           event: toObjectId(dto.event_id),
@@ -159,7 +165,11 @@ export class PaymentService {
         createdPayments.push(payment);
       }
 
-      return createdPayments;
+      return {
+        message: 'Pagos procesados correctamente',
+        payments: createdPayments,
+        total: createdPayments.length,
+      };
     } catch (error) {
       throw new BadRequestException(
         error.message || 'Error al procesar el pago manual',

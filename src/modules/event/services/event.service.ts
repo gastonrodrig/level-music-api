@@ -62,7 +62,7 @@ export class EventService {
           break;
         }
       }
-
+    
       // 3. Construir objeto base para el evento
       const eventToCreate: Partial<Event> = {
         ...dto,
@@ -74,7 +74,7 @@ export class EventService {
         version: 1,
         is_latest: true,
       };
-
+      console.log(eventToCreate);
       // 4. Crear evento
       const event = await this.eventModel.create(eventToCreate);
 
@@ -228,7 +228,6 @@ export class EventService {
     dto: UpdateQuotationDto,
   ): Promise<Event> {
     try {
-      console.log(dto)
       // Buscar la última versión del evento
       const currentEvent = await this.eventModel.findById(event_id);
       if (!currentEvent) {

@@ -53,22 +53,13 @@ export class PaymentController {
 
   @Post('manual')
   @Public()
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Registrar varios pagos manuales con comprobantes (uno por método)' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Pagos registrados correctamente.' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al registrar los pagos.' })
-  @ApiQuery({
-    name: 'mode',
-    required: false,
-    description: 'Modo de pago: parcial (por defecto) o ambos',
-    example: 'partial',
-    schema: {
-      type: 'string',
-      enum: ['partial', 'both'],
-      default: 'partial',
-    },
-  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -77,21 +68,16 @@ export class PaymentController {
         event_id: { type: 'string', example: '68fa352e038345fc4290f084' },
         user_id: { type: 'string', example: '68b9c17b445a8108efdf8d43' },
         payments: {
-          type: 'array',
-          description: 'Array de pagos con su información individual',
-          items: {
-            type: 'object',
-            properties: {
-              payment_method: {
-                type: 'string',
-                enum: ['Yape', 'Plin', 'Transferencia', 'Efectivo'],
-                example: 'Yape',
-              },
-              amount: { type: 'number', example: 300 },
-              operation_number: { type: 'string', example: 'YP123456' },
-            },
-            required: ['payment_method', 'amount'],
-          },
+          type: 'string',
+          description: 'JSON string con array de pagos (uno por cada imagen)',
+          example: JSON.stringify(
+            [
+              { payment_method: 'Yape', amount: 300, operation_number: 'YP123456' },
+              { payment_method: 'Plin', amount: 200, operation_number: 'PL789012' },
+            ],
+            null,
+            2
+          ),
         },
         images: {
           type: 'array',
@@ -99,14 +85,17 @@ export class PaymentController {
           description: 'Array de imágenes (una por cada pago, en el mismo orden)',
         },
       },
-      required: ['event_id', 'user_id', 'payments', 'images'],
+      required: ['payment_type', 'event_id', 'user_id', 'payments', 'images'],
     },
   })
   async processManualPayment(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() body: any,
   ) {
-    // return this.paymentService.processManualPayment(dto, orderedFiles);
+    // console.log('body.payments type:', typeof body.payments);
+    // console.log('body.payments value:', body.payments);
+    // console.log('Is Array?:', Array.isArray(body.payments));
+    return this.paymentService.processManualPayment(body as CreateManualPaymentDto, files);
   }
 
   @Get('user/:userId')
