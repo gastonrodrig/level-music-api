@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { StorehouseMovement } from '../schema';
 import { Model } from 'mongoose';
@@ -6,6 +6,9 @@ import { CreateStorehouseMovementDto } from '../dto';
 import { SF_STOREHOUSE_MOVEMENT } from 'src/core/utils';
 import { Event } from 'src/modules/event/schema';
 import { Equipment } from 'src/modules/equipments/schema';
+import { Assignation } from 'src/modules/event/schema';
+import { ResourceType } from 'src/modules/event/enum/resource-type.enum';
+import { LocationType } from 'src/modules/equipments/enum';
 
 @Injectable()
 export class StorehouseMovementService {
@@ -16,7 +19,102 @@ export class StorehouseMovementService {
     private eventModel: Model<Event>,
     @InjectModel(Equipment.name)
     private equipmentModel: Model<Equipment>,
+    @InjectModel(Assignation.name)
+    private assignationModel: Model<Assignation>,
   ) {}
+
+  // Return assignations (one per equipment) for an event code when event is En Revisión
+  async getAssignationsByEventCode(event_code: string) {
+    try {
+      const event = await this.eventModel.findOne({ event_code });
+      if (!event) throw new NotFoundException('Event not found');
+      // check status equals En Revisión
+      const { StatusType } = require('src/modules/event/enum/status-type.enum');
+      if (event.status !== StatusType.EN_REVISION) {
+        throw new BadRequestException('Event is not in En Revisión');
+      }
+
+      // find assignations for event and resource type EQUIPMENT
+      const assignations = await (this as any).assignationModel.find({ event: event._id, resource_type: ResourceType.EQUIPMENT }).sort({ assigned_at: -1 }).exec();
+
+      // keep only one assignation per resource (most recent)
+      const map = new Map();
+      for (const a of assignations) {
+        const resId = a.resource.toString();
+        if (!map.has(resId)) map.set(resId, a);
+      }
+
+      return { event, assignations: Array.from(map.values()) };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(`Error getting assignations: ${error.message}`);
+    }
+  }
+
+  // Create movements for each assignation (equipment) of an event
+  async createFromEvent(dto: any) {
+    try {
+      const { code, movement_type, destination } = dto;
+      const { event, assignations } = await this.getAssignationsByEventCode(code);
+
+      const created: any[] = [];
+      const errors: any[] = [];
+
+      for (const a of assignations) {
+        try {
+          const equipmentId = a.resource;
+          const movementCode = `MVT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+          const movement = new this.storehouseMovementModel({
+            equipment: equipmentId,
+            event: event._id,
+            movement_type,
+            destination: destination || LocationType.EVENTO,
+            code: movementCode,
+          });
+          await movement.save();
+          created.push(movement);
+        } catch (err) {
+          errors.push({ assignation: a._id, error: err.message });
+        }
+      }
+
+      return { created: created.length, items: created, errors };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Create a manual movement by equipment serial
+  async createManual(dto: any) {
+    try {
+      const { serial_number, movement_type, event_code, destination } = dto;
+      // find equipment
+      const equipment = await this.equipmentModel.findOne({ serial_number });
+      if (!equipment) throw new NotFoundException('Equipment not found');
+
+      let event = null;
+      if (event_code) {
+        event = await this.eventModel.findOne({ event_code });
+        if (!event) throw new NotFoundException('Event not found');
+      } else {
+        throw new BadRequestException('event_code is required for manual movements');
+      }
+
+      const movementCode = `MVT-${Date.now().toString(36)}`;
+      const movement = new this.storehouseMovementModel({
+        equipment: equipment._id,
+        event: event._id,
+        movement_type,
+        destination: destination || LocationType.SALIDA,
+        code: movementCode,
+      });
+
+      await movement.save();
+      return movement;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async create(createStorehouseMovementDto: CreateStorehouseMovementDto): Promise<StorehouseMovement> {
     try {
@@ -30,10 +128,15 @@ export class StorehouseMovementService {
         throw new NotFoundException('Equipment not found');
       }
 
+      const movementCode = createStorehouseMovementDto.code || `MVT-${Date.now().toString(36)}`;
+      const movementState = (createStorehouseMovementDto as any).state || 'Activo';
+
       const storehouseMovement = new this.storehouseMovementModel({
         ...createStorehouseMovementDto,
         event: event._id,
         equipment: equipment._id,
+        code: movementCode,
+        state: movementState,
       });
 
       return await storehouseMovement.save();
@@ -50,15 +153,16 @@ export class StorehouseMovementService {
     search = '',
     sortField: string,
     sortOrder: 'asc' | 'desc' = 'asc',
+    code?: string,
+    movement_type?: string,
+    state?: string,
   ): Promise<{ total: number; items: StorehouseMovement[] }> {
     try {
-      const filter = search
-      ? {
-          $or: SF_STOREHOUSE_MOVEMENT.map(field => ({
-            [field]: { $regex: search, $options: 'i' }
-          })),
-        }
-      : {};
+      // Build filter from params (no free-text search)
+      const filter: any = {};
+      if (code) filter.code = code;
+      if (movement_type) filter.movement_type = movement_type;
+      if (state) filter.state = state;
 
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,
