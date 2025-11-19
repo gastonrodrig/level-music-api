@@ -114,147 +114,60 @@ export class PaymentService {
 
       return { partialPayment, finalPayment };
     } catch (error) {
-      console.error('Error al crear pagos:', error);
       throw new BadRequestException('Error al crear las programaciones de pago');
     }
   }
 
-  // Registrar pagos manuales (modo parcial, ambos, etc.)
   async processManualPayment(
     dto: CreateManualPaymentDto,
     files: Express.Multer.File[],
-    mode: 'partial' | 'both' = 'partial',
   ) {
-    const { payment_type, event_id, user_id, payments } = dto;
+    try {
+      const createdPayments = [];
 
-    const schedules = await this.scheduleModel
-      .find({ event: toObjectId(event_id) })
-      .lean();
+      for (const [index, pay] of dto.payments.entries()) {
+        const file = files[index];
 
-    const parcialSchedule = schedules.find((s) => s.payment_type === PaymentType.PARCIAL);
-    const finalSchedule = schedules.find((s) => s.payment_type === PaymentType.FINAL);
-
-    const createdPayments = [];
-
-    // Iterar cada pago enviado
-    for (let i = 0; i < payments.length; i++) {
-      const pay = payments[i];
-      const file = files[i];
-
-      // Subir comprobante
-      const upload = await this.storageService.uploadFile('payments', file, String(event_id));
-      const voucher_url = upload.url;
-
-      let paymentType = payment_type;
-      let targetSchedule = null;
-
-      // Caso 1: Si el pago es tipo AMBOS (el tipo viene en el DTO raíz)
-      if (payment_type === PaymentType.AMBOS) {
-        paymentType = PaymentType.AMBOS;
-
-        // Marcar ambos schedules como completos
-        await this.scheduleModel.updateMany(
-          { event: toObjectId(event_id) },
-          { status: PaymentStatus.COMPLETO },
+        // Subir comprobante
+        const upload = await this.storageService.uploadFile(
+          'payments',
+          file,
+          String(dto.event_id),
         );
 
-        // Registrar el pago (no asociado a schedule) y continuar
+        // Validar tipo de pago
+        if (
+          dto.payment_type !== PaymentType.PARCIAL &&
+          dto.payment_type !== PaymentType.FINAL &&
+          dto.payment_type !== PaymentType.AMBOS
+        ) {
+          throw new BadRequestException('Tipo de pago inválido.');
+        }
+
+        // Crear pago simple (mapear DIRECTAMENTE los campos del DTO)
         const payment = await this.paymentModel.create({
-          payment_type: PaymentType.AMBOS,
+          payment_type: dto.payment_type,
           payment_method: pay.payment_method,
           amount: pay.amount,
-          operation_number: pay.operation_number || null,
-          voucher_url,
-          status: PaymentStatus.COMPLETO,
-          event: toObjectId(event_id),
-          user: toObjectId(user_id),
+          operation_number: pay.operation_number ? pay.operation_number : null,
+          voucher_url: upload.url,
+          status: PaymentStatus.PENDIENTE,
+          event: toObjectId(dto.event_id),
+          user: toObjectId(dto.user_id),
         });
 
         createdPayments.push(payment);
-        continue;
       }
 
-      // Caso 2: Modo BOTH -> priorizar parcial
-      if (mode === 'both') {
-        // Verificar si el parcial está completo
-        const pagosParcial = await this.paymentModel.aggregate([
-          { $match: { schedule: new Types.ObjectId(parcialSchedule._id) } },
-          { $group: { _id: null, total: { $sum: '$amount' } } },
-        ]);
-
-        const totalParcialPagado = pagosParcial[0]?.total || 0;
-        const restanteParcial =
-          (parcialSchedule.total_amount || 0) - totalParcialPagado;
-
-        if (restanteParcial > 0) {
-          paymentType = PaymentType.PARCIAL;
-          targetSchedule = parcialSchedule;
-        } else {
-          paymentType = PaymentType.FINAL;
-          targetSchedule = finalSchedule;
-        }
-      } else {
-        // Caso 3: Modo parcial normal -> asignar schedule en base al tipo raíz
-        if (payment_type === PaymentType.PARCIAL) {
-          if (!parcialSchedule) {
-            throw new BadRequestException('No se encontró el schedule parcial.');
-          }
-          targetSchedule = parcialSchedule;
-          paymentType = PaymentType.PARCIAL;
-        } else if (payment_type === PaymentType.FINAL) {
-          if (!finalSchedule) {
-            throw new BadRequestException('No se encontró el schedule final.');
-          }
-          targetSchedule = finalSchedule;
-          paymentType = PaymentType.FINAL;
-        } else {
-          throw new BadRequestException('Tipo de pago inválido para asignar schedule.');
-        }
-      }
-
-      if (!targetSchedule) {
-        throw new BadRequestException('No se encontró un schedule válido para aplicar el pago.');
-      }
-
-      // Crear registro de pago
-      const payment = await this.paymentModel.create({
-        payment_type: paymentType,
-        payment_method: pay.payment_method,
-        amount: pay.amount,
-        operation_number: pay.operation_number || null,
-        voucher_url,
-        status: PaymentStatus.PENDIENTE,
-        schedule: toObjectId(targetSchedule._id),
-        event: toObjectId(event_id),
-        user: toObjectId(user_id),
-      });
-
-      createdPayments.push(payment);
-
-      // Actualizar estado del schedule si se completó
-      const pagosConfirmados = await this.paymentModel.aggregate([
-        { $match: { schedule: new Types.ObjectId(targetSchedule._id) } },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
-      ]);
-
-      const totalPagado = pagosConfirmados[0]?.total || 0;
-      if (totalPagado >= (targetSchedule.total_amount || 0)) {
-        await this.scheduleModel.findByIdAndUpdate(targetSchedule._id, {
-          status: PaymentStatus.COMPLETO,
-        });
-      }
+      return createdPayments;
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Error al procesar el pago manual',
+      );
     }
-
-    return {
-      statusCode: HttpStatus.CREATED,
-      message:
-        mode === 'both'
-          ? 'Pagos registrados correctamente (priorizando el pago parcial).'
-          : 'Pagos manuales registrados correctamente.',
-      count: createdPayments.length,
-      payments: createdPayments,
-    };
   }
+
+
 
   // Prueba de integración con Mercado Pago
   async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
