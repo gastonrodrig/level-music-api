@@ -160,43 +160,40 @@ export class AssignationsService {
   }
 
   private async updateEstimatedPrice(eventId: any) {
-
     // 1. OBTENER ASIGNACIONES
-    const assignations = await this.assignationModel.find({ event: toObjectId(eventId) });
+    const assignations = await this.assignationModel.find({
+      event: toObjectId(eventId),
+    });
 
     let total = 0;
 
     for (const a of assignations) {
-      console.log(a)
       // --- Servicios adicionales ---
       if (a.resource_type === ResourceType.SERVICE_DETAIL) {
-        total += a.service_ref_price || 0;
+        total += a.hourly_rate;
       }
 
+      // --- Equipos ---
       if (a.resource_type === ResourceType.EQUIPMENT) {
-        const hours = a.hours || 0;
-        const rate = a.hourly_rate || 0;
-        total += hours * rate;
+        total += a.hourly_rate;
       }
 
       // --- Trabajadores ---
       if (a.resource_type === ResourceType.WORKER) {
-        const hours = a.hours || 0;
-        const rate = a.hourly_rate || 0;
-        total += hours * rate;
+        total += a.hourly_rate;   // ❤️ precio final, SIN multiplicar
       }
     }
 
     console.log(total)
 
-    // 2. OBTENER SUBTAREAS (ACTIVIDADES)
+    // 2. SUBTAREAS (si tienes precios en subtareas)
     const tasks = await this.eventTaskModel
       .find({ event: eventId })
       .select('_id');
 
     if (tasks.length > 0) {
       const subtasks = await this.eventSubtaskModel.find({
-        parent_task: { $in: tasks.map(t => t._id) }
+        parent_task: { $in: tasks.map((t) => t._id) },
       });
 
       const subtasksTotal = subtasks.reduce(
@@ -208,6 +205,9 @@ export class AssignationsService {
     }
 
     // 3. ACTUALIZAR EVENTO
-    await this.eventModel.findByIdAndUpdate(eventId, { estimated_price: total });
+    await this.eventModel.findByIdAndUpdate(eventId, {
+      estimated_price: total,
+    });
   }
+
 }
