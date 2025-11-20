@@ -16,7 +16,7 @@ import { User } from 'src/modules/user/schema';
 import { AuthService } from 'src/modules/firebase/services';
 import { errorCodes } from 'src/core/common';
 import { generateRandomPassword } from 'src/core/utils';
-import { Estado } from 'src/core/constants/app.constants';
+import { Estado, Roles } from 'src/core/constants/app.constants';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -110,7 +110,8 @@ export class WorkerService {
           created_by_admin: true,
           needs_password_change: true,
           is_extra_data_completed: true,
-          client_type: null
+          client_type: null,
+          role: Roles.PERSONAL_EXTERNO
         };
 
         const newUser = new this.userModel(userToCreate);
