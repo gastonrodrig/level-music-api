@@ -11,7 +11,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
 import { Assignation, Event, EventSubtask, EventTask, EventType } from '../schema';
-import { User } from 'src/modules/user/schema';
 import { StatusType } from '../enum';
 import { AssignationsService } from './assignations.service';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -228,7 +227,6 @@ export class EventService {
     dto: UpdateQuotationDto,
   ): Promise<Event> {
     try {
-      console.log(dto)
       // Buscar la última versión del evento
       const currentEvent = await this.eventModel.findById(event_id);
       if (!currentEvent) {

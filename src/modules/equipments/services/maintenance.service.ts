@@ -301,8 +301,6 @@ export class MaintenanceService {
         updateMaintenanceStatusDto.status === MaintenanceStatusType.EN_PROGRESO
       ) {
         if (maintenance.date.toISOString() !== getCurrentDateNormalized()) {
-          console.log(maintenance.date.toISOString(), getCurrentDateNormalized());
-          console.log(getCurrentDate())
           throw new HttpException(
             {
               code: errorCodes.MAINTENANCE_DATE_NOT_TODAY,

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
@@ -28,10 +28,10 @@ export class CreateAssignationDto {
   @IsNotEmpty()
   resource_id: string;
 
-  @ApiProperty({ type: Number, example: 5 })
+  @ApiProperty({ type: Number, example: 1 })
   @IsNumber()
-  @IsNotEmpty()
-  hours: number;
+  @IsOptional()
+  hours?: number = 1;
 
   @ApiProperty({ type: Number, example: 100 })
   @IsNumber()
