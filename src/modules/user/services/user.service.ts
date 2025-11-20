@@ -16,6 +16,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Model } from 'mongoose';
 import { User } from '../schema';
+import { Worker } from 'src/modules/worker/schema';
 import { SF_USER } from 'src/core/utils';
 import { generateRandomPassword } from 'src/core/utils';
 import { AuthService, StorageService } from 'src/modules/firebase/services';
@@ -28,6 +29,8 @@ export class UserService {
   constructor(
     @InjectModel(User.name)
     private userModel: Model<User>,
+    @InjectModel(Worker.name)
+    private workerModel: Model<Worker>,
     @InjectQueue('temporal-credentials')
     private temporalCredentialsQueue: Queue,
     @InjectQueue('forgot-password')
@@ -211,11 +214,21 @@ export class UserService {
 
   async findByEmail(email: string): Promise<User> {
     try {
-      return await this.userModel.findOne({ email });
+      const user = await this.userModel.findOne({ email });
+
+      const result = { ...user.toObject(), worker_type_name: null };
+
+      if (user.role === Roles.PERSONAL_EXTERNO) {
+        const worker = await this.workerModel.findOne({ user: user._id });
+        result.worker_type_name = worker.worker_type_name;
+      }
+
+      return result as User;
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
     }
   }
+
 
   async validateEmailNotRegistered(email: string): Promise<void> {
     const existingEmail = await this.userModel.findOne({ email });
