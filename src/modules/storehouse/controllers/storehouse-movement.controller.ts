@@ -49,6 +49,14 @@ export class StorehouseMovementController {
     return this.storehouseMovementServices.getAssignationsByEventCode(code);
   }
 
+  @Get('by-storehouse-code')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener asignaciones relevantes por storehouse_code (subtask) para crear movimientos' })
+  getByStorehouseCode(@Query('code') code: string) {
+    return this.storehouseMovementServices.getAssignationsByStorehouseCode(code);
+  }
+
   @Post('from-event')
   @Public()
   @HttpCode(HttpStatus.CREATED)
@@ -56,6 +64,15 @@ export class StorehouseMovementController {
   @ApiBody({ type: CreateFromEventDto })
   createFromEvent(@Body() dto: CreateFromEventDto) {
     return this.storehouseMovementServices.createFromEvent(dto);
+  }
+
+  @Post('from-storehouse')
+  @Public()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Crear movimientos en lote a partir de un storehouse_code (subtask) (uno por asignación de equipo)' })
+  @ApiBody({ type: CreateFromEventDto })
+  createFromStorehouse(@Body() dto: CreateFromEventDto) {
+    return this.storehouseMovementServices.createFromStorehouse(dto);
   }
 
   @Post('manual')
