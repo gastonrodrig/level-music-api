@@ -25,16 +25,4 @@ export class MailController {
       result,
     };
   }
-
-  @Post('send-quotation-ready')
-  @Public()
-  async sendQuotationReadyMail(
-    @Body() dto: SendQuotationReadyMailDto,
-  ) {
-    const result = await this.mailService.sendQuotationReadyMail(dto);
-    return {
-      message: `Correo de cotización lista enviado satisfactoriamente`,
-      result,
-    };
-  }
 }
