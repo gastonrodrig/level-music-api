@@ -23,6 +23,7 @@ import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
 import { UpdateQuotationDto, UpdateStatusEventDto, CreateQuotationDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+
 @Controller('events')
 @ApiTags('Events')
 export class EventController {
@@ -181,4 +182,25 @@ export class EventController {
     return this.eventService.sendPurchaseOrdersToProviders(event_id);
   }
 
+  @Get(':worker_id/events')
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Obtener eventos asignados a un trabajador con sus subactividades',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Eventos asignados al trabajador encontrados correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Trabajador no encontrado o sin eventos',
+  })
+  async getEventsByWorker(
+    @Param('worker_id') worker_id: string,
+  ) {
+    return this.eventService.getEventsForWorker(worker_id);
+  }
 }
