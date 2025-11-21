@@ -18,6 +18,7 @@ import { Queue } from 'bullmq';
 import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 import { errorCodes } from 'src/core/common';
 import { PaymentSchedule } from 'src/modules/payment/schema';
+import { Worker } from 'src/modules/worker/schema';
 
 @Injectable()
 export class EventService {
@@ -34,6 +35,8 @@ export class EventService {
     private eventTaskModel: Model<EventTask>,
     @InjectModel(EventSubtask.name)
     private eventSubtaskModel: Model<EventSubtask>,
+    @InjectModel(Worker.name)
+    private workerModel: Model<Worker>,
     private assignationService: AssignationsService,
     @InjectQueue('purchase-order')
     private purchaseOrderQueue: Queue,
@@ -371,5 +374,70 @@ export class EventService {
       total: grouped.size,
     };
   }
+
+  async getEventsForWorker(workerId: string): Promise<any[]> {
+  try {
+    const worker = await this.workerModel.findById(workerId);
+    if (!worker) throw new BadRequestException('Worker not found');
+
+    const workerObjectId = toObjectId(workerId);
+
+    const events = await this.eventModel.aggregate([
+      // 1. Traer tareas del evento
+      {
+        $lookup: {
+          from: 'event-tasks',
+          localField: '_id',
+          foreignField: 'event',
+          as: 'tasks'
+        }
+      },
+
+      // 2. Descomponer tareas
+      { $unwind: '$tasks' },
+
+      // 3. Lookup para subtareas de cada tarea
+      {
+        $lookup: {
+          from: 'event-subtasks',
+          localField: 'tasks._id',
+          foreignField: 'parent_task',
+          as: 'subtasks'
+        }
+      },
+
+      // 4. Filtrar eventos que tengan subtareas del trabajador
+      {
+        $match: {
+          'subtasks.worker': workerObjectId
+        }
+      },
+
+      // 5. Agrupar para evitar duplicados
+      {
+        $group: {
+          _id: '$_id',
+          event_code: { $first: '$event_code' },
+          name: { $first: '$name' },
+          description: { $first: '$description' },
+          event_date: { $first: '$event_date' },
+          start_time: { $first: '$start_time' },
+          end_time: { $first: '$end_time' },
+          exact_address: { $first: '$exact_address' },
+          subtasks: { $push: '$subtasks' }
+        }
+      }
+    ]);
+
+    // aplanar subtasks (porque quedaron en arrays anidados)
+    return events.map(ev => ({
+      ...ev,
+      subtasks: ev.subtasks.flat()
+    }));
+
+  } catch (error) {
+    throw new BadRequestException(`Error fetching events: ${error.message}`);
+  }
+}
 
 }
