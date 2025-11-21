@@ -4,7 +4,7 @@ import { StoreMovementType } from '../enum';
 import { LocationType } from 'src/modules/equipments/enum';
 
 export class CreateFromEventDto {
-  @ApiProperty({ example: 'SAL-JANGIY' })
+  @ApiProperty({ example: 'EVT-20251128-H8G6MO' })
   @IsString()
   @IsNotEmpty()
   code: string;
