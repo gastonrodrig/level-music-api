@@ -133,7 +133,7 @@ export class MailService {
       throw new Error(`Failed to send password reset email: ${error.message}`);
     }
   }
-
+ 
   async sendQuotationReadyMail(dto: SendQuotationReadyMailDto) {
     const user = await this.userModel.findOne({ email: dto.to });
     const appUrl = process.env.APP_URL;
