@@ -23,6 +23,7 @@ import { Public } from '../../../auth/decorators';
 import { EventService } from '../services';
 import { UpdateQuotationDto, UpdateStatusEventDto, CreateQuotationDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
+import { SendQuotationReadyMailDto } from 'src/modules/mail/dto';
 
 @Controller('events')
 @ApiTags('Events')
@@ -183,9 +184,8 @@ export class EventController {
   }
 
   @Get(':worker_id/events')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
-  @Public()
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Obtener eventos asignados a un trabajador con sus subactividades',
@@ -202,5 +202,31 @@ export class EventController {
     @Param('worker_id') worker_id: string,
   ) {
     return this.eventService.getEventsForWorker(worker_id);
+  }
+
+  @Post(':send-quotation-ready-email')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Enviar correo indicando que la cotización está lista para revisión',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Correo encolado correctamente para envío al cliente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Evento no encontrado',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al encolar el correo de cotización lista',
+  })
+  async sendQuotationReadyEmail(
+    @Body() dto: SendQuotationReadyMailDto,
+  ) {
+    return this.eventService.sendQuotationReadyEmail(dto);
   }
 }
