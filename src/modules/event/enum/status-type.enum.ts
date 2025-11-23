@@ -5,6 +5,7 @@ export enum StatusType {
   ENVIADO = 'Enviado',
   CONFIRMADO = 'Confirmado',
   PAGOS_ASIGNADOS = 'Pagos Asignados',
+  POR_VERIFICAR = 'Por Verificar',
   EN_SEGUIMIENTO = 'En Seguimiento',
   FINALIZADO = 'Finalizado',
 }
