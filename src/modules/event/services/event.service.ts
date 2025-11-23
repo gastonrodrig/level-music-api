@@ -19,6 +19,7 @@ import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 import { errorCodes } from 'src/core/common';
 import { PaymentSchedule } from 'src/modules/payment/schema';
 import { Worker } from 'src/modules/worker/schema';
+import { SendQuotationReadyMailDto } from 'src/modules/mail/dto';
 
 @Injectable()
 export class EventService {
@@ -40,6 +41,8 @@ export class EventService {
     private assignationService: AssignationsService,
     @InjectQueue('purchase-order')
     private purchaseOrderQueue: Queue,
+    @InjectQueue('quotation-ready')
+    private quotationReadyQueue: Queue,
   ) {}
 
   async createQuotation(dto: CreateQuotationDto): Promise<Event> {
@@ -115,7 +118,7 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Confirmado'],
+        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado'],
         2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
       };
 
@@ -335,30 +338,130 @@ export class EventService {
   }
   
   async sendPurchaseOrdersToProviders(event_id: string) {
-    const event = await this.eventModel.findById(event_id).lean();
-    if (!event) throw new NotFoundException('Evento no encontrado');
+    try {
+      const event = await this.eventModel.findById(event_id).lean();
+      if (!event) throw new NotFoundException('Evento no encontrado');
 
-    const assignations = await this.assignationModel.find({ event: event._id }).lean();
-    if (!assignations.length) throw new BadRequestException('No hay asignaciones para este evento');
+      const assignations = await this.assignationModel.find({ event: event._id }).lean();
+      if (!assignations.length) throw new BadRequestException('No hay asignaciones para este evento');
 
-    const grouped = new Map<string, any[]>();
+      const grouped = new Map<string, any[]>();
 
-    for (const a of assignations) {
-      const key = `${a.service_provider_email}||${a.service_provider_name}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(a);
+      for (const a of assignations) {
+        const key = `${a.service_provider_email}||${a.service_provider_name}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(a);
+      }
+
+      for (const [key, providerAssignations] of grouped.entries()) {
+        const [to, providerName] = key.split('||');
+
+        await this.purchaseOrderQueue.add(
+          'sendPurchaseOrderToProvider',
+          {
+            to,
+            providerName,
+            event,
+            assignations: providerAssignations,
+          },
+          {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 },
+            removeOnComplete: 1000,
+            removeOnFail: 100,
+          },
+        );
+      }
+
+      return {
+        message: 'Se han encolado los correos para los proveedores.',
+        total: grouped.size,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener los eventos para el trabajador: ${error.message}`,
+      );
     }
+  }
 
-    for (const [key, providerAssignations] of grouped.entries()) {
-      const [to, providerName] = key.split('||');
+  async getEventsForWorker(workerId: string): Promise<any[]> {
+    try {
+      const worker = await this.workerModel.findById(workerId);
+      if (!worker) throw new BadRequestException('Worker not found');
 
-      await this.purchaseOrderQueue.add(
-        'sendPurchaseOrderToProvider',
+      const workerObjectId = toObjectId(workerId);
+
+      const events = await this.eventModel.aggregate([
+        // 1. Traer tareas del evento
         {
-          to,
-          providerName,
-          event,
-          assignations: providerAssignations,
+          $lookup: {
+            from: 'event-tasks',
+            localField: '_id',
+            foreignField: 'event',
+            as: 'tasks'
+          }
+        },
+
+        // 2. Descomponer tareas
+        { $unwind: '$tasks' },
+
+        // 3. Lookup para subtareas de cada tarea
+        {
+          $lookup: {
+            from: 'event-subtasks',
+            localField: 'tasks._id',
+            foreignField: 'parent_task',
+            as: 'subtasks'
+          }
+        },
+
+        // 4. Filtrar eventos que tengan subtareas del trabajador
+        {
+          $match: {
+            'subtasks.worker': workerObjectId
+          }
+        },
+
+        // 5. Agrupar para evitar duplicados
+        {
+          $group: {
+            _id: '$_id',
+            event_code: { $first: '$event_code' },
+            name: { $first: '$name' },
+            description: { $first: '$description' },
+            event_date: { $first: '$event_date' },
+            start_time: { $first: '$start_time' },
+            end_time: { $first: '$end_time' },
+            exact_address: { $first: '$exact_address' },
+            subtasks: { $push: '$subtasks' }
+          }
+        }
+      ]);
+
+      // aplanar subtasks (porque quedaron en arrays anidados)
+      return events.map(ev => ({
+        ...ev,
+        subtasks: ev.subtasks.flat()
+      }));
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener los eventos para el trabajador: ${error.message}`,
+      );
+    }
+  }
+
+  async sendQuotationReadyEmail(dto: SendQuotationReadyMailDto) {
+    try {
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) throw new NotFoundException('Evento no encontrado');
+
+      event.status = StatusType.ENVIADO;
+      await event.save();
+
+      await this.quotationReadyQueue.add(
+        'sendQuotationReadyEmail',
+        {
+          to: dto.to
         },
         {
           attempts: 3,
@@ -367,77 +470,13 @@ export class EventService {
           removeOnFail: 100,
         },
       );
+      return {
+        message: 'El correo de cotización lista ha sido encolado para envío.',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error el enviar la cotización lista: ${error.message}`,
+      );
     }
-
-    return {
-      message: 'Se han encolado los correos para los proveedores.',
-      total: grouped.size,
-    };
   }
-
-  async getEventsForWorker(workerId: string): Promise<any[]> {
-  try {
-    const worker = await this.workerModel.findById(workerId);
-    if (!worker) throw new BadRequestException('Worker not found');
-
-    const workerObjectId = toObjectId(workerId);
-
-    const events = await this.eventModel.aggregate([
-      // 1. Traer tareas del evento
-      {
-        $lookup: {
-          from: 'event-tasks',
-          localField: '_id',
-          foreignField: 'event',
-          as: 'tasks'
-        }
-      },
-
-      // 2. Descomponer tareas
-      { $unwind: '$tasks' },
-
-      // 3. Lookup para subtareas de cada tarea
-      {
-        $lookup: {
-          from: 'event-subtasks',
-          localField: 'tasks._id',
-          foreignField: 'parent_task',
-          as: 'subtasks'
-        }
-      },
-
-      // 4. Filtrar eventos que tengan subtareas del trabajador
-      {
-        $match: {
-          'subtasks.worker': workerObjectId
-        }
-      },
-
-      // 5. Agrupar para evitar duplicados
-      {
-        $group: {
-          _id: '$_id',
-          event_code: { $first: '$event_code' },
-          name: { $first: '$name' },
-          description: { $first: '$description' },
-          event_date: { $first: '$event_date' },
-          start_time: { $first: '$start_time' },
-          end_time: { $first: '$end_time' },
-          exact_address: { $first: '$exact_address' },
-          subtasks: { $push: '$subtasks' }
-        }
-      }
-    ]);
-
-    // aplanar subtasks (porque quedaron en arrays anidados)
-    return events.map(ev => ({
-      ...ev,
-      subtasks: ev.subtasks.flat()
-    }));
-
-  } catch (error) {
-    throw new BadRequestException(`Error fetching events: ${error.message}`);
-  }
-}
-
 }

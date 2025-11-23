@@ -56,7 +56,6 @@ entity events #E6BB93 {
   * event_type_id     : OBJECT ID
   * event_type_name   : STRING
   * services_requested: OBJECT
-  * estimated_price   : NUMBER
   * final_price       : NUMBER
   * status            : ENUM('Pendiente','Enviado','Confirmado','Terminado','Cancelado')
   * client_info       : OBJECT
