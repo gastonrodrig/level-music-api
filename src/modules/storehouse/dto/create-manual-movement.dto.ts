@@ -1,13 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, IsOptional, IsMongoId } from 'class-validator';
 import { StoreMovementType } from '../enum';
 import { LocationType } from 'src/modules/equipments/enum';
 
 export class CreateManualMovementDto {
-  @ApiProperty({ example: 'JBL-001' })
-  @IsString()
+  @ApiProperty({ example: '002112..' })
+  @IsMongoId()
   @IsNotEmpty()
-  serial_number: string;
+  equipment_id?: string;
 
   @ApiProperty({ enum: StoreMovementType })
   @IsEnum(StoreMovementType)

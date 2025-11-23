@@ -10,111 +10,101 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+  ApiBody,
+} from '@nestjs/swagger';
+
 import { Public } from 'src/auth/decorators';
-import { CreateStorehouseMovementDto } from '../dto';
-import { CreateFromEventDto } from '../dto/create-from-event.dto';
-import { CreateManualMovementDto } from '../dto/create-manual-movement.dto';
-import { ApiBody } from '@nestjs/swagger';
 import { StorehouseMovementService } from '../services';
+
+import { CreateStorehouseMovementDto } from '../dto/create-storehouse-movement.dto';
+import { CreateFromStorehouseDto } from '../dto';
+import { CreateManualMovementDto } from '../dto';
 
 @Controller('storehouse-movement')
 @ApiTags('Storehouse-Movement')
 export class StorehouseMovementController {
   constructor(
-    private readonly storehouseMovementServices: StorehouseMovementService,
+    private readonly storehouseMovementService: StorehouseMovementService,
   ) {}
 
+  // ===========================================================
+  // Crear movimiento directo (con IDs)
+  // ===========================================================
   @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear un nuevo movimiento de almacén' })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'El movimiento de almacén ha sido creado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al crear el movimiento de almacén.',
-  })
-  create(@Body() createStorehouseMovementDto: CreateStorehouseMovementDto) {
-    return this.storehouseMovementServices.create(createStorehouseMovementDto);
+  @ApiOperation({ summary: 'Crear un nuevo movimiento de almacén (modo directo con IDs)' })
+  @ApiBody({ type: CreateStorehouseMovementDto })
+  create(@Body() dto: CreateStorehouseMovementDto) {
+    return this.storehouseMovementService.create(dto);
   }
 
-  @Get('by-event-code')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener asignaciones relevantes por event_code (una por equipo) para crear movimientos' })
-  getByEventCode(@Query('code') code: string) {
-    return this.storehouseMovementServices.getAssignationsByEventCode(code);
-  }
-
+  // ===========================================================
+  // Obtener asignaciones por STOREHOUSE CODE
+  // ===========================================================
   @Get('by-storehouse-code')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener asignaciones relevantes por storehouse_code (subtask) para crear movimientos' })
+  @ApiOperation({ summary: 'Obtener asignaciones por storehouse_code (subtask)' })
+  @ApiQuery({ name: 'code', required: true })
   getByStorehouseCode(@Query('code') code: string) {
-    return this.storehouseMovementServices.getAssignationsByStorehouseCode(code);
+    return this.storehouseMovementService.getAssignationsByStorehouseCode(code);
   }
 
-  @Post('from-event')
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear movimientos en lote a partir de un event_code (uno por asignación de equipo)' })
-  @ApiBody({ type: CreateFromEventDto })
-  createFromEvent(@Body() dto: CreateFromEventDto) {
-    return this.storehouseMovementServices.createFromEvent(dto);
-  }
-
+  // ===========================================================
+  // Crear movimientos desde STOREHOUSE CODE
+  // ===========================================================
   @Post('from-storehouse')
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear movimientos en lote a partir de un storehouse_code (subtask) (uno por asignación de equipo)' })
-  @ApiBody({ type: CreateFromEventDto })
-  createFromStorehouse(@Body() dto: CreateFromEventDto) {
-    return this.storehouseMovementServices.createFromStorehouse(dto);
+  @ApiOperation({ summary: 'Crear movimientos desde storehouse_code (subtask)' })
+  @ApiBody({ type: CreateFromStorehouseDto })
+  createFromStorehouse(@Body() dto: CreateFromStorehouseDto) {
+    return this.storehouseMovementService.createFromStorehouse(dto);
   }
 
+  // ===========================================================
+  // Crear movimiento manual
+  // ===========================================================
   @Post('manual')
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Crear movimiento manual por número de serie' })
+  @ApiOperation({ summary: 'Crear un movimiento manual por número de serie' })
   @ApiBody({ type: CreateManualMovementDto })
   createManual(@Body() dto: CreateManualMovementDto) {
-    return this.storehouseMovementServices.createManual(dto);
+    return this.storehouseMovementService.createManual(dto);
   }
 
+  // ===========================================================
+  // Paginado + filtros
+  // ===========================================================
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener movimiento de almacén con paginación, búsqueda y orden' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lista de movimientos de almacén obtenida paginada correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener los movimientos de almacén paginada.',
-  })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items por página' })
-  @ApiQuery({ name: 'offset', required: false, type: Number, description: 'Offset' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Texto para filtrar' })
-  @ApiQuery({ name: 'code', required: false, type: String, description: 'Filtro por code del movimiento' })
-  @ApiQuery({ name: 'movement_type', required: false, type: String, description: 'Filtro por tipo de movimiento' })
-  @ApiQuery({ name: 'state', required: false, type: String, description: 'Filtro por estado del movimiento' })
-  @ApiQuery({ name: 'sortField', required: false, type: String, description: 'Campo para ordenar' })
-  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc','desc'], description: 'Dirección de orden' })
+  @ApiOperation({ summary: 'Obtener movimientos con paginación y filtros' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'code', required: false, type: String })
+  @ApiQuery({ name: 'movement_type', required: false, type: String })
+  @ApiQuery({ name: 'state', required: false, type: String })
+  @ApiQuery({ name: 'sortField', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
   findAllPaginated(
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
-    @Query('offset', new DefaultValuePipe(0),  ParseIntPipe) offset: number,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number,
     @Query('search') search?: string,
     @Query('code') code?: string,
     @Query('movement_type') movement_type?: string,
     @Query('state') state?: string,
-    @Query('sortField', new DefaultValuePipe('name')) sortField?: string,
+    @Query('sortField', new DefaultValuePipe('createdAt')) sortField?: string,
     @Query('sortOrder', new DefaultValuePipe('asc')) sortOrder?: 'asc' | 'desc',
   ) {
-    return this.storehouseMovementServices.findAllPaginated(
+    return this.storehouseMovementService.findAllPaginated(
       limit,
       offset,
       search?.trim(),
@@ -126,19 +116,14 @@ export class StorehouseMovementController {
     );
   }
 
+  // ===========================================================
+  // Obtener por ID
+  // ===========================================================
   @Get(':id')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener un movimiento de almacén por ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Movimiento de almacén encontrado correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Error al obtener el movimiento de almacén.',
-  })
+  @ApiOperation({ summary: 'Obtener un movimiento por ID' })
   findOne(@Param('id') id: string) {
-    return this.storehouseMovementServices.findOne(id);
+    return this.storehouseMovementService.findOne(id);
   }
 }
