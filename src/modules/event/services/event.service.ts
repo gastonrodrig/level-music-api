@@ -127,7 +127,7 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Confirmado'],
+        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado'],
         2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
       };
 
@@ -286,6 +286,12 @@ export class EventService {
       };
 
       const newEvent = await this.eventModel.create(newEventData);
+
+      // Actualizar tareas para que apunten a la nueva versión del evento
+      await this.eventTaskModel.updateMany(
+        { event: currentEvent._id },
+        { $set: { event: newEvent._id } },
+      );
 
       // Manejar asignaciones (opcional)
       if (dto.assignations?.length) {
@@ -470,6 +476,12 @@ export class EventService {
 
   async sendQuotationReadyEmail(dto: SendQuotationReadyMailDto) {
     try {
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) throw new NotFoundException('Evento no encontrado');
+
+      event.status = StatusType.ENVIADO;
+      await event.save();
+
       await this.quotationReadyQueue.add(
         'sendQuotationReadyEmail',
         {
@@ -482,7 +494,6 @@ export class EventService {
           removeOnFail: 100,
         },
       );
-
       return {
         message: 'El correo de cotización lista ha sido encolado para envío.',
       };
