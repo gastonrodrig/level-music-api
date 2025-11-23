@@ -279,6 +279,12 @@ export class EventService {
 
       const newEvent = await this.eventModel.create(newEventData);
 
+      // Actualizar tareas para que apunten a la nueva versión del evento
+      await this.eventTaskModel.updateMany(
+        { event: currentEvent._id },
+        { $set: { event: newEvent._id } },
+      );
+
       // Manejar asignaciones (opcional)
       if (dto.assignations?.length) {
         for (const assign of dto.assignations) {
