@@ -10,8 +10,14 @@ import { CreateQuotationDto, UpdateQuotationDto } from '../dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SF_EVENT, toObjectId } from 'src/core/utils';
-import { Assignation, Event, EventSubtask, EventTask, EventType } from '../schema';
-import { StatusType } from '../enum';
+import {
+  Assignation,
+  Event,
+  EventSubtask,
+  EventTask,
+  EventType,
+} from '../schema';
+import { AppointmentStatus, StatusType } from '../enum';
 import { AssignationsService } from './assignations.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -20,6 +26,7 @@ import { errorCodes } from 'src/core/common';
 import { PaymentSchedule } from 'src/modules/payment/schema';
 import { Worker } from 'src/modules/worker/schema';
 import { SendQuotationReadyMailDto } from 'src/modules/mail/dto';
+import { Appointment } from '../schema/appointment.schema';
 
 @Injectable()
 export class EventService {
@@ -43,6 +50,8 @@ export class EventService {
     private purchaseOrderQueue: Queue,
     @InjectQueue('quotation-ready')
     private quotationReadyQueue: Queue,
+    @InjectModel(Appointment.name)
+    private appointmentModel: Model<Appointment>,
   ) {}
 
   async createQuotation(dto: CreateQuotationDto): Promise<Event> {
@@ -156,14 +165,15 @@ export class EventService {
       // Obtener asignaciones, pagos y tareas del evento
       const items = await Promise.all(
         events.map(async (event) => {
-          const [assignations, payment_schedules, event_tasks] = await Promise.all([
-            this.assignationModel.find({ event: event._id }).lean(),
-            this.paymentScheduleModel
-              .find({ event: event._id })
-              .sort({ due_date: 1 })
-              .lean(),
-            this.eventTaskModel.find({ event: event._id }).lean(),
-          ]);
+          const [assignations, payment_schedules, event_tasks] =
+            await Promise.all([
+              this.assignationModel.find({ event: event._id }).lean(),
+              this.paymentScheduleModel
+                .find({ event: event._id })
+                .sort({ due_date: 1 })
+                .lean(),
+              this.eventTaskModel.find({ event: event._id }).lean(),
+            ]);
 
           // Incrustar subtareas dentro de cada tarea
           const tasksWithSubtasks = await Promise.all(
@@ -196,9 +206,7 @@ export class EventService {
     }
   }
 
-  async findEventVersionsByCode(
-    event_code: string,
-  ): Promise<any[]> {
+  async findEventVersionsByCode(event_code: string): Promise<any[]> {
     try {
       // Buscar todas las versiones del evento, ordenadas descendente por versión
       const events = await this.eventModel
@@ -266,7 +274,7 @@ export class EventService {
       // Preparar la nueva versión
       const newEventData = {
         ...currentEvent.toObject(),
-        ...dto, 
+        ...dto,
         user: toObjectId(dto.user_id),
         _id: undefined, // Borra el _id
         version: currentEvent.version + 1,
@@ -336,14 +344,17 @@ export class EventService {
       );
     }
   }
-  
+
   async sendPurchaseOrdersToProviders(event_id: string) {
     try {
       const event = await this.eventModel.findById(event_id).lean();
       if (!event) throw new NotFoundException('Evento no encontrado');
 
-      const assignations = await this.assignationModel.find({ event: event._id }).lean();
-      if (!assignations.length) throw new BadRequestException('No hay asignaciones para este evento');
+      const assignations = await this.assignationModel
+        .find({ event: event._id })
+        .lean();
+      if (!assignations.length)
+        throw new BadRequestException('No hay asignaciones para este evento');
 
       const grouped = new Map<string, any[]>();
 
@@ -398,8 +409,8 @@ export class EventService {
             from: 'event-tasks',
             localField: '_id',
             foreignField: 'event',
-            as: 'tasks'
-          }
+            as: 'tasks',
+          },
         },
 
         // 2. Descomponer tareas
@@ -411,15 +422,15 @@ export class EventService {
             from: 'event-subtasks',
             localField: 'tasks._id',
             foreignField: 'parent_task',
-            as: 'subtasks'
-          }
+            as: 'subtasks',
+          },
         },
 
         // 4. Filtrar eventos que tengan subtareas del trabajador
         {
           $match: {
-            'subtasks.worker': workerObjectId
-          }
+            'subtasks.worker': workerObjectId,
+          },
         },
 
         // 5. Agrupar para evitar duplicados
@@ -433,15 +444,15 @@ export class EventService {
             start_time: { $first: '$start_time' },
             end_time: { $first: '$end_time' },
             exact_address: { $first: '$exact_address' },
-            subtasks: { $push: '$subtasks' }
-          }
-        }
+            subtasks: { $push: '$subtasks' },
+          },
+        },
       ]);
 
       // aplanar subtasks (porque quedaron en arrays anidados)
-      return events.map(ev => ({
+      return events.map((ev) => ({
         ...ev,
-        subtasks: ev.subtasks.flat()
+        subtasks: ev.subtasks.flat(),
       }));
     } catch (error) {
       throw new InternalServerErrorException(
@@ -455,7 +466,7 @@ export class EventService {
       await this.quotationReadyQueue.add(
         'sendQuotationReadyEmail',
         {
-          to: dto.to
+          to: dto.to,
         },
         {
           attempts: 3,
@@ -471,6 +482,213 @@ export class EventService {
     } catch (error) {
       throw new InternalServerErrorException(
         `Error el enviar la cotización lista: ${error.message}`,
+      );
+    }
+  }
+
+  async dashboard(): Promise<any> {
+    try {
+      const citas = await this.appointmentModel
+        .find({ status: AppointmentStatus.PENDIENTE })
+        .lean();
+      const cantidadCitas = citas.length;
+      const eventosBorrador = await this.eventModel
+        .find({ status: StatusType.BORRADOR })
+        .lean();
+      const cantidadEventosBorrador = eventosBorrador.length;
+      const eventosRevision = await this.eventModel
+        .find({ status: StatusType.EN_REVISION })
+        .lean();
+      const cantidadEventosRevision = eventosRevision.length;
+      const eventosConfirmados = await this.eventModel
+        .find({ status: StatusType.CONFIRMADO })
+        .lean();
+      const cantidadEventosConfirmados = eventosConfirmados.length;
+      const eventosEnSeguimiento = await this.eventModel
+        .find({ status: StatusType.EN_SEGUIMIENTO })
+        .lean();
+      const cantidadEventosEnSeguimiento = eventosEnSeguimiento.length;
+      const Resultado = {
+        cantidadCitas,
+        cantidadEventosBorrador,
+        cantidadEventosRevision,
+        cantidadEventosConfirmados,
+        cantidadEventosEnSeguimiento,
+      };
+      return Resultado;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al listar citas: ${error.message}`,
+      );
+    }
+  }
+
+  async eventsperMonth(fechaInicio?: string, fechaFin?: string): Promise<any> {
+    try {
+      // Construir el filtro base
+      const matchFilter: any = {  
+        event_date: { $exists: true, $ne: null },
+        status: StatusType.FINALIZADO,
+      };
+
+      // Si se proporcionan fechas, agregar filtro de rango
+      if (fechaInicio && fechaFin) {
+        matchFilter.event_date = {
+          ...matchFilter.event_date,
+          $gte: new Date(fechaInicio),
+          $lte: new Date(fechaFin),
+        };
+      }
+
+      const eventosPorMes = await this.eventModel.aggregate([
+        { $match: matchFilter },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$event_date' },
+              month: { $month: '$event_date' },
+              type: '$type', // Agregar type para mostrarlo en el gráfico
+              status: '$status',
+            },
+            cantidad: { $sum: 1 },
+            eventos: {
+              $push: {
+                _id: '$_id',
+                event_code: '$event_code',
+                name: '$name',
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            year: '$_id.year',
+            month: '$_id.month',
+            type: '$_id.type', // Incluir en el resultado
+            status: '$_id.status',
+            cantidad: 1,
+            eventos: 1,
+          },
+        },
+        { $sort: { year: 1, month: 1 } },
+      ]);
+
+      return eventosPorMes;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener eventos por mes: ${error.message}`,
+      );
+    }
+  }
+
+  async eventType(): Promise<any> {
+    try {
+      const tipoEvento = await this.eventModel.aggregate([
+        {
+          $match: {
+            event_date: { $exists: true, $ne: null },
+            event_type_name: { $exists: true, $ne: null },
+            status: StatusType.FINALIZADO,
+          },
+        },
+        {
+          $group: {
+            _id: {
+              type: '$event_type_name',
+              year: { $year: '$event_date' },
+              month: { $month: '$event_date' },
+              status: '$status',
+            },
+            cantidad: { $sum: 1 },
+            eventos: {
+              $push: { _id: '$_id', event_code: '$event_code', name: '$name' },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            type: '$_id.type',
+            year: '$_id.year',
+            month: '$_id.month',
+            status: '$_id.status',
+            cantidad: 1,
+            eventos: 1,
+          },
+        },
+        { $sort: { type: 1 } },
+      ]);
+      return tipoEvento;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener eventos por tipo: ${error.message}`,
+      );
+    }
+  }
+
+  async getEventsByDate(year: number, month: number): Promise<any> {
+    try {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+      const eventos = await this.eventModel.aggregate([
+        {
+          $match: {
+            event_date: {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            event_code: 1,
+            name: 1,
+            event_date: 1,
+            status: 1,
+            day: { $dayOfMonth: '$event_date' },
+            month: { $month: '$event_date' },
+            year: { $year: '$event_date' },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              day: '$day',
+              month: '$month',
+              year: '$year',
+            },
+            eventos: {
+              $push: {
+                _id: '$_id',
+                event_code: '$event_code',
+                name: '$name',
+                status: '$status',
+                event_date: '$event_date',
+              },
+            },
+            cantidad: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            day: '$_id.day',
+            month: '$_id.month',
+            year: '$_id.year',
+            eventos: 1,
+            cantidad: 1,
+          },
+        },
+        { $sort: { day: 1 } },
+      ]);
+
+      return eventos;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error al obtener eventos por fecha: ${error.message}`,
       );
     }
   }

@@ -104,7 +104,6 @@ export class WorkerService {
         // Crear usuario en la BD
         const userToCreate = {
           ...createWorkerDto,
-          role: 'Personal Externo',
           auth_id: firebaseResult.uid,
           status: Estado.ACTIVO,
           created_by_admin: true,
