@@ -415,28 +415,35 @@ export class EventService {
           }
         },
 
-        // 4. Filtrar eventos que tengan subtareas del trabajador
-        {
-          $match: {
-            'subtasks.worker': workerObjectId
-          }
-        },
+      { $unwind: '$subtasks' },
 
-        // 5. Agrupar para evitar duplicados
-        {
-          $group: {
-            _id: '$_id',
-            event_code: { $first: '$event_code' },
-            name: { $first: '$name' },
-            description: { $first: '$description' },
-            event_date: { $first: '$event_date' },
-            start_time: { $first: '$start_time' },
-            end_time: { $first: '$end_time' },
-            exact_address: { $first: '$exact_address' },
-            subtasks: { $push: '$subtasks' }
-          }
+      // 5. Filtrar AHORA
+      // Como ya están descompuestas, este match elimina las filas 
+      // donde el worker NO es el que buscamos.
+      {
+        $match: {
+          'subtasks.worker': workerObjectId
         }
-      ]);
+      },
+
+      // -------------------------
+
+      // 6. Agrupar de nuevo
+      // Solo las subtareas que sobrevivieron al match entran en este array
+      {
+        $group: {
+          _id: '$_id',
+          event_code: { $first: '$event_code' },
+          name: { $first: '$name' },
+          description: { $first: '$description' },
+          event_date: { $first: '$event_date' },
+          start_time: { $first: '$start_time' },
+          end_time: { $first: '$end_time' },
+          exact_address: { $first: '$exact_address' },
+          subtasks: { $push: '$subtasks' } // Reconstruye el array solo con las tuyas
+        }
+      }
+    ]);
 
       // aplanar subtasks (porque quedaron en arrays anidados)
       return events.map(ev => ({
@@ -473,82 +480,5 @@ export class EventService {
         `Error el enviar la cotización lista: ${error.message}`,
       );
     }
-<<<<<<< HEAD
-
-    return {
-      message: 'Se han encolado los correos para los proveedores.',
-      total: grouped.size,
-    };
-  }
-
-  async getEventsForWorker(workerId: string): Promise<any[]> {
-  try {
-    const worker = await this.workerModel.findById(workerId);
-    if (!worker) throw new BadRequestException('Worker not found');
-
-    const workerObjectId = toObjectId(workerId);
-
-    const events = await this.eventModel.aggregate([
-      // 1. Traer tareas del evento
-      {
-        $lookup: {
-          from: 'event-tasks',
-          localField: '_id',
-          foreignField: 'event',
-          as: 'tasks'
-        }
-      },
-
-      // 2. Descomponer tareas
-      { $unwind: '$tasks' },
-
-      // 3. Lookup para subtareas de cada tarea
-      {
-        $lookup: {
-          from: 'event-subtasks',
-          localField: 'tasks._id',
-          foreignField: 'parent_task',
-          as: 'subtasks'
-        }
-      },
-
-      { $unwind: '$subtasks' },
-
-      // 5. Filtrar AHORA
-      // Como ya están descompuestas, este match elimina las filas 
-      // donde el worker NO es el que buscamos.
-      {
-        $match: {
-          'subtasks.worker': workerObjectId
-        }
-      },
-
-      // -------------------------
-
-      // 6. Agrupar de nuevo
-      // Solo las subtareas que sobrevivieron al match entran en este array
-      {
-        $group: {
-          _id: '$_id',
-          event_code: { $first: '$event_code' },
-          name: { $first: '$name' },
-          description: { $first: '$description' },
-          event_date: { $first: '$event_date' },
-          start_time: { $first: '$start_time' },
-          end_time: { $first: '$end_time' },
-          exact_address: { $first: '$exact_address' },
-          subtasks: { $push: '$subtasks' } // Reconstruye el array solo con las tuyas
-        }
-      }
-    ]);
-
-    // Nota: Ya no necesitas .flat() porque al hacer unwind y group, 
-    // el $push crea un array limpio de objetos, no un array de arrays.
-    return events;
-
-  } catch (error) {
-    throw new BadRequestException(`Error fetching events: ${error.message}`);
-=======
->>>>>>> origin/gaston
   }
 }
