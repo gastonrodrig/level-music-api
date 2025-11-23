@@ -426,28 +426,35 @@ export class EventService {
           },
         },
 
-        // 4. Filtrar eventos que tengan subtareas del trabajador
-        {
-          $match: {
-            'subtasks.worker': workerObjectId,
-          },
-        },
+      { $unwind: '$subtasks' },
 
-        // 5. Agrupar para evitar duplicados
-        {
-          $group: {
-            _id: '$_id',
-            event_code: { $first: '$event_code' },
-            name: { $first: '$name' },
-            description: { $first: '$description' },
-            event_date: { $first: '$event_date' },
-            start_time: { $first: '$start_time' },
-            end_time: { $first: '$end_time' },
-            exact_address: { $first: '$exact_address' },
-            subtasks: { $push: '$subtasks' },
-          },
-        },
-      ]);
+      // 5. Filtrar AHORA
+      // Como ya están descompuestas, este match elimina las filas 
+      // donde el worker NO es el que buscamos.
+      {
+        $match: {
+          'subtasks.worker': workerObjectId
+        }
+      },
+
+      // -------------------------
+
+      // 6. Agrupar de nuevo
+      // Solo las subtareas que sobrevivieron al match entran en este array
+      {
+        $group: {
+          _id: '$_id',
+          event_code: { $first: '$event_code' },
+          name: { $first: '$name' },
+          description: { $first: '$description' },
+          event_date: { $first: '$event_date' },
+          start_time: { $first: '$start_time' },
+          end_time: { $first: '$end_time' },
+          exact_address: { $first: '$exact_address' },
+          subtasks: { $push: '$subtasks' } // Reconstruye el array solo con las tuyas
+        }
+      }
+    ]);
 
       // aplanar subtasks (porque quedaron en arrays anidados)
       return events.map((ev) => ({
