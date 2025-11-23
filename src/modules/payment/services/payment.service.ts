@@ -123,6 +123,12 @@ export class PaymentService {
     files: Express.Multer.File[],
   ) {
     try {
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) throw new BadRequestException('Evento no encontrado');
+
+      event.status = StatusType.POR_VERIFICAR;
+      await event.save();
+
       const createdPayments = [];
 
       for (const [index, pay] of dto.payments.entries()) {
@@ -166,8 +172,6 @@ export class PaymentService {
       );
     }
   }
-
-
 
   // Prueba de integración con Mercado Pago
   async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
