@@ -118,7 +118,7 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Confirmado'],
+        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado'],
         2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
       };
 
