@@ -452,6 +452,12 @@ export class EventService {
 
   async sendQuotationReadyEmail(dto: SendQuotationReadyMailDto) {
     try {
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) throw new NotFoundException('Evento no encontrado');
+
+      event.status = StatusType.ENVIADO;
+      await event.save();
+
       await this.quotationReadyQueue.add(
         'sendQuotationReadyEmail',
         {
@@ -464,7 +470,6 @@ export class EventService {
           removeOnFail: 100,
         },
       );
-
       return {
         message: 'El correo de cotización lista ha sido encolado para envío.',
       };
