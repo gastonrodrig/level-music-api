@@ -173,8 +173,6 @@ export class PaymentService {
     }
   }
 
-
-
   // Prueba de integración con Mercado Pago
   async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
     try {
