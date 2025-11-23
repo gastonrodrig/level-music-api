@@ -47,8 +47,10 @@ import {
   addEventTypeHooks 
 } from './hooks';
 import {
+  Worker,
   WorkerType,
-  WorkerTypeSchema
+  WorkerTypeSchema,
+  WorkerSchema
 } from 'src/modules/worker/schema';
 import {
   User,
@@ -82,6 +84,7 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
         { name: EventTask.name, schema: EventTaskSchema },
         { name: EventSubtask.name, schema: EventSubtaskSchema },
         { name: EventSubtaskEvidence.name, schema: EventSubtaskEvidenceSchema },
+        { name: Worker.name, schema: WorkerSchema },
         { name: WorkerType.name, schema: WorkerTypeSchema },
         { name: User.name, schema: UserSchema },
         { name: FeaturedEvent.name, schema: FeaturedEventSchema },

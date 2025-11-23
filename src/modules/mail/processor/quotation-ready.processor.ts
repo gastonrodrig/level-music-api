@@ -8,12 +8,13 @@ export class QuotationReadyProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<any>): Promise<void> {
-    const { to, user_id } = job.data;
+  async process(job: Job<any>): Promise<any> {
+    const { to } = job.data;
 
     await this.mailService.sendQuotationReadyMail({
-      to,
-      user_id,
+      to
     });
+
+    return { status: 'sent', to };
   }
 }

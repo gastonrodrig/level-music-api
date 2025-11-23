@@ -8,13 +8,4 @@ export class SendQuotationReadyMailDto {
   })
   @IsEmail()
   to: string;
-
-  @ApiProperty({
-    example: '675c9c3df72a23c5a8b88990',
-    required: false,
-    description: 'ID del usuario cliente para construir el saludo personalizado.',
-  })
-  @IsOptional()
-  @IsString()
-  user_id?: string;
 }

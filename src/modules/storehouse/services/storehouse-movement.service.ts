@@ -1,11 +1,14 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { StorehouseMovement } from '../schema';
 import { Model } from 'mongoose';
 import { CreateStorehouseMovementDto } from '../dto';
 import { SF_STOREHOUSE_MOVEMENT } from 'src/core/utils';
-import { Event } from 'src/modules/event/schema';
+import { Event, EventTask, EventSubtask, Assignation } from 'src/modules/event/schema';
 import { Equipment } from 'src/modules/equipments/schema';
+import { ResourceType } from 'src/modules/event/enum/resource-type.enum';
+import { LocationType } from 'src/modules/equipments/enum';
+import { StatusType } from '../../event/enum/status-type.enum';
 
 @Injectable()
 export class StorehouseMovementService {
@@ -16,7 +19,182 @@ export class StorehouseMovementService {
     private eventModel: Model<Event>,
     @InjectModel(Equipment.name)
     private equipmentModel: Model<Equipment>,
+    @InjectModel(Assignation.name)
+    private assignationModel: Model<Assignation>,
+    @InjectModel(EventTask.name)
+    private eventTaskModel: Model<EventTask>,
+    @InjectModel(EventSubtask.name)
+    private eventSubtaskModel: Model<EventSubtask>,
   ) {}
+
+  // Return assignations (one per equipment) for an event code when event is En Revisión
+  async getAssignationsByEventCode(event_code: string) {
+    try {
+      // Always resolve the latest version of the event
+      const event = await this.eventModel.findOne({ event_code, is_latest: true });
+      if (!event) throw new NotFoundException('Latest event version not found');
+
+      // check status equals En Revisión (strict match)
+      if (event.status !== StatusType.EN_REVISION) {
+        throw new BadRequestException(`Event status is '${event.status}' (expected '${StatusType.EN_REVISION}')`);
+      }
+
+      // find assignations for event and resource type EQUIPMENT
+      const assignations = await (this as any).assignationModel.find({ event: event._id, resource_type: ResourceType.EQUIPMENT }).sort({ assigned_at: -1 }).exec();
+
+      // keep only one assignation per resource (most recent)
+      const map = new Map();
+      for (const a of assignations) {
+        const resId = a.resource.toString();
+        if (!map.has(resId)) map.set(resId, a);
+      }
+
+      return { event, assignations: Array.from(map.values()) };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(`Error getting assignations: ${error.message}`);
+    }
+  }
+
+  // Resolve event by EventSubtask.storehouse_code and return assignations (one per equipment)
+  async getAssignationsByStorehouseCode(storehouse_code: string) {
+    try {
+      const subtask = await this.eventSubtaskModel.findOne({ storehouse_code }).select('parent_task');
+      if (!subtask || !subtask.parent_task) throw new NotFoundException('Subtask not found for given storehouse_code');
+
+      const parentTask = await this.eventTaskModel.findById(subtask.parent_task).select('event');
+      if (!parentTask || !parentTask.event) throw new NotFoundException('Parent task or event not found for subtask');
+
+      // Resolve the event referenced by the parent task, then ensure we use the latest version
+      const referencedEvent = await this.eventModel.findById(parentTask.event);
+      if (!referencedEvent) throw new NotFoundException('Event not found');
+
+      // Try to find the latest version for that event_code
+      const latestEvent = await this.eventModel.findOne({ event_code: referencedEvent.event_code, is_latest: true });
+      if (!latestEvent) throw new NotFoundException('Latest event version not found');
+
+      const event = latestEvent;
+
+      // check status equals En Revisión (strict match)
+      if (event.status !== StatusType.EN_REVISION) {
+        throw new BadRequestException(`Event status is '${event.status}' (expected '${StatusType.EN_REVISION}')`);
+      }
+
+      // find assignations for event and resource type EQUIPMENT
+      const assignations = await (this as any).assignationModel.find({ event: event._id, resource_type: ResourceType.EQUIPMENT }).sort({ assigned_at: -1 }).exec();
+
+      // keep only one assignation per resource (most recent)
+      const map = new Map();
+      for (const a of assignations) {
+        const resId = a.resource.toString();
+        if (!map.has(resId)) map.set(resId, a);
+      }
+
+      return { event, assignations: Array.from(map.values()) };
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException(`Error getting assignations by storehouse_code: ${error.message}`);
+    }
+  }
+
+  // Create movements for each assignation (equipment) of an event
+  async createFromEvent(dto: any) {
+    try {
+      const { code, movement_type, destination } = dto;
+      const { event, assignations } = await this.getAssignationsByEventCode(code);
+
+      const created: any[] = [];
+      const errors: any[] = [];
+
+      for (const a of assignations) {
+        try {
+          const equipmentId = a.resource;
+          const movementCode = `MVT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+          const movement = new this.storehouseMovementModel({
+            equipment: equipmentId,
+            event: event._id,
+            movement_type,
+            destination: destination || LocationType.EVENTO,
+            code: movementCode,
+          });
+          await movement.save();
+          created.push(movement);
+        } catch (err) {
+          errors.push({ assignation: a._id, error: err.message });
+        }
+      }
+
+      return { created: created.length, items: created, errors };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Create movements from a storehouse_code (subtask) instead of event_code
+  async createFromStorehouse(dto: any) {
+    try {
+      const { code, movement_type, destination } = dto;
+      const { event, assignations } = await this.getAssignationsByStorehouseCode(code);
+
+      const created: any[] = [];
+      const errors: any[] = [];
+
+      for (const a of assignations) {
+        try {
+          const equipmentId = a.resource;
+          const movementCode = `MVT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+          const movement = new this.storehouseMovementModel({
+            equipment: equipmentId,
+            event: event._id,
+            movement_type,
+            destination: destination || LocationType.EVENTO,
+            code: movementCode,
+          });
+          await movement.save();
+          created.push(movement);
+        } catch (err) {
+          errors.push({ assignation: a._id, error: err.message });
+        }
+      }
+
+      return { created: created.length, items: created, errors };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Create a manual movement by equipment serial
+  async createManual(dto: any) {
+    try {
+      const { serial_number, movement_type, event_code, destination } = dto;
+      // find equipment
+      const equipment = await this.equipmentModel.findOne({ serial_number });
+      if (!equipment) throw new NotFoundException('Equipment not found');
+
+      let event = null;
+      if (event_code) {
+        // resolve latest version of event for manual movements
+        event = await this.eventModel.findOne({ event_code, is_latest: true });
+        if (!event) throw new NotFoundException('Latest event version not found');
+      } else {
+        throw new BadRequestException('event_code is required for manual movements');
+      }
+
+      const movementCode = `MVT-${Date.now().toString(36)}`;
+      const movement = new this.storehouseMovementModel({
+        equipment: equipment._id,
+        event: event._id,
+        movement_type,
+        destination: destination || LocationType.SALIDA,
+        code: movementCode,
+      });
+
+      await movement.save();
+      return movement;
+    } catch (error) {
+      throw error;
+    }
+  }
 
   async create(createStorehouseMovementDto: CreateStorehouseMovementDto): Promise<StorehouseMovement> {
     try {
@@ -30,10 +208,15 @@ export class StorehouseMovementService {
         throw new NotFoundException('Equipment not found');
       }
 
+      const movementCode = createStorehouseMovementDto.code || `MVT-${Date.now().toString(36)}`;
+      const movementState = (createStorehouseMovementDto as any).state || 'Activo';
+
       const storehouseMovement = new this.storehouseMovementModel({
         ...createStorehouseMovementDto,
         event: event._id,
         equipment: equipment._id,
+        code: movementCode,
+        state: movementState,
       });
 
       return await storehouseMovement.save();
@@ -50,15 +233,16 @@ export class StorehouseMovementService {
     search = '',
     sortField: string,
     sortOrder: 'asc' | 'desc' = 'asc',
+    code?: string,
+    movement_type?: string,
+    state?: string,
   ): Promise<{ total: number; items: StorehouseMovement[] }> {
     try {
-      const filter = search
-      ? {
-          $or: SF_STOREHOUSE_MOVEMENT.map(field => ({
-            [field]: { $regex: search, $options: 'i' }
-          })),
-        }
-      : {};
+      // Build filter from params (no free-text search)
+      const filter: any = {};
+      if (code) filter.code = code;
+      if (movement_type) filter.movement_type = movement_type;
+      if (state) filter.state = state;
 
       const sortObj: Record<string, 1 | -1> = {
         [sortField]: sortOrder === 'asc' ? 1 : -1,

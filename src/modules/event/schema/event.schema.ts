@@ -55,9 +55,6 @@ export class Event {
   @Prop({ type: String, required: false, nullable: true })
   event_type_name?: string;
 
-  @Prop({ type: Number, default: 0 })
-  estimated_price: number;
-
   @Prop({ type: Number, nullable: true })
   final_price?: number;
 

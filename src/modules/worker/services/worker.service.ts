@@ -16,7 +16,7 @@ import { User } from 'src/modules/user/schema';
 import { AuthService } from 'src/modules/firebase/services';
 import { errorCodes } from 'src/core/common';
 import { generateRandomPassword } from 'src/core/utils';
-import { Estado } from 'src/core/constants/app.constants';
+import { Estado, Roles } from 'src/core/constants/app.constants';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -109,7 +109,8 @@ export class WorkerService {
           created_by_admin: true,
           needs_password_change: true,
           is_extra_data_completed: true,
-          client_type: null
+          client_type: null,
+          role: Roles.PERSONAL_EXTERNO
         };
 
         const newUser = new this.userModel(userToCreate);
@@ -215,6 +216,12 @@ export class WorkerService {
 
   async update(worker_id: string, updateWorkerDto: UpdateWorkerDto) {
     try {
+      // Buscar trabajador primero para obtener su user_id si tiene cuenta
+      const worker = await this.workerModel.findById(worker_id);
+      if (!worker) {
+        throw new BadRequestException('Trabajador no encontrado');
+      }
+
       // Validar email y documento únicos
       const [
         userByEmail, 
@@ -222,10 +229,22 @@ export class WorkerService {
         workerByEmail, 
         workerByDoc 
       ] = await Promise.all([
-        this.userModel.findOne({ email: updateWorkerDto.email, _id: { $ne: worker_id }, }),
-        this.userModel.findOne({ document_number: updateWorkerDto.document_number, _id: { $ne: worker_id }, }),
-        this.workerModel.findOne({ email: updateWorkerDto.email, _id: { $ne: worker_id }, }),
-        this.workerModel.findOne({ document_number: updateWorkerDto.document_number, _id: { $ne: worker_id }, }),
+        this.userModel.findOne({ 
+          email: updateWorkerDto.email, 
+          _id: { $ne: worker.user }, 
+        }),
+        this.userModel.findOne({ 
+          document_number: updateWorkerDto.document_number, 
+          _id: { $ne: worker.user }, 
+        }),
+        this.workerModel.findOne({ 
+          email: updateWorkerDto.email, 
+          _id: { $ne: worker_id }, 
+        }),
+        this.workerModel.findOne({ 
+          document_number: updateWorkerDto.document_number, 
+          _id: { $ne: worker_id }, 
+        }),
       ]);
 
       if (userByEmail || workerByEmail) {
@@ -246,12 +265,6 @@ export class WorkerService {
           },
           HttpStatus.BAD_REQUEST,
         );
-      }
-
-      // Buscar trabajador
-      const worker = await this.workerModel.findById(worker_id);
-      if (!worker) {
-        throw new BadRequestException('Trabajador no encontrado');
       }
 
       // Buscar tipo de trabajador
@@ -286,7 +299,11 @@ export class WorkerService {
       // Actualizar el trabajador
       const updatedWorker = await this.workerModel.findOneAndUpdate(
         { _id: worker_id },
-        { ...updateWorkerDto, worker_type_name: workerType.name },
+        { 
+          ...updateWorkerDto, 
+          worker_type: workerType._id,
+          worker_type_name: workerType.name 
+        },
         { new: true },
       );
 

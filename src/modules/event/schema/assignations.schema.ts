@@ -7,8 +7,8 @@ import {LocationType} from "src/modules/equipments/enum";
 @Schema({ collection: 'assignations' })
 export class Assignation {
   // Datos comunes
-  @Prop({ type: Number, default: 0 })
-  hours: number;
+  @Prop({ type: Number, default: 1 })
+  hours?: number;
 
   @Prop({ type: Number, default: 0 })
   hourly_rate: number;
