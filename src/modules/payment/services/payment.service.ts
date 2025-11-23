@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, HttpStatus } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PaymentSchedule } from '../schema/payment-schedules.schema';
@@ -123,39 +123,39 @@ export class PaymentService {
     files: Express.Multer.File[],
   ) {
     try {
-      // Validar que haya la misma cantidad de archivos que pagos
-      if (files.length !== dto.payments.length) {
-        throw new BadRequestException(
-          `Se esperaban ${dto.payments.length} imágenes pero se recibieron ${files.length}. Deben coincidir en cantidad y orden.`
-        );
-      }
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) throw new BadRequestException('Evento no encontrado');
+
+      event.status = StatusType.POR_VERIFICAR;
+      await event.save();
 
       const createdPayments = [];
 
-      // Procesar cada pago con su imagen correspondiente por índice
-      for (let i = 0; i < dto.payments.length; i++) {
-        const paymentItem = dto.payments[i];
-        const file = files[i]; // La imagen en el mismo índice
+      for (const [index, pay] of dto.payments.entries()) {
+        const file = files[index];
 
-        if (!file) {
-          throw new BadRequestException(
-            `No se encontró la imagen para el pago en la posición ${i + 1}`
-          );
-        }
-
-        // Subir comprobante a Firebase Storage
+        // Subir comprobante
         const upload = await this.storageService.uploadFile(
           'payments',
           file,
-          dto.event_id,
+          String(dto.event_id),
         );
 
-        // Crear el registro de pago
+        // Validar tipo de pago
+        if (
+          dto.payment_type !== PaymentType.PARCIAL &&
+          dto.payment_type !== PaymentType.FINAL &&
+          dto.payment_type !== PaymentType.AMBOS
+        ) {
+          throw new BadRequestException('Tipo de pago inválido.');
+        }
+
+        // Crear pago simple (mapear DIRECTAMENTE los campos del DTO)
         const payment = await this.paymentModel.create({
           payment_type: dto.payment_type,
-          payment_method: paymentItem.payment_method,
-          amount: paymentItem.amount,
-          operation_number: paymentItem.operation_number || null,
+          payment_method: pay.payment_method,
+          amount: pay.amount,
+          operation_number: pay.operation_number ? pay.operation_number : null,
           voucher_url: upload.url,
           status: PaymentStatus.PENDIENTE,
           event: toObjectId(dto.event_id),
@@ -165,19 +165,13 @@ export class PaymentService {
         createdPayments.push(payment);
       }
 
-      return {
-        message: 'Pagos procesados correctamente',
-        payments: createdPayments,
-        total: createdPayments.length,
-      };
+      return createdPayments;
     } catch (error) {
       throw new BadRequestException(
         error.message || 'Error al procesar el pago manual',
       );
     }
   }
-
-
 
   // Prueba de integración con Mercado Pago
   async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
