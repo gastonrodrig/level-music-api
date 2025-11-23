@@ -98,12 +98,7 @@ export class CreateEventDto {
   @ValidateNested({ each: true })
   @Type(() => ServiceRequestedDto)
   services_requested?: ServiceRequestedDto[];
-
-  @ApiProperty({ example: 1500.5, required: false, nullable: true })
-  @IsNumber()
-  @IsNotEmpty()
-  estimated_price?: number | null;
-
+  
   @ApiProperty({ example: 1500.5, required: false, nullable: true })
   @IsNumber()
   @IsOptional()
