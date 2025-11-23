@@ -148,9 +148,6 @@ export class AssignationsService {
       const newAssignation = new this.assignationModel(assignationToCreate);
       await newAssignation.save();
 
-      // 6. Actualizar el estimated_price del evento
-      await this.updateEstimatedPrice(event._id);
-
       return newAssignation;
     } catch (error) {
       if (error instanceof HttpException) throw error;
@@ -159,55 +156,4 @@ export class AssignationsService {
       );
     }
   }
-
-private async updateEstimatedPrice(eventId: any) {
-  // 1. OBTENER ASIGNACIONES
-  const assignations = await this.assignationModel.find({
-    event: toObjectId(eventId),
-  });
-
-  let total = 0;
-
-  for (const a of assignations) {
-    // --- Servicios adicionales ---
-    if (a.resource_type === ResourceType.SERVICE_DETAIL) {
-      total += a.hourly_rate;
-    }
-
-    // --- Equipos ---
-    if (a.resource_type === ResourceType.EQUIPMENT) {
-      total += a.hourly_rate;
-    }
-
-    // --- Trabajadores ---
-    if (a.resource_type === ResourceType.WORKER) {
-      total += a.hourly_rate;
-    }
-  }
-
-  // 2. SUBTAREAS (si tienes precios en subtareas)
-  const tasks = await this.eventTaskModel
-    .find({ event: eventId })
-    .select('_id');
-
-  if (tasks.length > 0) {
-    const subtasks = await this.eventSubtaskModel.find({
-      parent_task: { $in: tasks.map((t) => t._id) },
-    });
-
-    const subtasksTotal = subtasks.reduce(
-      (sum, s) => sum + (s.price || 0),
-      0
-    );
-
-    total += subtasksTotal;
-  }
-
-  // 3. ACTUALIZAR EVENTO
-  await this.eventModel.findByIdAndUpdate(eventId, {
-    estimated_price: total,
-  });
-}
-
-
 }

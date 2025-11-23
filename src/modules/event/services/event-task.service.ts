@@ -152,9 +152,6 @@ export class EventTaskService {
       eventTask.subtasks = subtaskIds;
       await eventTask.save();
 
-      // 4. Recalcular el estimated_price del evento
-      await this.recalculateEstimatedPrice(event._id);
-
       return {
         event_task: eventTask,
         subtasks: createdSubtasks,
@@ -235,9 +232,6 @@ export class EventTaskService {
       eventTask.subtasks = subtaskIds;
       await eventTask.save();
 
-      // 5. Recalcular el estimated_price del evento
-      await this.recalculateEstimatedPrice(eventTask.event);
-
       return {
         event_task: eventTask,
         subtasks: createdSubtasks,
@@ -249,58 +243,4 @@ export class EventTaskService {
       );
     }
   }
-
-  private async recalculateEstimatedPrice(eventId: any) {
-    const event = await this.eventModel.findById(eventId);
-    if (!event) throw new BadRequestException('El evento no existe');
-
-    // Obtener todas las actividades del evento
-    const tasks = await this.eventTaskModel.find({ event: eventId });
-    const taskIds = tasks.map(t => t._id);
-
-    // Obtener todas las subtareas asociadas
-    const subtasks = await this.eventSubtaskModel.find({
-      parent_task: { $in: taskIds },
-    });
-
-    // Sumar precios (solo los que NO son null)
-    const subtaskTotal = subtasks.reduce(
-      (sum, st) => sum + (st.price ? Number(st.price) : 0),
-      0
-    );
-
-    // Calcular nuevo estimated_price FINAL
-    const finalEstimatedPrice =
-      Number(event.estimated_price) + subtaskTotal;
-
-    // Guardar
-    await this.eventModel.findByIdAndUpdate(eventId, {
-      estimated_price: finalEstimatedPrice,
-    });
-
-    return finalEstimatedPrice;
-  }
-
-  // async update(event_task_id: string, updateEventTaskDto: UpdateEventTaskDto): Promise<EventTask> {
-  //   try {
-  //     const eventTask = await this.eventTaskModel.findOne({ _id: event_task_id });
-  //     if (!eventTask) {
-  //       throw new BadRequestException('Tarea de evento no encontrado');
-  //     }
-     
-  //     const worker = await this.workerModel.findById(updateEventTaskDto.worker_id).lean();
-  //     if (!worker) throw new BadRequestException('Trabajador no encontrado');
-  //     eventTask.worker = worker._id;
-  //     eventTask.worker_name = `${worker.first_name} ${worker.last_name}`.trim();
-  //     const workerType = await this.workerTypeModel.findById(worker.worker_type).lean();
-  //     if (!workerType) throw new BadRequestException('Tipo de trabajador no encontrado');
-  //     eventTask.worker_type = workerType._id;
-  //     eventTask.worker_type_name = workerType.name;
-      
-  //     Object.assign(eventTask, updateEventTaskDto);
-  //     return await eventTask.save();
-  //   } catch (error) {
-  //     throw new InternalServerErrorException(`Error: ${error.message}`);
-  //   }
-  // }
 }

@@ -135,7 +135,7 @@ export class MailService {
   }
 
   async sendQuotationReadyMail(dto: SendQuotationReadyMailDto) {
-    const user = await this.userModel.findById(dto.user_id);
+    const user = await this.userModel.findOne({ email: dto.to });
     const appUrl = process.env.APP_URL;
     const loginUrl = `${appUrl}/auth/login`;
 
