@@ -5,9 +5,8 @@ import * as nodemailer from 'nodemailer';
 import {
   CreateTemporalCredentialMailDto,
   CreatePasswordResetLinkMailDto,
-  SendQuotationReadyMailDto,
 } from '../dto';
-import { formatLatamDate, formatLatamDateTime } from '../../../core/utils/format-latam-date';
+import { formatLatamDate } from '../../../core/utils/format-latam-date';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/modules/user/schema';
 import { Model } from 'mongoose';
@@ -134,8 +133,8 @@ export class MailService {
     }
   }
 
-  async sendQuotationReadyMail(dto: SendQuotationReadyMailDto) {
-    const user = await this.userModel.findOne({ email: dto.to });
+  async sendQuotationReadyMail(to: string) {
+    const user = await this.userModel.findOne({ email: to });
     const appUrl = process.env.APP_URL;
     const loginUrl = `${appUrl}/auth/login`;
 
@@ -174,7 +173,7 @@ export class MailService {
 
     await this.transporter.sendMail({
       from: process.env.GMAIL_USER,
-      to: dto.to,
+      to: to,
       subject,
       html,
     });

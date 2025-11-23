@@ -2,10 +2,7 @@ import { Controller, Body, Post } from '@nestjs/common';
 import { MailService } from '../service';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
-import { 
-  CreateTemporalCredentialMailDto, 
-  SendQuotationReadyMailDto,
-} from '../dto';
+import { CreateTemporalCredentialMailDto } from '../dto';
 
 @ApiTags('Mail - Gmail Api')
 @Controller('mail')
