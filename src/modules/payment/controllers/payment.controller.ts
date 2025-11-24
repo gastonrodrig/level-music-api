@@ -19,7 +19,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
-import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
+import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto, ApproveAllPaymentsDto, ReportPaymentIssuesDto } from '../dto';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators';
@@ -48,22 +50,13 @@ export class PaymentController {
 
   @Post('manual')
   @Public()
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Registrar varios pagos manuales con comprobantes (uno por método)' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Pagos registrados correctamente.' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al registrar los pagos.' })
-  @ApiQuery({
-    name: 'mode',
-    required: false,
-    description: 'Modo de pago: parcial (por defecto) o ambos',
-    example: 'partial',
-    schema: {
-      type: 'string',
-      enum: ['partial', 'both'],
-      default: 'partial',
-    },
-  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -72,21 +65,16 @@ export class PaymentController {
         event_id: { type: 'string', example: '68fa352e038345fc4290f084' },
         user_id: { type: 'string', example: '68b9c17b445a8108efdf8d43' },
         payments: {
-          type: 'array',
-          description: 'Array de pagos con su información individual',
-          items: {
-            type: 'object',
-            properties: {
-              payment_method: {
-                type: 'string',
-                enum: ['Yape', 'Plin', 'Transferencia', 'Efectivo'],
-                example: 'Yape',
-              },
-              amount: { type: 'number', example: 300 },
-              operation_number: { type: 'string', example: 'YP123456' },
-            },
-            required: ['payment_method', 'amount'],
-          },
+          type: 'string',
+          description: 'JSON string con array de pagos (uno por cada imagen)',
+          example: JSON.stringify(
+            [
+              { payment_method: 'Yape', amount: 300, operation_number: 'YP123456' },
+              { payment_method: 'Plin', amount: 200, operation_number: 'PL789012' },
+            ],
+            null,
+            2
+          ),
         },
         images: {
           type: 'array',
@@ -94,7 +82,7 @@ export class PaymentController {
           description: 'Array de imágenes (una por cada pago, en el mismo orden)',
         },
       },
-      required: ['event_id', 'user_id', 'payments', 'images'],
+      required: ['payment_type', 'event_id', 'user_id', 'payments', 'images'],
     },
   })
   async processManualPayment(
@@ -119,5 +107,39 @@ export class PaymentController {
   })
   async processPayment(@Body() dto: CreateMercadoPagoDto) {
     return this.paymentService.testMercadoPagoPayment(dto);
+  }
+
+  @Post('approve-all')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Aprobar todos los pagos pendientes de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos aprobados correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al aprobar los pagos',
+  })
+  async approveAllPayments(@Body() dto: ApproveAllPaymentsDto) {
+    return this.paymentService.approveAllPayments(dto);
+  }
+
+  @Post('report-issues')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reportar desconformidades en pagos de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Reporte enviado correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al enviar el reporte',
+  })
+  async reportPaymentIssues(@Body() dto: ReportPaymentIssuesDto) {
+    return this.paymentService.reportPaymentIssues(dto);
   }
 }

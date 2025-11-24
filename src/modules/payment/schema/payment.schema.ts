@@ -37,6 +37,19 @@ export class Payment {
 
   @Prop({ default: Date.now })
   created_at: Date;
+
+  @Prop({ type: Date, nullable: true })
+  approved_at?: Date;
+
+  @Prop({ type: Boolean, default: false })
+  has_issues?: boolean;
+
+  @Prop({ type: Array, nullable: true })
+  issues?: Array<{
+    category: string;
+    comments: string;
+    reported_at: Date;
+  }>;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

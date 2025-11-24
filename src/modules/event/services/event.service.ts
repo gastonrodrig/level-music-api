@@ -23,7 +23,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 import { errorCodes } from 'src/core/common';
-import { PaymentSchedule } from 'src/modules/payment/schema';
+import { Payment, PaymentSchedule } from 'src/modules/payment/schema';
 import { Worker } from 'src/modules/worker/schema';
 import { SendQuotationReadyMailDto } from 'src/modules/mail/dto';
 import { Appointment } from '../schema/appointment.schema';
@@ -45,13 +45,16 @@ export class EventService {
     private eventSubtaskModel: Model<EventSubtask>,
     @InjectModel(Worker.name)
     private workerModel: Model<Worker>,
+    @InjectModel(Appointment.name)
+    private appointmentModel: Model<Appointment>,
+    @InjectModel(Payment.name)
+    private paymentModel: Model<Payment>,
+    @InjectModel(Assignation.name)
     private assignationService: AssignationsService,
     @InjectQueue('purchase-order')
     private purchaseOrderQueue: Queue,
     @InjectQueue('quotation-ready')
     private quotationReadyQueue: Queue,
-    @InjectModel(Appointment.name)
-    private appointmentModel: Model<Appointment>,
   ) {}
 
   async createQuotation(dto: CreateQuotationDto): Promise<Event> {
@@ -76,7 +79,7 @@ export class EventService {
           break;
         }
       }
-
+    
       // 3. Construir objeto base para el evento
       const eventToCreate: Partial<Event> = {
         ...dto,
@@ -88,7 +91,7 @@ export class EventService {
         version: 1,
         is_latest: true,
       };
-
+      console.log(eventToCreate);
       // 4. Crear evento
       const event = await this.eventModel.create(eventToCreate);
 
@@ -162,30 +165,36 @@ export class EventService {
         this.eventModel.countDocuments(filter).exec(),
       ]);
 
-      // Obtener asignaciones, pagos y tareas del evento
+      // Obtener asignaciones, pagos, cronograma y tareas
       const items = await Promise.all(
         events.map(async (event) => {
-          const [assignations, payment_schedules, event_tasks] =
-            await Promise.all([
-              this.assignationModel.find({ event: event._id }).lean(),
-              this.paymentScheduleModel
-                .find({ event: event._id })
-                .sort({ due_date: 1 })
-                .lean(),
-              this.eventTaskModel.find({ event: event._id }).lean(),
-            ]);
+          const [
+            assignations,
+            payment_schedules,
+            payments,
+            event_tasks,
+          ] = await Promise.all([
+            this.assignationModel.find({ event: event._id }).lean(),
+            this.paymentScheduleModel
+              .find({ event: event._id })
+              .sort({ due_date: 1 })
+              .lean(),
+            this.paymentModel
+              .find({ event: event._id })
+              .sort({ created_at: -1 })
+              .lean(),
+            this.eventTaskModel.find({ event: event._id }).lean(),
+          ]);
 
-          // Incrustar subtareas dentro de cada tarea
+          // Incrustar subtareas
           const tasksWithSubtasks = await Promise.all(
             event_tasks.map(async (task) => {
               const subtasks = await this.eventSubtaskModel
                 .find({ parent_task: task._id })
+                .populate('evidences')
                 .lean();
 
-              return {
-                ...task,
-                subtasks,
-              };
+              return { ...task, subtasks };
             }),
           );
 
@@ -193,6 +202,7 @@ export class EventService {
             ...event,
             assignations,
             payment_schedules,
+            payments,
             tasks: tasksWithSubtasks,
           };
         }),
