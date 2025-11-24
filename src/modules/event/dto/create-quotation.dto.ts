@@ -90,9 +90,4 @@ export class CreateQuotationDto extends IntersectionType(CreateEventDto) {
   @IsString()
   @IsOptional()
   document_number?: string;
-  
-  @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
-  estimated_price: number;
 }

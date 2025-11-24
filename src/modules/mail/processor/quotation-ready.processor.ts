@@ -11,9 +11,7 @@ export class QuotationReadyProcessor extends WorkerHost {
   async process(job: Job<any>): Promise<any> {
     const { to } = job.data;
 
-    await this.mailService.sendQuotationReadyMail({
-      to
-    });
+    await this.mailService.sendQuotationReadyMail(to);
 
     return { status: 'sent', to };
   }
