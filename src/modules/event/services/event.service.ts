@@ -76,7 +76,7 @@ export class EventService {
           break;
         }
       }
-
+    
       // 3. Construir objeto base para el evento
       const eventToCreate: Partial<Event> = {
         ...dto,
@@ -88,7 +88,7 @@ export class EventService {
         version: 1,
         is_latest: true,
       };
-
+      console.log(eventToCreate);
       // 4. Crear evento
       const event = await this.eventModel.create(eventToCreate);
 
