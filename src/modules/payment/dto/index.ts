@@ -6,5 +6,5 @@ export * from './create-payment-schedules.dto';
 export * from './update-payment-schedules.dto';
 export * from './create-mercado-pago.dto';
 export * from './create-manual-payment.dto';  
-export * from './report-issues.dto';
-export * from './approve-payments.dto';
+export * from './create-report-issues.dto';
+export * from './create-approve-payments.dto';
