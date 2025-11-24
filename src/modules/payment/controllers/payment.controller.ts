@@ -22,7 +22,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
-import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
+import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto, ApproveAllPaymentsDto, ReportPaymentIssuesDto } from '../dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { FirebaseAuthGuard } from 'src/auth/guards';
@@ -135,5 +135,39 @@ export class PaymentController {
   })
   async processPayment(@Body() dto: CreateMercadoPagoDto) {
     return this.paymentService.testMercadoPagoPayment(dto);
+  }
+
+  @Post('approve-all')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Aprobar todos los pagos pendientes de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos aprobados correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al aprobar los pagos',
+  })
+  async approveAllPayments(@Body() dto: ApproveAllPaymentsDto) {
+    return this.paymentService.approveAllPayments(dto);
+  }
+
+  @Post('report-issues')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reportar desconformidades en pagos de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Reporte enviado correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al enviar el reporte',
+  })
+  async reportPaymentIssues(@Body() dto: ReportPaymentIssuesDto) {
+    return this.paymentService.reportPaymentIssues(dto);
   }
 }

@@ -11,6 +11,8 @@ import {
   CreateManualPaymentDto,
   CreateMercadoPagoDto,
   CreatePaymentSchedulesDto,
+  ApproveAllPaymentsDto,
+  ReportPaymentIssuesDto,
 } from '../dto';
 import { PaymentType, PaymentStatus } from '../enum';
 import { toObjectId } from 'src/core/utils';
@@ -186,6 +188,136 @@ export class PaymentService {
     } catch (error) {
       console.error('Error en pago de prueba:', error);
       throw new BadRequestException(error.message || 'Error al procesar el pago de prueba');
+    }
+  }
+
+  /**
+   * Aprobar todos los pagos pendientes de un evento
+   */
+  async approveAllPayments(dto: ApproveAllPaymentsDto) {
+    try {
+      const { event_id } = dto;
+
+      // Verificar que el evento existe
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new BadRequestException('Evento no encontrado');
+      }
+
+      // Buscar todos los pagos pendientes del evento
+      const pendingPayments = await this.paymentModel.find({
+        event: toObjectId(event_id),
+        status: PaymentStatus.PENDIENTE,
+      });
+
+      if (pendingPayments.length === 0) {
+        return {
+          success: false,
+          message: 'No hay pagos pendientes para aprobar',
+          approved_count: 0,
+          total_amount: 0,
+        };
+      }
+
+      // Actualizar todos los pagos a APROBADO
+      const updateResult = await this.paymentModel.updateMany(
+        {
+          event: toObjectId(event_id),
+          status: PaymentStatus.PENDIENTE,
+        },
+        {
+          $set: {
+            status: PaymentStatus.APROBADO,
+            approved_at: new Date(),
+          },
+        },
+      );
+
+      // Calcular el monto total aprobado
+      const totalAmount = pendingPayments.reduce(
+        (sum, payment) => sum + (payment.amount || 0),
+        0,
+      );
+
+      // Actualizar el estado del evento a EN_SEGUIMIENTO (los pagos están aprobados)
+      event.status = StatusType.EN_SEGUIMIENTO;
+      await event.save();
+
+      return {
+        success: true,
+        message: `${updateResult.modifiedCount} pagos aprobados exitosamente`,
+        approved_count: updateResult.modifiedCount,
+        total_amount: totalAmount,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Error al aprobar los pagos',
+      );
+    }
+  }
+
+  /**
+   * Reportar desconformidades en los pagos
+   */
+  async reportPaymentIssues(dto: ReportPaymentIssuesDto) {
+    try {
+      const { event_id, issues } = dto;
+
+      if (!issues || issues.length === 0) {
+        throw new BadRequestException('Debe reportar al menos un problema');
+      }
+
+      // Verificar que el evento existe
+      const event = await this.eventModel.findById(event_id);
+      if (!event) {
+        throw new BadRequestException('Evento no encontrado');
+      }
+
+      // Validar que todos los pagos existen y pertenecen al evento
+      const paymentIds = issues.map((issue) => toObjectId(issue.payment_id));
+      const payments = await this.paymentModel.find({
+        _id: { $in: paymentIds },
+        event: toObjectId(event_id),
+      });
+
+      if (payments.length !== issues.length) {
+        throw new BadRequestException(
+          'Uno o más pagos no pertenecen al evento o no existen',
+        );
+      }
+
+      // Actualizar el estado de los pagos con observaciones
+      await this.paymentModel.updateMany(
+        { _id: { $in: paymentIds } },
+        {
+          $set: {
+            status: PaymentStatus.CON_OBSERVACIONES,
+            has_issues: true,
+            issues: issues.map((issue) => ({
+              category: issue.category,
+              comments: issue.comments || '',
+              reported_at: new Date(),
+            })),
+          },
+        },
+      );
+
+      // Actualizar el estado del evento
+      event.status = StatusType.POR_VERIFICAR;
+      await event.save();
+
+      // TODO: Aquí puedes enviar notificación al cliente
+      // await this.notificationService.sendPaymentIssuesNotification(event, issues);
+
+      return {
+        success: true,
+        message: 'Reporte de desconformidades enviado exitosamente',
+        issues_count: issues.length,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Error al reportar desconformidades',
+      );
     }
   }
 }
