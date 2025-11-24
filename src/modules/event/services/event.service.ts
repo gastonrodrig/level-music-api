@@ -127,8 +127,8 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado'],
-        2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
+        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado', 'Por Verificar'],
+        2: ['En Seguimiento', 'Finalizado'],
       };
 
       if (caseFilter && statusCases[caseFilter]) {
@@ -593,43 +593,57 @@ export class EventService {
     }
   }
 
-  async eventType(): Promise<any> {
+  async eventType(fechaInicio?: string, fechaFin?: string): Promise<any> {
     try {
+      // Filtro base (igual a tu eventsperMonth)
+      const matchFilter: any = {
+        event_date: { $exists: true, $ne: null },
+        event_type_name: { $exists: true, $ne: null },
+        status: StatusType.FINALIZADO,
+      };
+
+      // Aplicar rango de fechas
+      if (fechaInicio && fechaFin) {
+        matchFilter.event_date = {
+          ...matchFilter.event_date,
+          $gte: new Date(fechaInicio),
+          $lte: new Date(fechaFin),
+        };
+      }
+
       const tipoEvento = await this.eventModel.aggregate([
-        {
-          $match: {
-            event_date: { $exists: true, $ne: null },
-            event_type_name: { $exists: true, $ne: null },
-            status: StatusType.FINALIZADO,
-          },
-        },
+        { $match: matchFilter },
+
+        // Agrupación solo por TYPE
         {
           $group: {
-            _id: {
-              type: '$event_type_name',
-              year: { $year: '$event_date' },
-              month: { $month: '$event_date' },
-              status: '$status',
-            },
+            _id: "$event_type_name",
             cantidad: { $sum: 1 },
             eventos: {
-              $push: { _id: '$_id', event_code: '$event_code', name: '$name' },
+              $push: {
+                _id: "$_id",
+                event_code: "$event_code",
+                name: "$name",
+                event_date: "$event_date",
+              },
             },
           },
         },
+
+        // Proyección limpia
         {
           $project: {
             _id: 0,
-            type: '$_id.type',
-            year: '$_id.year',
-            month: '$_id.month',
-            status: '$_id.status',
+            type: "$_id",
             cantidad: 1,
             eventos: 1,
           },
         },
+
+        // Orden alfabético por type
         { $sort: { type: 1 } },
       ]);
+
       return tipoEvento;
     } catch (error) {
       throw new InternalServerErrorException(
@@ -650,6 +664,10 @@ export class EventService {
               $gte: startDate,
               $lte: endDate,
             },
+            // ⬇️ excluir eventos históricos
+            status: { $ne: StatusType.HISTORICO },
+            // si no usas enum y guardas el string directo:
+            // status: { $ne: "Histórico" },
           },
         },
         {
