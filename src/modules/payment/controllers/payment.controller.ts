@@ -6,10 +6,7 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
-  Query,
   Get,
-  Param,
   UploadedFiles,
 } from '@nestjs/common';
 import {
@@ -23,10 +20,8 @@ import {
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
 import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators';
 
 @ApiTags('Payments')
@@ -104,32 +99,10 @@ export class PaymentController {
   })
   async processManualPayment(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body() body: any,
+    @Body() dto: CreateManualPaymentDto,
   ) {
-    // return this.paymentService.processManualPayment(dto, orderedFiles);
+    return this.paymentService.processManualPayment(dto, files);
   }
-
-  @Get('user/:userId')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
-  // @Public()
-  // @ApiOperation({ summary: 'Obtener pagos por usuario' })
-  // @ApiQuery({ name: 'status', required: false, description: 'Filtrar por estado de pago' })
-  // @ApiQuery({ name: 'page', required: false, description: 'Número de página', example: 1 })
-  // @ApiQuery({ name: 'limit', required: false, description: 'Items por página', example: 20 })
-  // @ApiResponse({ status: HttpStatus.OK, description: 'Pagos obtenidos correctamente.' })
-  // async getPaymentsByUser(
-  //   @Param('userId') userId: string,
-  //   @Query('status') status?: string,
-  //   @Query('page') page = '1',
-  //   @Query('limit') limit = '20',
-  // ) {
-  //   return this.paymentService.getPaymentsByUser(userId, {
-  //     status,
-  //     page: Number(page),
-  //     limit: Number(limit),
-  //   });
-  // }
 
   @Post('test/mercadopago')
   @UseGuards(FirebaseAuthGuard)
