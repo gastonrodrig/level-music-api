@@ -7,3 +7,4 @@ export * from './assignations.service';
 export * from './incident.service';
 export * from './appointments.service';
 export * from './event-task-evidence.service';
+export * from './subtask.service';

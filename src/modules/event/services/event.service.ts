@@ -402,69 +402,81 @@ export class EventService {
   }
 
   async getEventsForWorker(workerId: string): Promise<any[]> {
-    try {
-      const worker = await this.workerModel.findById(workerId);
-      if (!worker) throw new BadRequestException('Worker not found');
+  try {
+    const worker = await this.workerModel.findById(workerId);
+    if (!worker) throw new BadRequestException('Worker not found');
 
-      const workerObjectId = toObjectId(workerId);
+    const workerObjectId = toObjectId(workerId);
 
-      const events = await this.eventModel.aggregate([
-        // 1. Traer tareas del evento
-        {
-          $lookup: {
-            from: 'event-tasks',
-            localField: '_id',
-            foreignField: 'event',
-            as: 'tasks',
-          },
-        },
+    const events = await this.eventModel.aggregate([
+      // 1. Traer tareas del evento
+      {
+        $lookup: {
+          from: 'event-tasks',
+          localField: '_id',
+          foreignField: 'event',
+          as: 'tasks'
+        }
+      },
 
-        // 2. Descomponer tareas
-        { $unwind: '$tasks' },
+      // 2. Descomponer tareas
+      { $unwind: '$tasks' },
 
-        // 3. Lookup para subtareas de cada tarea
-        {
-          $lookup: {
-            from: 'event-subtasks',
-            localField: 'tasks._id',
-            foreignField: 'parent_task',
-            as: 'subtasks',
-          },
-        },
+      // 3. Lookup para subtareas de cada tarea
+      {
+        $lookup: {
+          from: 'event-subtasks',
+          localField: 'tasks._id',
+          foreignField: 'parent_task',
+          as: 'subtasks'
+        }
+      },
 
-        // 4. Filtrar eventos que tengan subtareas del trabajador
-        {
-          $match: {
-            'subtasks.worker': workerObjectId,
-          },
-        },
+      { $unwind: '$subtasks' },
 
-        // 5. Agrupar para evitar duplicados
-        {
-          $group: {
-            _id: '$_id',
-            event_code: { $first: '$event_code' },
-            name: { $first: '$name' },
-            description: { $first: '$description' },
-            event_date: { $first: '$event_date' },
-            start_time: { $first: '$start_time' },
-            end_time: { $first: '$end_time' },
-            exact_address: { $first: '$exact_address' },
-            subtasks: { $push: '$subtasks' },
-          },
-        },
-      ]);
+      // 4. Filtrar por worker
+      {
+        $match: {
+          'subtasks.worker': workerObjectId
+        }
+      },
 
-      // aplanar subtasks (porque quedaron en arrays anidados)
-      return events.map((ev) => ({
-        ...ev,
-        subtasks: ev.subtasks.flat(),
-      }));
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error al obtener los eventos para el trabajador: ${error.message}`,
-      );
-    }
+      // 5. Lookup para popular las evidencias de cada subtask
+      {
+        $lookup: {
+          from: 'subtask-evidences', 
+          localField: 'subtasks.evidences',
+          foreignField: '_id',
+          as: 'subtasks.evidences' 
+        }
+      },
+
+      // 6. Agrupar de nuevo
+      {
+        $group: {
+          _id: '$_id',
+          event_code: { $first: '$event_code' },
+          name: { $first: '$name' },
+          description: { $first: '$description' },
+          event_date: { $first: '$event_date' },
+          start_time: { $first: '$start_time' },
+          end_time: { $first: '$end_time' },
+          exact_address: { $first: '$exact_address' },
+          subtasks: { $push: '$subtasks' }
+        }
+      }
+    ]);
+
+    // Aplanar subtasks
+    return events.map(ev => ({
+      ...ev,
+      subtasks: ev.subtasks.flat()
+    }));
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error al obtener los eventos para el trabajador: ${error.message}`,
+    );
+  }
   }
 
   async sendQuotationReadyEmail(dto: SendQuotationReadyMailDto) {
@@ -558,7 +570,7 @@ export class EventService {
             _id: {
               year: { $year: '$event_date' },
               month: { $month: '$event_date' },
-              type: '$type', // Agregar type para mostrarlo en el gráfico
+              type: '$type', 
               status: '$status',
             },
             cantidad: { $sum: 1 },
@@ -576,7 +588,7 @@ export class EventService {
             _id: 0,
             year: '$_id.year',
             month: '$_id.month',
-            type: '$_id.type', // Incluir en el resultado
+            type: '$_id.type', 
             status: '$_id.status',
             cantidad: 1,
             eventos: 1,
@@ -664,10 +676,7 @@ export class EventService {
               $gte: startDate,
               $lte: endDate,
             },
-            // ⬇️ excluir eventos históricos
             status: { $ne: StatusType.HISTORICO },
-            // si no usas enum y guardas el string directo:
-            // status: { $ne: "Histórico" },
           },
         },
         {

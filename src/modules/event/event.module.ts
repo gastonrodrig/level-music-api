@@ -26,7 +26,8 @@ import {
   IncidentService, 
   AssignationsService,
   AppointmentsService,
-  TaskEvidenceService
+  TaskEvidenceService,
+  EventSubtaskService
 } from './services';
 import { 
   EventController, 
@@ -106,7 +107,8 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
     FeaturedEventService,
     IncidentService, 
     AssignationsService,
-    AppointmentsService
+    AppointmentsService,
+    EventSubtaskService
   ],
   controllers: [
     EventController, 
