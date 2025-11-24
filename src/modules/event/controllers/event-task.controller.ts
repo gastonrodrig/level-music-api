@@ -19,15 +19,16 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Public } from 'src/auth/decorators';
 import { EventTaskService } from '../services/event-task.service';
-import { CreateMultipleTasksDto, UpdateMultipleTasksDto } from '../dto';
+import { CreateMultipleTasksDto, UpdateMultipleTasksDto, UpdateSubtaskDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { EventSubtaskService } from '../services';
 
 
 @Controller('event-tasks')
 @ApiTags('Event-Task')
 export class EventTaskController {
-  constructor(private readonly eventTaskService: EventTaskService) {}
+  constructor(private readonly eventTaskService: EventTaskService, private readonly subtaskService: EventSubtaskService) {}
 
   @Post()
   @Public()
@@ -151,4 +152,41 @@ export class EventTaskController {
   // ) {
   //   return this.eventTaskService.update(id, dto);
   // }
+
+  @Patch(':id')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Actualizar subtask (status, notas, evidencias)' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: ['Pendiente', 'En Progreso', 'Completado'] },
+        notas: { type: 'string' },
+        worker_id: { type: 'string' },
+        evidences: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @UseInterceptors(FilesInterceptor('evidences', 10))
+ async update(
+  @Param('id') id: string,
+  @Body() updateSubtaskDto: UpdateSubtaskDto,
+  @UploadedFiles() files: Array<Express.Multer.File>,
+) {
+  // AQUI ESTA LA CLAVE: Extraemos el worker_id del DTO
+  const workerId = updateSubtaskDto.worker_id;
+
+  return this.subtaskService.updateSubtask(
+    id, 
+    updateSubtaskDto, 
+    files, 
+    workerId // <--- Pasamos el workerId explícitamente como 4to argumento
+  );
+}
+
 }

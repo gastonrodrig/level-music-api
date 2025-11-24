@@ -391,51 +391,56 @@ export class EventService {
   }
 
   async getEventsForWorker(workerId: string): Promise<any[]> {
-    try {
-      const worker = await this.workerModel.findById(workerId);
-      if (!worker) throw new BadRequestException('Worker not found');
+  try {
+    const worker = await this.workerModel.findById(workerId);
+    if (!worker) throw new BadRequestException('Worker not found');
 
-      const workerObjectId = toObjectId(workerId);
+    const workerObjectId = toObjectId(workerId);
 
-      const events = await this.eventModel.aggregate([
-        // 1. Traer tareas del evento
-        {
-          $lookup: {
-            from: 'event-tasks',
-            localField: '_id',
-            foreignField: 'event',
-            as: 'tasks'
-          }
-        },
+    const events = await this.eventModel.aggregate([
+      // 1. Traer tareas del evento
+      {
+        $lookup: {
+          from: 'event-tasks',
+          localField: '_id',
+          foreignField: 'event',
+          as: 'tasks'
+        }
+      },
 
-        // 2. Descomponer tareas
-        { $unwind: '$tasks' },
+      // 2. Descomponer tareas
+      { $unwind: '$tasks' },
 
-        // 3. Lookup para subtareas de cada tarea
-        {
-          $lookup: {
-            from: 'event-subtasks',
-            localField: 'tasks._id',
-            foreignField: 'parent_task',
-            as: 'subtasks'
-          }
-        },
+      // 3. Lookup para subtareas de cada tarea
+      {
+        $lookup: {
+          from: 'event-subtasks',
+          localField: 'tasks._id',
+          foreignField: 'parent_task',
+          as: 'subtasks'
+        }
+      },
 
       { $unwind: '$subtasks' },
 
-      // 5. Filtrar AHORA
-      // Como ya están descompuestas, este match elimina las filas 
-      // donde el worker NO es el que buscamos.
+      // 4. Filtrar por worker
       {
         $match: {
           'subtasks.worker': workerObjectId
         }
       },
 
-      // -------------------------
+      // 🔥 5. NUEVO: Lookup para popular las evidencias de cada subtask
+      {
+        $lookup: {
+          from: 'subtask-evidences', // <-- Nombre de la colección de evidencias
+          localField: 'subtasks.evidences',
+          foreignField: '_id',
+          as: 'subtasks.evidences' // <-- Reemplaza los IDs con los objetos completos
+        }
+      },
 
       // 6. Agrupar de nuevo
-      // Solo las subtareas que sobrevivieron al match entran en este array
       {
         $group: {
           _id: '$_id',
@@ -446,21 +451,21 @@ export class EventService {
           start_time: { $first: '$start_time' },
           end_time: { $first: '$end_time' },
           exact_address: { $first: '$exact_address' },
-          subtasks: { $push: '$subtasks' } // Reconstruye el array solo con las tuyas
+          subtasks: { $push: '$subtasks' }
         }
       }
     ]);
 
-      // aplanar subtasks (porque quedaron en arrays anidados)
-      return events.map(ev => ({
-        ...ev,
-        subtasks: ev.subtasks.flat()
-      }));
-    } catch (error) {
-      throw new InternalServerErrorException(
-        `Error al obtener los eventos para el trabajador: ${error.message}`,
-      );
-    }
+    // Aplanar subtasks
+    return events.map(ev => ({
+      ...ev,
+      subtasks: ev.subtasks.flat()
+    }));
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error al obtener los eventos para el trabajador: ${error.message}`,
+    );
+  }
   }
 
   async sendQuotationReadyEmail(dto: SendQuotationReadyMailDto) {

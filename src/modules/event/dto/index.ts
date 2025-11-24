@@ -24,3 +24,4 @@ export * from './confirm-appointment.dto';
 export * from './create-event-task.dto';
 export * from './create-multiple-tasks.dto';
 export * from './update-multiple-tasks.dto';
+export * from './update-subtask.dto';
