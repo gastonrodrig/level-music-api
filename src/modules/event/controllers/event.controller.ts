@@ -229,4 +229,93 @@ export class EventController {
   ) {
     return this.eventService.sendQuotationReadyEmail(dto);
   }
+
+  @Get('dashboard/appointments-count')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener la cantidad de citas y eventospendientes para el dashboard' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Cantidad de citas y eventos pendientes obtenida correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Datos del dashboard no encontrados',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los datos del dashboard',
+  })
+  async getAppointmentsCountForDashboard() {
+    return this.eventService.dashboard();
+  }
+
+  @Get('eventsperMonths')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener la cantidad de eventos por mes para el dashboard' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Cantidad de eventos por mes obtenida correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Datos del dashboard no encontrados',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los datos del dashboard',
+  })
+  async getEventsPerMonths(
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+    ) {
+    return this.eventService.eventsperMonth(fechaInicio, fechaFin);
+  }
+
+  @Get('eventTypes')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener la cantidad de eventos por tipo para el dashboard' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Cantidad de eventos por tipo obtenida correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Datos del dashboard no encontrados',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los datos del dashboard',
+  })
+  async getEventsTypes(
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+  ) {
+    return this.eventService.eventType(fechaInicio, fechaFin);
+  }
+
+  @Get('getEventByDate')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener la cantidad de eventos por tipo para el dashboard' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Cantidad de eventos por tipo obtenida correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Datos del dashboard no encontrados',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al obtener los datos del dashboard',
+  })
+  async getEventsByDate(
+    @Query('year') year: number,
+    @Query('month') month: number,
+  ) {
+    return this.eventService.getEventsByDate(year, month);
+  }
 }

@@ -216,11 +216,12 @@ export class UserService {
     try {
       const user = await this.userModel.findOne({ email });
 
-      const result = { ...user.toObject(), worker_type_name: null };
+      const result = { ...user.toObject(), worker_type_name: null, worker_id: null };
 
       if (user.role === Roles.PERSONAL_EXTERNO) {
         const worker = await this.workerModel.findOne({ user: user._id });
         result.worker_type_name = worker.worker_type_name;
+        result.worker_id = worker._id;
       }
 
       return result as User;
