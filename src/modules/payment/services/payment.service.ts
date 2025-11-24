@@ -131,7 +131,17 @@ export class PaymentService {
 
       const createdPayments = [];
 
-      for (const [index, pay] of dto.payments.entries()) {
+      // Asegurarse de que dto.payments es un array
+      let payments = dto.payments;
+      if (typeof payments === 'string') {
+        try {
+          payments = JSON.parse(payments);
+        } catch (e) {
+          throw new BadRequestException('Formato inválido en payments');
+        }
+      }
+
+      for (const [index, pay] of payments.entries()) {
         const file = files[index];
 
         // Subir comprobante
