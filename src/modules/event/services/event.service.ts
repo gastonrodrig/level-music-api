@@ -180,6 +180,7 @@ export class EventService {
             event_tasks.map(async (task) => {
               const subtasks = await this.eventSubtaskModel
                 .find({ parent_task: task._id })
+                .populate('evidences') // <--- AGREGAR ESTA LÍNEA
                 .lean();
 
               return {

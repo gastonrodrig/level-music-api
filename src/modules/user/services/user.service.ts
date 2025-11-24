@@ -223,7 +223,7 @@ export class UserService {
         result.worker_type_name = worker.worker_type_name;
         result.worker_id = worker._id;
       }
-
+      
       return result as User;
     } catch (error) {
       throw new InternalServerErrorException(`Error: ${error.message}`);
