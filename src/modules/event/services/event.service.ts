@@ -23,7 +23,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { UpdateStatusEventDto } from '../dto/update-status-event.dto';
 import { errorCodes } from 'src/core/common';
-import { PaymentSchedule } from 'src/modules/payment/schema';
+import { Payment, PaymentSchedule } from 'src/modules/payment/schema';
 import { Worker } from 'src/modules/worker/schema';
 import { SendQuotationReadyMailDto } from 'src/modules/mail/dto';
 import { Appointment } from '../schema/appointment.schema';
@@ -45,13 +45,16 @@ export class EventService {
     private eventSubtaskModel: Model<EventSubtask>,
     @InjectModel(Worker.name)
     private workerModel: Model<Worker>,
+    @InjectModel(Appointment.name)
+    private appointmentModel: Model<Appointment>,
+    @InjectModel(Payment.name)
+    private paymentModel: Model<Payment>,
+    @InjectModel(Assignation.name)
     private assignationService: AssignationsService,
     @InjectQueue('purchase-order')
     private purchaseOrderQueue: Queue,
     @InjectQueue('quotation-ready')
     private quotationReadyQueue: Queue,
-    @InjectModel(Appointment.name)
-    private appointmentModel: Model<Appointment>,
   ) {}
 
   async createQuotation(dto: CreateQuotationDto): Promise<Event> {
@@ -76,7 +79,7 @@ export class EventService {
           break;
         }
       }
-
+    
       // 3. Construir objeto base para el evento
       const eventToCreate: Partial<Event> = {
         ...dto,
@@ -88,7 +91,7 @@ export class EventService {
         version: 1,
         is_latest: true,
       };
-
+      console.log(eventToCreate);
       // 4. Crear evento
       const event = await this.eventModel.create(eventToCreate);
 
@@ -127,8 +130,8 @@ export class EventService {
       }
 
       const statusCases: Record<number, string[]> = {
-        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado'],
-        2: ['En Seguimiento', 'Reprogramado', 'Finalizado'],
+        1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado', 'Por Verificar'],
+        2: ['En Seguimiento', 'Finalizado'],
       };
 
       if (caseFilter && statusCases[caseFilter]) {
@@ -162,30 +165,36 @@ export class EventService {
         this.eventModel.countDocuments(filter).exec(),
       ]);
 
-      // Obtener asignaciones, pagos y tareas del evento
+      // Obtener asignaciones, pagos, cronograma y tareas
       const items = await Promise.all(
         events.map(async (event) => {
-          const [assignations, payment_schedules, event_tasks] =
-            await Promise.all([
-              this.assignationModel.find({ event: event._id }).lean(),
-              this.paymentScheduleModel
-                .find({ event: event._id })
-                .sort({ due_date: 1 })
-                .lean(),
-              this.eventTaskModel.find({ event: event._id }).lean(),
-            ]);
+          const [
+            assignations,
+            payment_schedules,
+            payments,
+            event_tasks,
+          ] = await Promise.all([
+            this.assignationModel.find({ event: event._id }).lean(),
+            this.paymentScheduleModel
+              .find({ event: event._id })
+              .sort({ due_date: 1 })
+              .lean(),
+            this.paymentModel
+              .find({ event: event._id })
+              .sort({ created_at: -1 })
+              .lean(),
+            this.eventTaskModel.find({ event: event._id }).lean(),
+          ]);
 
-          // Incrustar subtareas dentro de cada tarea
+          // Incrustar subtareas
           const tasksWithSubtasks = await Promise.all(
             event_tasks.map(async (task) => {
               const subtasks = await this.eventSubtaskModel
                 .find({ parent_task: task._id })
+                .populate('evidences')
                 .lean();
 
-              return {
-                ...task,
-                subtasks,
-              };
+              return { ...task, subtasks };
             }),
           );
 
@@ -193,6 +202,7 @@ export class EventService {
             ...event,
             assignations,
             payment_schedules,
+            payments,
             tasks: tasksWithSubtasks,
           };
         }),
@@ -402,51 +412,56 @@ export class EventService {
   }
 
   async getEventsForWorker(workerId: string): Promise<any[]> {
-    try {
-      const worker = await this.workerModel.findById(workerId);
-      if (!worker) throw new BadRequestException('Worker not found');
+  try {
+    const worker = await this.workerModel.findById(workerId);
+    if (!worker) throw new BadRequestException('Worker not found');
 
-      const workerObjectId = toObjectId(workerId);
+    const workerObjectId = toObjectId(workerId);
 
-      const events = await this.eventModel.aggregate([
-        // 1. Traer tareas del evento
-        {
-          $lookup: {
-            from: 'event-tasks',
-            localField: '_id',
-            foreignField: 'event',
-            as: 'tasks',
-          },
-        },
+    const events = await this.eventModel.aggregate([
+      // 1. Traer tareas del evento
+      {
+        $lookup: {
+          from: 'event-tasks',
+          localField: '_id',
+          foreignField: 'event',
+          as: 'tasks'
+        }
+      },
 
-        // 2. Descomponer tareas
-        { $unwind: '$tasks' },
+      // 2. Descomponer tareas
+      { $unwind: '$tasks' },
 
-        // 3. Lookup para subtareas de cada tarea
-        {
-          $lookup: {
-            from: 'event-subtasks',
-            localField: 'tasks._id',
-            foreignField: 'parent_task',
-            as: 'subtasks',
-          },
-        },
+      // 3. Lookup para subtareas de cada tarea
+      {
+        $lookup: {
+          from: 'event-subtasks',
+          localField: 'tasks._id',
+          foreignField: 'parent_task',
+          as: 'subtasks'
+        }
+      },
 
       { $unwind: '$subtasks' },
 
-      // 5. Filtrar AHORA
-      // Como ya están descompuestas, este match elimina las filas 
-      // donde el worker NO es el que buscamos.
+      // 4. Filtrar por worker
       {
         $match: {
           'subtasks.worker': workerObjectId
         }
       },
 
-      // -------------------------
+      // 5. Lookup para popular las evidencias de cada subtask
+      {
+        $lookup: {
+          from: 'subtask-evidences', 
+          localField: 'subtasks.evidences',
+          foreignField: '_id',
+          as: 'subtasks.evidences' 
+        }
+      },
 
       // 6. Agrupar de nuevo
-      // Solo las subtareas que sobrevivieron al match entran en este array
       {
         $group: {
           _id: '$_id',
@@ -457,11 +472,12 @@ export class EventService {
           start_time: { $first: '$start_time' },
           end_time: { $first: '$end_time' },
           exact_address: { $first: '$exact_address' },
-          subtasks: { $push: '$subtasks' } // Reconstruye el array solo con las tuyas
+          subtasks: { $push: '$subtasks' }
         }
       }
     ]);
 
+<<<<<<< HEAD
       // aplanar subtasks (porque quedaron en arrays anidados)
       return events.map((ev) => ({
         ...ev,
@@ -472,6 +488,18 @@ export class EventService {
         `Error al obtener los eventos para el trabajador: ${error.message}`,
       );
     }
+=======
+    // Aplanar subtasks
+    return events.map(ev => ({
+      ...ev,
+      subtasks: ev.subtasks.flat()
+    }));
+  } catch (error) {
+    throw new InternalServerErrorException(
+      `Error al obtener los eventos para el trabajador: ${error.message}`,
+    );
+  }
+>>>>>>> origin/gaston
   }
 
   async sendQuotationReadyEmail(dto: SendQuotationReadyMailDto) {
@@ -565,7 +593,7 @@ export class EventService {
             _id: {
               year: { $year: '$event_date' },
               month: { $month: '$event_date' },
-              type: '$type', // Agregar type para mostrarlo en el gráfico
+              type: '$type', 
               status: '$status',
             },
             cantidad: { $sum: 1 },
@@ -583,7 +611,7 @@ export class EventService {
             _id: 0,
             year: '$_id.year',
             month: '$_id.month',
-            type: '$_id.type', // Incluir en el resultado
+            type: '$_id.type', 
             status: '$_id.status',
             cantidad: 1,
             eventos: 1,
@@ -600,43 +628,57 @@ export class EventService {
     }
   }
 
-  async eventType(): Promise<any> {
+  async eventType(fechaInicio?: string, fechaFin?: string): Promise<any> {
     try {
+      // Filtro base (igual a tu eventsperMonth)
+      const matchFilter: any = {
+        event_date: { $exists: true, $ne: null },
+        event_type_name: { $exists: true, $ne: null },
+        status: StatusType.FINALIZADO,
+      };
+
+      // Aplicar rango de fechas
+      if (fechaInicio && fechaFin) {
+        matchFilter.event_date = {
+          ...matchFilter.event_date,
+          $gte: new Date(fechaInicio),
+          $lte: new Date(fechaFin),
+        };
+      }
+
       const tipoEvento = await this.eventModel.aggregate([
-        {
-          $match: {
-            event_date: { $exists: true, $ne: null },
-            event_type_name: { $exists: true, $ne: null },
-            status: StatusType.FINALIZADO,
-          },
-        },
+        { $match: matchFilter },
+
+        // Agrupación solo por TYPE
         {
           $group: {
-            _id: {
-              type: '$event_type_name',
-              year: { $year: '$event_date' },
-              month: { $month: '$event_date' },
-              status: '$status',
-            },
+            _id: "$event_type_name",
             cantidad: { $sum: 1 },
             eventos: {
-              $push: { _id: '$_id', event_code: '$event_code', name: '$name' },
+              $push: {
+                _id: "$_id",
+                event_code: "$event_code",
+                name: "$name",
+                event_date: "$event_date",
+              },
             },
           },
         },
+
+        // Proyección limpia
         {
           $project: {
             _id: 0,
-            type: '$_id.type',
-            year: '$_id.year',
-            month: '$_id.month',
-            status: '$_id.status',
+            type: "$_id",
             cantidad: 1,
             eventos: 1,
           },
         },
+
+        // Orden alfabético por type
         { $sort: { type: 1 } },
       ]);
+
       return tipoEvento;
     } catch (error) {
       throw new InternalServerErrorException(
@@ -657,6 +699,7 @@ export class EventService {
               $gte: startDate,
               $lte: endDate,
             },
+            status: { $ne: StatusType.HISTORICO },
           },
         },
         {

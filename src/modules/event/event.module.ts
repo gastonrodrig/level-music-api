@@ -17,8 +17,6 @@ import {
   IncidentSchema,
   Assignation,
   AssignationSchema,
-  ReprogramingsSchema,
-  Reprogramings,
 } from './schema';
 import { 
   EventService, 
@@ -27,9 +25,9 @@ import {
   FeaturedEventService,
   IncidentService, 
   AssignationsService,
-  ReprogramingsService,
   AppointmentsService,
-  TaskEvidenceService
+  TaskEvidenceService,
+  EventSubtaskService
 } from './services';
 import { 
   EventController, 
@@ -38,7 +36,6 @@ import {
   FeaturedEventController,
   IncidentController,
   AssignationsController,
-  ReprogramingsController,
   AppointmentsController
 } from './controllers';
 import { 
@@ -56,7 +53,12 @@ import {
   User,
   UserSchema
 } from 'src/modules/user/schema';
-import { PaymentSchedule, PaymentScheduleSchema } from '../payment/schema';
+import {
+  Payment,
+  PaymentSchedule,
+  PaymentScheduleSchema,
+  PaymentSchema,
+} from '../payment/schema';
 import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { EquipmentModule } from '../equipments/equipment.module';
@@ -91,8 +93,8 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
         { name: FeaturedEventsMedia.name, schema: FeaturedEventsMediaSchema },
         { name: Incident.name, schema: IncidentSchema },
         { name: Assignation.name, schema: AssignationSchema },
-        { name: Reprogramings.name, schema: ReprogramingsSchema },
         { name: PaymentSchedule.name, schema: PaymentScheduleSchema },
+        { name: Payment.name, schema: PaymentSchema },
         { name: Appointment.name, schema: AppointmentSchema },
         ]);
     })(),
@@ -108,18 +110,17 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
     EventTaskService, 
     TaskEvidenceService,
     FeaturedEventService,
-    ReprogramingsService,
     FeaturedEventService,
     IncidentService, 
     AssignationsService,
-    AppointmentsService
+    AppointmentsService,
+    EventSubtaskService
   ],
   controllers: [
     EventController, 
     EventTypeController, 
     EventTaskController, 
     FeaturedEventController,
-    ReprogramingsController,
     IncidentController,
     AssignationsController,
     AppointmentsController

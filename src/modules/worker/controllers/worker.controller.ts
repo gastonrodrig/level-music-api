@@ -106,21 +106,4 @@ export class WorkerController {
   update(@Param('id') id: string, @Body() updateWorkerDto: UpdateWorkerDto) {
     return this.workerService.update(id, updateWorkerDto);
   }
-
-  @Get('by-auth-id/:authId')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener un trabajador por authId de Firebase' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'El trabajador ha sido obtenido correctamente.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Trabajador no encontrado.',
-  })
-  findByAuthId(@Param('authId') authId: string) {
-    return this.workerService.findByAuthId(authId);
-  }
 }

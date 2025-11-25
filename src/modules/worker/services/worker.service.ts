@@ -319,32 +319,5 @@ export class WorkerService {
       );
     }
   }
-
-  async findByAuthId(authId: string): Promise<Worker> {
-    try {
-      // 1. Primero buscamos el usuario base por su ID de Firebase
-      const user = await this.userModel.findById(authId).exec();
-
-      if (!user) {
-        throw new NotFoundException(`Usuario no encontrado con el auth_id proporcionado.`);
-      }
-
-      // 2. Buscamos el trabajador que esté linkeado a ese usuario
-      const worker = await this.workerModel
-        .findOne({ user: user._id })
-        .exec();
-
-      if (!worker) {
-        throw new NotFoundException(`El usuario existe, pero no tiene un perfil de Trabajador asociado.`);
-      }
-
-      return worker;
-    } catch (error) {
-      if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException(
-        `Error al buscar trabajador por auth_id: ${error.message}`,
-      );
-    }
-  }
 }
 

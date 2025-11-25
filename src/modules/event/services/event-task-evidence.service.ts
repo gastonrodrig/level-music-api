@@ -4,7 +4,6 @@ import { Model, Types } from 'mongoose';
 import { UploadResult } from 'src/core/interfaces';
 import { EventSubtaskEvidence } from '../schema'; 
 import { StorageService } from 'src/modules/firebase/services';
-import { CreateTaskEvidenceDto } from '../dto';
 
 @Injectable()
 export class TaskEvidenceService {
@@ -14,22 +13,24 @@ export class TaskEvidenceService {
     private readonly storageService: StorageService,
   ) {}
 
-  async createFromFiles(taskId: string, 
+  async createFromFiles(
+    subtaskId: string, 
     files: Express.Multer.File[], 
-    workerId?: string): Promise<EventSubtaskEvidence[]> {
+    workerId?: string
+  ): Promise<EventSubtaskEvidence[]> {
     try {
       if (!files || !files.length) return [];
-      const filesEvidence = files;
-        
+      
       const uploaded = (await this.storageService.uploadMultipleFiles(
-        'event-tasks', filesEvidence, 'evidences'
+        'event-tasks', files, 'evidences'
       )) as UploadResult[];
 
       const docs = uploaded.map(u => ({
-        event_task_id: new Types.ObjectId(taskId),
+        event_subtask_id: new Types.ObjectId(subtaskId),
         worker_id: workerId ? new Types.ObjectId(workerId) : null,
         file_url: u?.url,
       }));
+      
       const created = await this.taskEvidenceModel.insertMany(docs);
       return created;
     } catch (error) {
@@ -37,8 +38,8 @@ export class TaskEvidenceService {
     }
   }
 
-  async findByTaskId(taskIds: string[]): Promise<EventSubtaskEvidence[]> {
-    const objectIds = taskIds
+  async findBySubtaskId(subtaskIds: string[]): Promise<EventSubtaskEvidence[]> {
+    const objectIds = subtaskIds
       .filter(Boolean)
       .map(id => {
         try { return new Types.ObjectId(id); } catch { return null; }
@@ -46,13 +47,8 @@ export class TaskEvidenceService {
       .filter(Boolean) as Types.ObjectId[];
 
     return await this.taskEvidenceModel
-      .find({ event_task_id: { $in: objectIds } })
+      .find({ event_subtask_id: { $in: objectIds } })
       .lean()
       .exec();
-  }
-
-  async removeEvidence(evidenceId: string) {
-    // opcional: borrar del storage antes de eliminar DB
-    return this.taskEvidenceModel.findByIdAndDelete(evidenceId).exec();
   }
 }

@@ -289,8 +289,11 @@ export class EventController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al obtener los datos del dashboard',
   })
-  async getEventsTypes() {
-    return this.eventService.eventType();
+  async getEventsTypes(
+    @Query('fechaInicio') fechaInicio: string,
+    @Query('fechaFin') fechaFin: string,
+  ) {
+    return this.eventService.eventType(fechaInicio, fechaFin);
   }
 
   @Get('getEventByDate')

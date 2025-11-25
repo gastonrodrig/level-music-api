@@ -64,20 +64,6 @@ entity events #E6BB93 {
   updated_at          : DATETIME
 }
 
-entity reprogramings #E6BB93 {
-  * _id               : OBJECT ID <<UID>>
-  * event_id          : OBJECT ID
-  * user_id           : OBJECT ID
-  * previous_date     : DATETIME
-  * previous_time_range: STRING
-  * new_date          : DATETIME
-  * new_time_range    : STRING
-  * reason            : STRING
-  * status            : ENUM('Pendiente','Confirmado','Cancelado')
-  --
-  created_at         : DATETIME
-}
-
 entity service_types #E6BB93 {
   * _id              : OBJECT ID <<UID>>
   * name             : STRING
@@ -302,9 +288,6 @@ worker_types         ||--o{ workers                : classifies
 events               ||--o{ storehouse_movements   : associates
 equipments           ||--o{ storehouse_movements   : is_moved
 equipments           ||--o{ maintenances           : receives_maintenance
-
-users                ||--o{ reprogramings          : requests_reschedule
-events               ||--o{ reprogramings          : has_reschedules
 
 events               ||--o{ event_tasks            : generates
 worker_types         ||--o{ event_tasks            : classifies

@@ -6,10 +6,7 @@ import {
   Body,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
-  Query,
   Get,
-  Param,
   UploadedFiles,
 } from '@nestjs/common';
 import {
@@ -22,11 +19,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
-import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto } from '../dto';
+import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto, ApproveAllPaymentsDto, ReportPaymentIssuesDto } from '../dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { FirebaseAuthGuard } from 'src/auth/guards';
-import { AnyFilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators';
 
 @ApiTags('Payments')
@@ -53,22 +50,13 @@ export class PaymentController {
 
   @Post('manual')
   @Public()
+  // @UseGuards(FirebaseAuthGuard)
+  // @ApiBearerAuth('firebase-auth')
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Registrar varios pagos manuales con comprobantes (uno por método)' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Pagos registrados correctamente.' })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Error al registrar los pagos.' })
-  @ApiQuery({
-    name: 'mode',
-    required: false,
-    description: 'Modo de pago: parcial (por defecto) o ambos',
-    example: 'partial',
-    schema: {
-      type: 'string',
-      enum: ['partial', 'both'],
-      default: 'partial',
-    },
-  })
   @ApiBody({
     schema: {
       type: 'object',
@@ -77,21 +65,16 @@ export class PaymentController {
         event_id: { type: 'string', example: '68fa352e038345fc4290f084' },
         user_id: { type: 'string', example: '68b9c17b445a8108efdf8d43' },
         payments: {
-          type: 'array',
-          description: 'Array de pagos con su información individual',
-          items: {
-            type: 'object',
-            properties: {
-              payment_method: {
-                type: 'string',
-                enum: ['Yape', 'Plin', 'Transferencia', 'Efectivo'],
-                example: 'Yape',
-              },
-              amount: { type: 'number', example: 300 },
-              operation_number: { type: 'string', example: 'YP123456' },
-            },
-            required: ['payment_method', 'amount'],
-          },
+          type: 'string',
+          description: 'JSON string con array de pagos (uno por cada imagen)',
+          example: JSON.stringify(
+            [
+              { payment_method: 'Yape', amount: 300, operation_number: 'YP123456' },
+              { payment_method: 'Plin', amount: 200, operation_number: 'PL789012' },
+            ],
+            null,
+            2
+          ),
         },
         images: {
           type: 'array',
@@ -99,37 +82,15 @@ export class PaymentController {
           description: 'Array de imágenes (una por cada pago, en el mismo orden)',
         },
       },
-      required: ['event_id', 'user_id', 'payments', 'images'],
+      required: ['payment_type', 'event_id', 'user_id', 'payments', 'images'],
     },
   })
   async processManualPayment(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body() body: any,
+    @Body() dto: CreateManualPaymentDto,
   ) {
-    // return this.paymentService.processManualPayment(dto, orderedFiles);
+    return this.paymentService.processManualPayment(dto, files);
   }
-
-  @Get('user/:userId')
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
-  // @Public()
-  // @ApiOperation({ summary: 'Obtener pagos por usuario' })
-  // @ApiQuery({ name: 'status', required: false, description: 'Filtrar por estado de pago' })
-  // @ApiQuery({ name: 'page', required: false, description: 'Número de página', example: 1 })
-  // @ApiQuery({ name: 'limit', required: false, description: 'Items por página', example: 20 })
-  // @ApiResponse({ status: HttpStatus.OK, description: 'Pagos obtenidos correctamente.' })
-  // async getPaymentsByUser(
-  //   @Param('userId') userId: string,
-  //   @Query('status') status?: string,
-  //   @Query('page') page = '1',
-  //   @Query('limit') limit = '20',
-  // ) {
-  //   return this.paymentService.getPaymentsByUser(userId, {
-  //     status,
-  //     page: Number(page),
-  //     limit: Number(limit),
-  //   });
-  // }
 
   @Post('test/mercadopago')
   @UseGuards(FirebaseAuthGuard)
@@ -146,5 +107,39 @@ export class PaymentController {
   })
   async processPayment(@Body() dto: CreateMercadoPagoDto) {
     return this.paymentService.testMercadoPagoPayment(dto);
+  }
+
+  @Post('approve-all')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Aprobar todos los pagos pendientes de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos aprobados correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al aprobar los pagos',
+  })
+  async approveAllPayments(@Body() dto: ApproveAllPaymentsDto) {
+    return this.paymentService.approveAllPayments(dto);
+  }
+
+  @Post('report-issues')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reportar desconformidades en pagos de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Reporte enviado correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Error al enviar el reporte',
+  })
+  async reportPaymentIssues(@Body() dto: ReportPaymentIssuesDto) {
+    return this.paymentService.reportPaymentIssues(dto);
   }
 }
