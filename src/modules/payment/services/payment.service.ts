@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { PaymentSchedule } from '../schema/payment-schedules.schema';
@@ -327,6 +327,49 @@ export class PaymentService {
     } catch (error) {
       throw new BadRequestException(
         error.message || 'Error al reportar desconformidades',
+      );
+    }
+  }
+
+  /**
+   * Obtener todas las programaciones de pago de un evento (sin comprobante)
+   */
+  async getPaymentsByEvent(eventId: string): Promise<any[]> {
+    try {
+      const payments = await this.paymentModel
+        .find({ event: toObjectId(eventId) })
+        .sort({ created_at: -1 })
+        .populate('user', 'email first_name last_name')
+        .lean()
+        .exec();
+
+      return payments;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error obteniendo los pagos del evento: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Obtener solo pagos manuales de un evento (con comprobante)
+   */
+  async getManualPaymentsByEvent(eventId: string): Promise<any[]> {
+    try {
+      const payments = await this.paymentModel
+        .find({ 
+          event: toObjectId(eventId),
+          voucher_url: { $exists: true, $ne: null } // Solo pagos con comprobante
+        })
+        .sort({ created_at: -1 })
+        .populate('user', 'email first_name last_name')
+        .lean()
+        .exec();
+
+      return payments;
+    } catch (error) {
+      throw new InternalServerErrorException(
+        `Error obteniendo los pagos manuales del evento: ${error.message}`,
       );
     }
   }

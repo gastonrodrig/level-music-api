@@ -1,12 +1,13 @@
 import {
   Controller,
   Post,
+  Get,
+  Param,
   HttpCode,
   HttpStatus,
   Body,
   UseGuards,
   UseInterceptors,
-  Get,
   UploadedFiles,
 } from '@nestjs/common';
 import {
@@ -20,8 +21,6 @@ import {
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
 import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto, ApproveAllPaymentsDto, ReportPaymentIssuesDto } from '../dto';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators';
@@ -141,5 +140,35 @@ export class PaymentController {
   })
   async reportPaymentIssues(@Body() dto: ReportPaymentIssuesDto) {
     return this.paymentService.reportPaymentIssues(dto);
+  }
+
+  @Get('event/:eventId')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los pagos de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos del evento obtenidos correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Evento no encontrado',
+  })
+  async getPaymentsByEvent(@Param('eventId') eventId: string) {
+    return this.paymentService.getPaymentsByEvent(eventId);
+  }
+
+  @Get('manual/event/:eventId')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener solo pagos manuales de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos manuales obtenidos correctamente',
+  })
+  async getManualPaymentsByEvent(@Param('eventId') eventId: string) {
+    return this.paymentService.getManualPaymentsByEvent(eventId);
   }
 }
