@@ -53,7 +53,12 @@ import {
   User,
   UserSchema
 } from 'src/modules/user/schema';
-import { PaymentSchedule, PaymentScheduleSchema } from '../payment/schema';
+import {
+  Payment,
+  PaymentSchedule,
+  PaymentScheduleSchema,
+  PaymentSchema,
+} from '../payment/schema';
 import { FeaturedEventsMedia, FeaturedEventsMediaSchema } from '../uploads';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { EquipmentModule } from '../equipments/equipment.module';
@@ -89,6 +94,7 @@ import { Appointment, AppointmentSchema } from './schema/appointment.schema';
         { name: Incident.name, schema: IncidentSchema },
         { name: Assignation.name, schema: AssignationSchema },
         { name: PaymentSchedule.name, schema: PaymentScheduleSchema },
+        { name: Payment.name, schema: PaymentSchema },
         { name: Appointment.name, schema: AppointmentSchema },
         ]);
     })(),
