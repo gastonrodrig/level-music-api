@@ -9,12 +9,12 @@ import { StatusType } from 'src/modules/event/enum/status-type.enum';
 import MercadoPagoConfig, { Payment as MP_Payment } from 'mercadopago';
 import {
   CreateManualPaymentDto,
-  CreateMercadoPagoDto,
+  CreateMercadoPagoPaymentDto,
   CreatePaymentSchedulesDto,
   ApproveAllPaymentsDto,
   ReportPaymentIssuesDto,
 } from '../dto';
-import { PaymentType, PaymentStatus } from '../enum';
+import { PaymentType, PaymentStatus, PaymentMethod } from '../enum';
 import { toObjectId } from 'src/core/utils';
 import { StorageService } from 'src/modules/firebase/services';
 import { Payment } from '../schema';
@@ -36,10 +36,23 @@ export class PaymentService {
     private readonly eventModel: Model<Event>,
     private readonly storageService: StorageService,
   ) {
-    const client = new MercadoPagoConfig({
-      accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
-    });
-    this.mp_payment = new MP_Payment(client);
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    
+    if (!accessToken) {
+      console.error('⚠️ MERCADO_PAGO_ACCESS_TOKEN no está configurado en .env');
+      throw new Error('MERCADO_PAGO_ACCESS_TOKEN es requerido');
+    }
+
+    try {
+      const client = new MercadoPagoConfig({
+        accessToken,
+      });
+      this.mp_payment = new MP_Payment(client);
+      console.log('✅ MercadoPago inicializado correctamente');
+    } catch (error) {
+      console.error('❌ Error al inicializar MercadoPago:', error);
+      throw error;
+    }
   }
 
   // Obtener todos los pagos por usuario con filtros y paginación
@@ -185,20 +198,174 @@ export class PaymentService {
     }
   }
 
-  // Prueba de integración con Mercado Pago
-  async testMercadoPagoPayment(createMercadoPagoDto: CreateMercadoPagoDto) {
+  /**
+   * Procesar pago con Mercado Pago (PRODUCCIÓN - SIN SIMULACIÓN)
+   */
+  async processMercadoPagoPayment(dto: CreateMercadoPagoPaymentDto) {
     try {
-      console.log(createMercadoPagoDto);
-      console.log(this.mp_payment);
-      const payment = await this.mp_payment.create({
-        body: createMercadoPagoDto,
+      console.log('📤 Procesando pago REAL con Mercado Pago');
+      console.log('📋 Datos recibidos:', {
+        event_id: dto.event_id,
+        user_id: dto.user_id,
+        amount: dto.transaction_amount,
+        payment_type: dto.payment_type,
       });
 
-      return payment;
+      // Validaciones
+      if (!dto.token || dto.token.trim() === '') {
+        throw new BadRequestException('Token de pago es requerido');
+      }
+
+      if (dto.transaction_amount <= 0) {
+        throw new BadRequestException('El monto debe ser mayor a 0');
+      }
+
+      if (dto.transaction_amount > 10000) {
+        throw new BadRequestException('El monto máximo permitido es S/ 10,000');
+      }
+
+      // Verificar que el evento existe
+      const event = await this.eventModel.findById(dto.event_id);
+      if (!event) {
+        throw new BadRequestException('Evento no encontrado');
+      }
+
+      // Preparar datos para Mercado Pago
+      const paymentData = {
+        transaction_amount: Number(dto.transaction_amount),
+        token: dto.token,
+        description: dto.description || `Pago ${dto.payment_type} - Evento: ${event.name}`,
+        installments: dto.installments || 1,
+        payment_method_id: dto.payment_method_id || 'visa',
+        payer: {
+          email: dto.payer.email,
+          ...(dto.payer.identification && {
+            identification: {
+              type: dto.payer.identification.type || 'DNI',
+              number: dto.payer.identification.number || '',
+            },
+          }),
+        },
+      };
+
+      console.log('📦 Enviando a Mercado Pago:', {
+        amount: paymentData.transaction_amount,
+        email: paymentData.payer.email,
+        installments: paymentData.installments,
+      });
+
+      // Llamar a la API de Mercado Pago
+      const mpResponse = await this.mp_payment.create({
+        body: paymentData,
+      });
+
+      console.log('✅ Respuesta de Mercado Pago recibida:', {
+        id: mpResponse.id,
+        status: mpResponse.status,
+        status_detail: mpResponse.status_detail,
+      });
+
+      // Determinar el estado del pago según la respuesta de MP
+      let paymentStatus: PaymentStatus;
+      
+      switch (mpResponse.status) {
+        case 'approved':
+          paymentStatus = PaymentStatus.APROBADO;
+          break;
+        case 'pending':
+        case 'in_process':
+          paymentStatus = PaymentStatus.PENDIENTE;
+          break;
+        case 'rejected':
+        case 'cancelled':
+          paymentStatus = PaymentStatus.RECHAZADO;
+          break;
+        default:
+          paymentStatus = PaymentStatus.PENDIENTE;
+      }
+
+      // Crear registro del pago en la base de datos
+      const payment = await this.paymentModel.create({
+        payment_type: dto.payment_type,
+        payment_method: PaymentMethod.TRANSFERENCIA,
+        amount: dto.transaction_amount,
+        operation_number: mpResponse.id?.toString(),
+        status: paymentStatus,
+        event: toObjectId(dto.event_id),
+        user: toObjectId(dto.user_id),
+        mercadopago_id: mpResponse.id?.toString(),
+        mercadopago_status: mpResponse.status,
+        mercadopago_response: mpResponse,
+        ...(paymentStatus === PaymentStatus.APROBADO && { approved_at: new Date() }),
+      });
+
+      // Actualizar estado del evento solo si el pago fue aprobado
+      if (mpResponse.status === 'approved') {
+        event.status = StatusType.EN_SEGUIMIENTO;
+        await event.save();
+        console.log('✅ Estado del evento actualizado a EN_SEGUIMIENTO');
+      }
+
+      console.log('💾 Pago guardado en BD:', payment._id);
+
+      return {
+        success: mpResponse.status === 'approved',
+        message: this.getPaymentStatusMessage(mpResponse.status),
+        payment: {
+          _id: payment._id,
+          payment_type: payment.payment_type,
+          amount: payment.amount,
+          status: payment.status,
+          mercadopago_id: payment.mercadopago_id,
+          created_at: payment.created_at,
+        },
+        mercadopago_response: {
+          id: mpResponse.id,
+          status: mpResponse.status,
+          status_detail: mpResponse.status_detail,
+          payment_method_id: mpResponse.payment_method_id,
+          payment_type_id: mpResponse.payment_type_id,
+        },
+      };
     } catch (error) {
-      console.error('Error en pago de prueba:', error);
-      throw new BadRequestException(error.message || 'Error al procesar el pago de prueba');
+      console.error('❌ Error al procesar pago con Mercado Pago:', error);
+      
+      // Log detallado del error
+      if (error.cause) {
+        console.error('📋 Causa del error:', JSON.stringify(error.cause, null, 2));
+      }
+
+      // Mensajes de error más específicos
+      if (error.message?.includes('Card Token not found')) {
+        throw new BadRequestException('Token de tarjeta inválido o expirado. Por favor, intente nuevamente.');
+      }
+
+      if (error.message?.includes('insufficient_amount')) {
+        throw new BadRequestException('Fondos insuficientes en la tarjeta.');
+      }
+
+      if (error.message?.includes('invalid_card')) {
+        throw new BadRequestException('Tarjeta inválida. Verifique los datos ingresados.');
+      }
+
+      throw new BadRequestException(
+        error.message || 'Error al procesar el pago con Mercado Pago',
+      );
     }
+  }
+
+  /**
+   * Obtener mensaje amigable según el estado del pago
+   */
+  private getPaymentStatusMessage(status: string): string {
+    const messages = {
+      approved: 'Pago aprobado exitosamente',
+      pending: 'Pago pendiente de confirmación',
+      in_process: 'Pago en proceso de aprobación',
+      rejected: 'Pago rechazado',
+      cancelled: 'Pago cancelado',
+    };
+    return messages[status] || 'Estado de pago desconocido';
   }
 
   /**
@@ -208,13 +375,11 @@ export class PaymentService {
     try {
       const { event_id } = dto;
 
-      // Verificar que el evento existe
       const event = await this.eventModel.findById(event_id);
       if (!event) {
         throw new BadRequestException('Evento no encontrado');
       }
 
-      // Buscar todos los pagos pendientes del evento
       const pendingPayments = await this.paymentModel.find({
         event: toObjectId(event_id),
         status: PaymentStatus.PENDIENTE,
@@ -229,7 +394,6 @@ export class PaymentService {
         };
       }
 
-      // Actualizar todos los pagos a APROBADO
       const updateResult = await this.paymentModel.updateMany(
         {
           event: toObjectId(event_id),
@@ -243,13 +407,11 @@ export class PaymentService {
         },
       );
 
-      // Calcular el monto total aprobado
       const totalAmount = pendingPayments.reduce(
         (sum, payment) => sum + (payment.amount || 0),
         0,
       );
 
-      // Actualizar el estado del evento a EN_SEGUIMIENTO (los pagos están aprobados)
       event.status = StatusType.EN_SEGUIMIENTO;
       await event.save();
 
@@ -277,13 +439,11 @@ export class PaymentService {
         throw new BadRequestException('Debe reportar al menos un problema');
       }
 
-      // Verificar que el evento existe
       const event = await this.eventModel.findById(event_id);
       if (!event) {
         throw new BadRequestException('Evento no encontrado');
       }
 
-      // Validar que todos los pagos existen y pertenecen al evento
       const paymentIds = issues.map((issue) => toObjectId(issue.payment_id));
       const payments = await this.paymentModel.find({
         _id: { $in: paymentIds },
@@ -296,7 +456,6 @@ export class PaymentService {
         );
       }
 
-      // Actualizar el estado de los pagos con observaciones
       await this.paymentModel.updateMany(
         { _id: { $in: paymentIds } },
         {
@@ -312,12 +471,8 @@ export class PaymentService {
         },
       );
 
-      // Actualizar el estado del evento
       event.status = StatusType.POR_VERIFICAR;
       await event.save();
-
-      // TODO: Aquí puedes enviar notificación al cliente
-      // await this.notificationService.sendPaymentIssuesNotification(event, issues);
 
       return {
         success: true,
@@ -332,14 +487,13 @@ export class PaymentService {
   }
 
   /**
-   * Obtener todas las programaciones de pago de un evento (sin comprobante)
+   * Obtener todas las programaciones de pago de un evento
    */
   async getPaymentsByEvent(eventId: string): Promise<any[]> {
     try {
-      const payments = await this.paymentModel
+      const payments = await this.scheduleModel
         .find({ event: toObjectId(eventId) })
         .sort({ created_at: -1 })
-        .populate('user', 'email first_name last_name')
         .lean()
         .exec();
 
@@ -352,14 +506,17 @@ export class PaymentService {
   }
 
   /**
-   * Obtener solo pagos manuales de un evento (con comprobante)
+   * Obtener solo pagos manuales de un evento (con comprobante o de Mercado Pago)
    */
   async getManualPaymentsByEvent(eventId: string): Promise<any[]> {
     try {
       const payments = await this.paymentModel
         .find({ 
           event: toObjectId(eventId),
-          voucher_url: { $exists: true, $ne: null } // Solo pagos con comprobante
+          $or: [
+            { voucher_url: { $exists: true, $ne: null } },
+            { mercadopago_id: { $exists: true, $ne: null } },
+          ]
         })
         .sort({ created_at: -1 })
         .populate('user', 'email first_name last_name')

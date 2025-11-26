@@ -1,81 +1,89 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, ValidateNested, IsOptional } from 'class-validator';
+import { 
+  IsMongoId, 
+  IsNotEmpty, 
+  IsEnum, 
+  IsNumber, 
+  IsString, 
+  IsOptional,
+  ValidateNested,
+  IsEmail 
+} from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaymentType } from '../enum';
+import { ApiProperty } from '@nestjs/swagger';
 
 class IdentificationDto {
-  @ApiProperty({
-    example: 'DNI',
-    description: 'Tipo de documento del pagador (DNI, RUC, CE, etc.)',
-  })
+  @ApiProperty({ example: 'DNI', description: 'Tipo de documento', required: false })
+  @IsString()
   @IsOptional()
-  type: string;
+  type?: string;
 
-  @ApiProperty({
-    example: '12345678',
-    description: 'Número de documento del pagador',
-  })
+  @ApiProperty({ example: '12345678', description: 'Número de documento', required: false })
+  @IsString()
   @IsOptional()
-  number: string;
+  number?: string;
 }
 
 class PayerDto {
-  @ApiProperty({
-    example: 'cliente@gmail.com',
-    description: 'Correo electrónico del pagador',
-  })
-  @IsOptional()
+  @ApiProperty({ example: 'cliente@gmail.com', description: 'Email del pagador' })
+  @IsEmail()
+  @IsNotEmpty()
   email: string;
 
-  @ApiProperty({
-    type: () => IdentificationDto,
-    description: 'Datos de identificación del pagador',
-  })
+  @ApiProperty({ type: () => IdentificationDto, required: false })
   @ValidateNested()
   @Type(() => IdentificationDto)
-  identification: IdentificationDto;
+  @IsOptional()
+  identification?: IdentificationDto;
 }
 
-export class CreateMercadoPagoDto {
-  @ApiProperty({
-    example: 150,
-    description: 'Monto total de la transacción en soles (S/)',
-  })
+export class CreateMercadoPagoPaymentDto {
+  // Contexto del sistema
+  @ApiProperty({ example: 'Parcial', enum: PaymentType })
+  @IsEnum(PaymentType)
+  @IsNotEmpty()
+  payment_type: PaymentType;
+
+  @ApiProperty({ example: '68fa352e038345fc4290f084' })
+  @IsMongoId()
+  @IsNotEmpty()
+  event_id: string;
+
+  @ApiProperty({ example: '68b9c17b445a8108efdf8d43' })
+  @IsMongoId()
+  @IsNotEmpty()
+  user_id: string;
+
+  // Datos del pago de Mercado Pago
+  @ApiProperty({ example: 166.1, description: 'Monto a pagar' })
   @IsNumber()
+  @IsNotEmpty()
   transaction_amount: number;
 
-  @ApiProperty({
-    example: '21ddc8d94c83ee89d3c713114dbf92bd',
-    description: 'Token generado por el frontend de Mercado Pago',
-  })
+  @ApiProperty({ example: 'card_token_abc123', description: 'Token de Mercado Pago' })
   @IsString()
+  @IsNotEmpty()
   token: string;
 
-  @ApiProperty({
-    example: 'Pago del servicio Level Music',
-    description: 'Descripción del pago',
-  })
+  @ApiProperty({ example: 'Pago del evento Level Music', required: false })
   @IsString()
-  description: string;
+  @IsOptional()
+  description?: string;
 
-  @ApiProperty({
-    example: 1,
-    description: 'Número de cuotas (normalmente 1 si es pago único)',
-  })
+  @ApiProperty({ example: 1, description: 'Número de cuotas', required: false })
   @IsNumber()
-  installments: number;
+  @IsOptional()
+  installments?: number;
 
-  @ApiProperty({
-    example: 'master',
-    description: 'Método de pago seleccionado por el usuario (visa, master, etc.)',
-  })
+  @ApiProperty({ example: 'visa', description: 'Método de pago', required: false })
   @IsString()
-  payment_method_id: string;
+  @IsOptional()
+  payment_method_id?: string;
 
-  @ApiProperty({
-    type: () => PayerDto,
-    description: 'Información del pagador',
-  })
+  // Información del pagador
+  @ApiProperty({ type: () => PayerDto, description: 'Datos del pagador' })
   @ValidateNested()
   @Type(() => PayerDto)
+  @IsNotEmpty()
   payer: PayerDto;
 }
