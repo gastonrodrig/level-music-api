@@ -97,8 +97,6 @@ export class AssignationsService {
         assigned_at: new Date(),
       };
 
-      console.log(dto)
-
       assignationToCreate.resource = toObjectId(dto.resource_id);
 
       // 4. Agregar info extra según tipo (si es necesario)

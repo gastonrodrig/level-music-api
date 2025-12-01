@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import { PaymentType, PaymentMethod, PaymentStatus } from '../enum';
 import { PaymentSchedule } from './payment-schedules.schema';
-import { SalesDocument } from './sales-documents.schema';
 import { Event } from 'src/modules/event/schema';
 import { User } from 'src/modules/user/schema';
 
@@ -18,21 +17,21 @@ export class Payment {
   amount: number; 
 
   @Prop()
-  operation_number?: string; // Numero de operacion (manual)
+  operation_number?: string;
 
   @Prop()
-  voucher_url?: string; // Comprobante de pago (manual)
+  voucher_url?: string;
 
   @Prop({ enum: PaymentStatus, default: PaymentStatus.PENDIENTE })
   status: PaymentStatus;
 
-  @Prop({ type: Types.ObjectId, ref: Event.name })
-  event?: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: Event.name, required: true })
+  event: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: PaymentSchedule.name })
-  schedule: Types.ObjectId;
+  schedule?: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: User.name })
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   user: Types.ObjectId;
 
   @Prop({ default: Date.now })
@@ -50,6 +49,15 @@ export class Payment {
     comments: string;
     reported_at: Date;
   }>;
+
+  @Prop({ type: String, nullable: true })
+  mercadopago_id?: string;
+
+  @Prop({ type: String, nullable: true })
+  mercadopago_status?: string;
+
+  @Prop({ type: Object, nullable: true })
+  mercadopago_response?: any;
 }
 
 export const PaymentSchema = SchemaFactory.createForClass(Payment);

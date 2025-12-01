@@ -1,12 +1,13 @@
 import {
   Controller,
   Post,
+  Get,
+  Param,
   HttpCode,
   HttpStatus,
   Body,
   UseGuards,
   UseInterceptors,
-  Get,
   UploadedFiles,
 } from '@nestjs/common';
 import {
@@ -14,14 +15,17 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { PaymentService } from '../services/payment.service';
-import { CreateManualPaymentDto, CreateMercadoPagoDto, CreatePaymentSchedulesDto, ApproveAllPaymentsDto, ReportPaymentIssuesDto } from '../dto';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+import { 
+  CreateManualPaymentDto, 
+  CreateMercadoPagoPaymentDto, // ✅ Importar el nuevo DTO
+  CreatePaymentSchedulesDto, 
+  ApproveAllPaymentsDto, 
+  ReportPaymentIssuesDto 
+} from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/auth/decorators';
@@ -50,8 +54,6 @@ export class PaymentController {
 
   @Post('manual')
   @Public()
-  // @UseGuards(FirebaseAuthGuard)
-  // @ApiBearerAuth('firebase-auth')
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Registrar varios pagos manuales con comprobantes (uno por método)' })
@@ -92,21 +94,46 @@ export class PaymentController {
     return this.paymentService.processManualPayment(dto, files);
   }
 
-  @Post('test/mercadopago')
-  @UseGuards(FirebaseAuthGuard)
-  @ApiBearerAuth('firebase-auth')
+  @Post('mercadopago')
+  @Public() 
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Procesar pago con Mercado Pago' })
+  @ApiOperation({ summary: 'Procesar pago con Mercado Pago (Producción)' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Pago procesado correctamente con Mercado Pago.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Pago aprobado exitosamente',
+        payment: {
+          _id: '674xxx',
+          payment_type: 'Parcial',
+          amount: 166.1,
+          status: 'Aprobado',
+          mercadopago_id: '1234567890',
+          created_at: '2025-11-26T...',
+        },
+        mercadopago_response: {
+          id: 1234567890,
+          status: 'approved',
+          status_detail: 'accredited',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Error al procesar el pago.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Token de tarjeta inválido o expirado',
+        error: 'Bad Request',
+      },
+    },
   })
-  async processPayment(@Body() dto: CreateMercadoPagoDto) {
-    return this.paymentService.testMercadoPagoPayment(dto);
+  async processMercadoPagoPayment(@Body() dto: CreateMercadoPagoPaymentDto) {
+    return this.paymentService.processMercadoPagoPayment(dto);
   }
 
   @Post('approve-all')
@@ -141,5 +168,35 @@ export class PaymentController {
   })
   async reportPaymentIssues(@Body() dto: ReportPaymentIssuesDto) {
     return this.paymentService.reportPaymentIssues(dto);
+  }
+
+  @Get('event/:eventId')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener todos los pagos de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos del evento obtenidos correctamente',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Evento no encontrado',
+  })
+  async getPaymentsByEvent(@Param('eventId') eventId: string) {
+    return this.paymentService.getPaymentsByEvent(eventId);
+  }
+
+  @Get('manual/event/:eventId')
+  @UseGuards(FirebaseAuthGuard)
+  @ApiBearerAuth('firebase-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obtener solo pagos manuales de un evento' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pagos manuales obtenidos correctamente',
+  })
+  async getManualPaymentsByEvent(@Param('eventId') eventId: string) {
+    return this.paymentService.getManualPaymentsByEvent(eventId);
   }
 }
