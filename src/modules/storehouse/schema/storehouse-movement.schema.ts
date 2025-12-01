@@ -21,7 +21,7 @@ export class StorehouseMovement {
   code: string;
 
   @Prop({ enum: Estado, default: Estado.ACTIVO })
-  state: Estado;
+  status: Estado;
 
   @Prop({ enum: StoreMovementType, nullable: true })
   movement_type: StoreMovementType;

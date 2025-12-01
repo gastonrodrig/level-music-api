@@ -49,7 +49,6 @@ export class EventService {
     private appointmentModel: Model<Appointment>,
     @InjectModel(Payment.name)
     private paymentModel: Model<Payment>,
-    @InjectModel(Assignation.name)
     private assignationService: AssignationsService,
     @InjectQueue('purchase-order')
     private purchaseOrderQueue: Queue,
@@ -91,7 +90,6 @@ export class EventService {
         version: 1,
         is_latest: true,
       };
-      console.log(eventToCreate);
       // 4. Crear evento
       const event = await this.eventModel.create(eventToCreate);
 
@@ -100,7 +98,8 @@ export class EventService {
         for (const assign of dto.assignations) {
           await this.assignationService.create({
             ...assign,
-            event_id: event._id.toString(),
+            event_id: toObjectId(event._id),
+            resource_id: toObjectId(assign.resource_id),
           });
         }
       }
@@ -308,7 +307,8 @@ export class EventService {
         for (const assign of dto.assignations) {
           await this.assignationService.create({
             ...assign,
-            event_id: newEvent._id.toString(),
+            event_id: toObjectId(newEvent._id),
+            resource_id: toObjectId(assign.resource_id),
           });
         }
       }

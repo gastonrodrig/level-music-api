@@ -16,10 +16,8 @@ import {
   ApiTags,
   ApiBody,
 } from '@nestjs/swagger';
-
 import { Public } from 'src/auth/decorators';
 import { StorehouseMovementService } from '../services';
-
 import { CreateStorehouseMovementDto } from '../dto/create-storehouse-movement.dto';
 import { CreateFromStorehouseDto } from '../dto';
 import { CreateManualMovementDto } from '../dto';
@@ -31,9 +29,6 @@ export class StorehouseMovementController {
     private readonly storehouseMovementService: StorehouseMovementService,
   ) {}
 
-  // ===========================================================
-  // Crear movimiento directo (con IDs)
-  // ===========================================================
   @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
@@ -43,9 +38,6 @@ export class StorehouseMovementController {
     return this.storehouseMovementService.create(dto);
   }
 
-  // ===========================================================
-  // Obtener asignaciones por STOREHOUSE CODE
-  // ===========================================================
   @Get('by-storehouse-code')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -55,9 +47,6 @@ export class StorehouseMovementController {
     return this.storehouseMovementService.getAssignationsByStorehouseCode(code);
   }
 
-  // ===========================================================
-  // Crear movimientos desde STOREHOUSE CODE
-  // ===========================================================
   @Post('from-storehouse')
   @Public()
   @HttpCode(HttpStatus.CREATED)
@@ -67,9 +56,6 @@ export class StorehouseMovementController {
     return this.storehouseMovementService.createFromStorehouse(dto);
   }
 
-  // ===========================================================
-  // Crear movimiento manual
-  // ===========================================================
   @Post('manual')
   @Public()
   @HttpCode(HttpStatus.CREATED)
@@ -79,9 +65,6 @@ export class StorehouseMovementController {
     return this.storehouseMovementService.createManual(dto);
   }
 
-  // ===========================================================
-  // Paginado + filtros
-  // ===========================================================
   @Get('paginated')
   @Public()
   @HttpCode(HttpStatus.OK)
@@ -114,16 +97,5 @@ export class StorehouseMovementController {
       movement_type,
       state,
     );
-  }
-
-  // ===========================================================
-  // Obtener por ID
-  // ===========================================================
-  @Get(':id')
-  @Public()
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtener un movimiento por ID' })
-  findOne(@Param('id') id: string) {
-    return this.storehouseMovementService.findOne(id);
   }
 }

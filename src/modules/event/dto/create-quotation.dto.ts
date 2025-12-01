@@ -38,6 +38,12 @@ class AssignationRequestDto {
   @Min(0)
   @Max(100)
   payment_percentage_required?: number;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  quantity_required?: number;
 }
 
 export class CreateQuotationDto extends IntersectionType(CreateEventDto) {

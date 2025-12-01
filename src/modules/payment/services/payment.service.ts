@@ -201,9 +201,6 @@ export class PaymentService {
     }
   }
 
-  /**
-   * Aprobar todos los pagos pendientes de un evento
-   */
   async approveAllPayments(dto: ApproveAllPaymentsDto) {
     try {
       const { event_id } = dto;

@@ -19,6 +19,7 @@ import {
 import { AssignationsService } from '../services';
 import { CreateAssignationDto } from '../dto';
 import { FirebaseAuthGuard } from 'src/auth/guards/firebase-auth.guard';
+import { Types } from 'mongoose';
 
 @Controller('assignations')
 @ApiTags('Assignations')
@@ -57,7 +58,7 @@ export class AssignationsController {
     @Query('eventCode') eventCode?: string,
   ) {
     await this.assignationsService.validateResourceAvailability(
-      equipment_id,
+      new Types.ObjectId(equipment_id),
       new Date(from),
       new Date(to),
       eventCode
@@ -79,7 +80,7 @@ export class AssignationsController {
     @Query('eventCode') eventCode?: string,
   ) {
     await this.assignationsService.validateResourceAvailability(
-      worker_id,
+      new Types.ObjectId(worker_id),
       new Date(from),
       new Date(to),
       eventCode
@@ -101,7 +102,7 @@ export class AssignationsController {
     @Query('eventCode') eventCode?: string,
   ) {
     await this.assignationsService.validateResourceAvailability(
-      serviceDetail_id,
+      new Types.ObjectId(serviceDetail_id),
       new Date(from),
       new Date(to),
       eventCode

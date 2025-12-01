@@ -3,6 +3,7 @@ import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 import { StoreMovementType } from '../enum';
 import { LocationType } from 'src/modules/equipments/enum';
+import { Estado } from 'src/core/constants/app.constants';
 
 export class CreateStorehouseMovementDto {
   @ApiProperty({ type: Types.ObjectId, required: true })
@@ -34,7 +35,7 @@ export class CreateStorehouseMovementDto {
   @IsString()
   code?: string;
 
-  @ApiProperty({ enum: ['Activo','Inactivo'], required: false })
-  @IsEnum(['Activo','Inactivo'] as any)
-  state?: any;
+  @ApiProperty({ enum: Estado, required: false })
+  @IsEnum(Estado)
+  status?: Estado;
 }

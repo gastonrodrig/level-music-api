@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Types } from "mongoose";
 import { ResourceType } from "../enum";
-import { Estado } from "src/core/constants/app.constants";
 import {LocationType} from "src/modules/equipments/enum";
+import { Worker, WorkerType } from "src/modules/worker/schema";
 
 @Schema({ collection: 'assignations' })
 export class Assignation {
@@ -15,7 +15,7 @@ export class Assignation {
 
   // Horarios de asignación
   @Prop({ type: Date, required: true })
-  available_from: Date; // Ej: 2025-09-22T22:00:00Z
+  available_from: Date; 
 
   @Prop({ type: Date, required: true })
   available_to: Date; 
@@ -60,16 +60,13 @@ export class Assignation {
 
   // --- Solo si es trabajador ---
   @Prop({ type: String })
-  worker_first_name?: string;
+  worker_type_name?: string;
 
-  @Prop({ type: String })
-  worker_last_name?: string;
+  @Prop({ type: Number, default: 1, required: false })
+  quantity_required?: number;
 
-  @Prop({ type: String })
-  worker_role?: string;
-
-  @Prop({ enum: Estado }) 
-  worker_status?: Estado;
+  @Prop({ type: [Types.ObjectId], ref: Worker.name, default: [] })
+  assigned_workers?: Types.ObjectId[];
 
   // --- Política de pago del servicio ---
   @Prop({ type: Number, min: 0, max: 100, default: 100 })

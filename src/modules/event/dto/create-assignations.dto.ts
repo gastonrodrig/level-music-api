@@ -11,22 +11,23 @@ import {
   Min,
 } from 'class-validator';
 import { ResourceType } from '../enum';
+import { Types } from 'mongoose';
 
 export class CreateAssignationDto {
-  @ApiProperty({ type: String, example: '6501a7c8f0a1b2c3d4e5f678' })
+  @ApiProperty({ type: Types.ObjectId, example: '6501a7c8f0a1b2c3d4e5f678' })
   @IsMongoId()
   @IsNotEmpty()
-  event_id: string;
+  event_id: Types.ObjectId;
 
   @ApiProperty({ enum: ResourceType, example: ResourceType.SERVICE_DETAIL })
   @IsEnum(ResourceType)
   @IsNotEmpty()
   resource_type: ResourceType;
 
-  @ApiProperty({ type: String, example: '68ca75fe4289595b8bb1a331' })
+  @ApiProperty({ type: Types.ObjectId, example: '68ca75fe4289595b8bb1a331' })
   @IsMongoId()
   @IsNotEmpty()
-  resource_id: string;
+  resource_id: Types.ObjectId;
 
   @ApiProperty({ type: Number, example: 1 })
   @IsNumber()
@@ -54,4 +55,10 @@ export class CreateAssignationDto {
   @Min(0)
   @Max(100)
   payment_percentage_required?: number;
+
+  @ApiProperty({ type: Number, example: 3 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  quantity_required?: number;
 }

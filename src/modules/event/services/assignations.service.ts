@@ -13,10 +13,10 @@ import { Event } from 'src/modules/event/schema/event.schema';
 import { errorCodes } from 'src/core/common';
 import { ResourceType } from '../enum';
 import { Equipment } from 'src/modules/equipments/schema';
-import { Worker } from 'src/modules/worker/schema/worker.schema';
 import { ServiceDetail } from 'src/modules/service/schema/service-detail.schema';
 import { Service } from 'src/modules/service/schema/service.schema';
 import { toObjectId } from 'src/core/utils';
+import { WorkerType } from 'src/modules/worker/schema';
 
 @Injectable()
 export class AssignationsService {
@@ -27,8 +27,8 @@ export class AssignationsService {
     private readonly eventModel: Model<Event>,
     @InjectModel(Equipment.name)
     private readonly equipmentModel: Model<Equipment>,
-    @InjectModel(Worker.name)
-    private readonly workerModel: Model<Worker>,
+    @InjectModel(WorkerType.name)
+    private readonly workerTypeModel: Model<WorkerType>,
     @InjectModel(ServiceDetail.name)
     private readonly serviceDetailModel: Model<ServiceDetail>,
     @InjectModel(Service.name)
@@ -40,7 +40,7 @@ export class AssignationsService {
   ) {}
 
   async validateResourceAvailability(
-    resource_id: string,
+    resource_id: Types.ObjectId,
     available_from: Date,
     available_to: Date,
     excluded_event_code?: string
@@ -56,7 +56,6 @@ export class AssignationsService {
     };
 
     if (excluded_event_code) {
-      // Busca el listado de todos los eventos que comparten ese código, y exclúyelos
       const eventsToExclude = await this.eventModel
         .find({ event_code: excluded_event_code })
         .select('_id');
@@ -93,12 +92,16 @@ export class AssignationsService {
       // 3. Construir objeto base
       const assignationToCreate: any = {
         ...dto,
-        event: event._id,
+        event: toObjectId(dto.event_id), 
         resource: toObjectId(dto.resource_id),
         assigned_at: new Date(),
       };
 
-      // 4. Agregar info extra según tipo
+      console.log(dto)
+
+      assignationToCreate.resource = toObjectId(dto.resource_id);
+
+      // 4. Agregar info extra según tipo (si es necesario)
       if (dto.resource_type === ResourceType.EQUIPMENT) {
         const equipment = await this.equipmentModel.findById(dto.resource_id);
         if (!equipment) {
@@ -114,15 +117,16 @@ export class AssignationsService {
       }
 
       if (dto.resource_type === ResourceType.WORKER) {
-        const worker = await this.workerModel.findById(dto.resource_id);
-        if (!worker) {
-          throw new BadRequestException(`El trabajador "${dto.resource_id}" no existe.`);
+        const role = await this.workerTypeModel.findById(dto.resource_id);
+        if (!role) {
+          throw new BadRequestException(`El rol de trabajador "${dto.resource_id}" no existe.`);
         }
 
-        assignationToCreate.worker_role = worker.worker_type_name;
-        assignationToCreate.worker_status = worker.status;
-        assignationToCreate.worker_first_name = worker.first_name;
-        assignationToCreate.worker_last_name = worker.last_name;
+        assignationToCreate.worker_type_name = role.name;
+        assignationToCreate.quantity_required = dto.quantity_required;
+
+        // No hay assigned_workers en precotización
+        assignationToCreate.assigned_workers = [];
       }
 
       if (dto.resource_type === ResourceType.SERVICE_DETAIL) {

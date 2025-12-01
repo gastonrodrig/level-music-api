@@ -1,22 +1,17 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-
 import { StorehouseMovement } from '../schema';
 import { Event, EventTask, EventSubtask, Assignation } from 'src/modules/event/schema';
 import { Equipment } from 'src/modules/equipments/schema';
-
 import { CreateStorehouseMovementDto } from '../dto';
 import { CreateManualMovementDto } from '../dto';
 import { CreateFromStorehouseDto } from '../dto/';
-
 import { ResourceType } from 'src/modules/event/enum/resource-type.enum';
 import { LocationType } from 'src/modules/equipments/enum';
-import { StatusType } from 'src/modules/event/enum/status-type.enum';
 import { toObjectId } from 'src/core/utils';
 
 @Injectable()
@@ -24,28 +19,20 @@ export class StorehouseMovementService {
   constructor(
     @InjectModel(StorehouseMovement.name)
     private storehouseMovementModel: Model<StorehouseMovement>,
-
     @InjectModel(Event.name)
     private eventModel: Model<Event>,
-
     @InjectModel(Equipment.name)
     private equipmentModel: Model<Equipment>,
-
     @InjectModel(Assignation.name)
     private assignationModel: Model<Assignation>,
-
     @InjectModel(EventTask.name)
     private eventTaskModel: Model<EventTask>,
-
     @InjectModel(EventSubtask.name)
     private eventSubtaskModel: Model<EventSubtask>,
   ) {}
 
-  // ============================================================
-  // CREAR movimiento directo con IDs
-  // ============================================================
-  async create(dto: CreateStorehouseMovementDto) {
-    const { equipment_id, event_id, movement_type, destination, movement_date, code, state } = dto;
+  async create(dto: CreateStorehouseMovementDto): Promise<StorehouseMovement> {
+    const { equipment_id, event_id, movement_type, destination, movement_date, code, status } = dto;
 
     const equipment = await this.equipmentModel.findById(equipment_id);
     if (!equipment) throw new NotFoundException('Equipo no encontrado');
@@ -59,20 +46,16 @@ export class StorehouseMovementService {
       movement_type,
       destination,
       movement_date,
-      code: code || `MVT-${Date.now().toString(36)}`,
-      state: state || 'Activo',
+      code,
+      status,
     });
 
     await movement.save();
     return movement;
   }
 
-  // ============================================================
-  // CREAR movimientos cuando tiene storehouse_code
-  // ============================================================
   async createFromStorehouse(dto: CreateFromStorehouseDto) {
     const { code, movement_type, destination } = dto;
-
     const { event, assignations } = await this.getAssignationsByStorehouseCode(code);
 
     const created = [];
@@ -82,7 +65,7 @@ export class StorehouseMovementService {
         equipment: a.resource,
         event: event._id,
         movement_type,
-        destination: destination || LocationType.EVENTO,
+        destination: destination,
         code: `MVT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
       });
 
@@ -96,9 +79,6 @@ export class StorehouseMovementService {
     };
   }
 
-  // ============================================================
-  // CREAR movimiento manual
-  // ============================================================
   async createManual(dto: CreateManualMovementDto) {
     const { equipment_id, movement_type, event_code, destination } = dto;
 
@@ -112,7 +92,7 @@ export class StorehouseMovementService {
       equipment: equipment._id,
       event: event._id,
       movement_type,
-      destination: destination || LocationType.EVENTO,
+      destination: destination,
       code: `MVT-${Date.now().toString(36)}`,
     });
 
@@ -120,21 +100,6 @@ export class StorehouseMovementService {
     return movement;
   }
 
-  // ============================================================
-  // Obtener movimiento por ID
-  // ============================================================
-  async findOne(id: string) {
-    const movement = await this.storehouseMovementModel.findById(id)
-      .populate('equipment')
-      .populate('event');
-
-    if (!movement) throw new NotFoundException('Movimiento no encontrado');
-    return movement;
-  }
-
-  // ============================================================
-  // Paginación + filtros
-  // ============================================================
   async findAllPaginated(
     limit: number,
     offset: number,
@@ -164,23 +129,19 @@ export class StorehouseMovementService {
     return { total, items };
   }
 
-  // ============================================================
-  // LOOKUP por STOREHOUSE_CODE
-  // ============================================================
   async getAssignationsByStorehouseCode(storehouse_code: string) {
     const subtask = await this.eventSubtaskModel
       .findOne({ storehouse_code })
       .select('parent_task');
-
     if (!subtask) throw new NotFoundException('No existe subtask con ese storehouse_code');
 
     const parentTask = await this.eventTaskModel
       .findById(subtask.parent_task)
       .select('event');
-
     if (!parentTask) throw new NotFoundException('No existe parentTask para este storehouse_code');
 
-    const baseEvent = await this.eventModel.findById(parentTask.event);
+    const baseEvent = await this.eventModel
+      .findById(parentTask.event);
     if (!baseEvent) throw new NotFoundException('Evento no encontrado');
 
     // Obtener versión más reciente
@@ -188,7 +149,6 @@ export class StorehouseMovementService {
       event_code: baseEvent.event_code,
       is_latest: true,
     });
-
     if (!event) throw new NotFoundException('No existe la versión más reciente del evento');
 
     const assignations = await this.assignationModel
