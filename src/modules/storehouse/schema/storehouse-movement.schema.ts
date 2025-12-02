@@ -8,17 +8,20 @@ import { Event } from "src/modules/event/schema/event.schema";
 
 @Schema({ collection: 'storehouse-movements' })
 export class StorehouseMovement {
+  @Prop({ type: String, required: true, index: true })
+  code: string;
+
   @Prop({ type: Types.ObjectId, ref: Equipment.name, required: true })
   equipment: string;
 
   @Prop({ type: Types.ObjectId, ref: Event.name, required: true })
   event: string;
 
+  @Prop({ type: String })
+  event_name?: string;
+
   @Prop({ enum: LocationType, required: true })
   destination: LocationType;
-
-  @Prop({ type: String, required: true, index: true })
-  code: string;
 
   @Prop({ enum: Estado, default: Estado.ACTIVO })
   status: Estado;

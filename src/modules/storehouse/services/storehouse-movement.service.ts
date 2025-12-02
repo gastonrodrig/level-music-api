@@ -64,6 +64,7 @@ export class StorehouseMovementService {
       const movement = new this.storehouseMovementModel({
         equipment: a.resource,
         event: event._id,
+        event_name: event.name,
         movement_type,
         destination: destination,
         code: `MVT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
@@ -91,6 +92,7 @@ export class StorehouseMovementService {
     const movement = new this.storehouseMovementModel({
       equipment: equipment._id,
       event: event._id,
+      event_name: event.name,
       movement_type,
       destination: destination,
       code: `MVT-${Date.now().toString(36)}`,

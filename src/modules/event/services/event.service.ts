@@ -130,7 +130,7 @@ export class EventService {
 
       const statusCases: Record<number, string[]> = {
         1: ['Pagos Asignados', 'Borrador', 'En Revisión', 'Enviado', 'Confirmado', 'Por Verificar'],
-        2: ['En Seguimiento', 'Finalizado'],
+        2: ['En Seguimiento'],
       };
 
       if (caseFilter && statusCases[caseFilter]) {
