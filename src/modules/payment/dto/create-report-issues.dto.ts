@@ -1,8 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsArray, ValidateNested, IsEnum, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IssueCategory } from '../enum/Issue-Category.enum';
-
 
 export class PaymentIssueDto {
   @ApiProperty({
@@ -13,14 +11,8 @@ export class PaymentIssueDto {
   @IsString()
   payment_id: string;
 
-  @ApiProperty({
-    description: 'Categoría del problema',
-    enum: IssueCategory,
-    example: 'amount_incorrect',
-  })
   @IsNotEmpty()
-  @IsEnum(IssueCategory)
-  category: IssueCategory;
+  category: string;
 
   @ApiProperty({
     description: 'Comentarios adicionales',
