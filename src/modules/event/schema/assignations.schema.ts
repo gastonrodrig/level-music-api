@@ -74,7 +74,7 @@ export class Assignation {
 
   // Referencias
   @Prop({ enum: ResourceType, required: true })
-  resource_type: ResourceType;
+  resource_type: ResourceType; 
 
   @Prop({ type: Types.ObjectId, required: true })
   resource: Types.ObjectId;
